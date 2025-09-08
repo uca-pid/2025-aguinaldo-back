@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- FKs -->
+    <changeSet id="0003-01-fk-user_roles-user" author="bauti">
+        <addForeignKeyConstraint baseTableName="user_roles"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_user_roles_user"/>
+    </changeSet>
+
+    <changeSet id="0003-02-fk-user_roles-role" author="bauti">
+        <addForeignKeyConstraint baseTableName="user_roles"
+                                 baseColumnNames="role_id"
+                                 referencedTableName="roles"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"
+                                 constraintName="fk_user_roles_role"/>
+    </changeSet>
+
+    <changeSet id="0003-03-fk-patient_profiles-user" author="bauti">
+        <addForeignKeyConstraint baseTableName="patient_profiles"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_patient_profiles_user"/>
+    </changeSet>
+
+    <changeSet id="0003-04-fk-doctor_profiles-user" author="bauti">
+        <addForeignKeyConstraint baseTableName="doctor_profiles"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_doctor_profiles_user"/>
+    </changeSet>
+
+    <changeSet id="0003-05-fk-refresh_tokens-user" author="bauti">
+        <addForeignKeyConstraint baseTableName="refresh_tokens"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_refresh_tokens_user"/>
+    </changeSet>
+
+    <changeSet id="0003-06-fk-email_verifications-user" author="bauti">
+        <addForeignKeyConstraint baseTableName="email_verifications"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_email_verifications_user"/>
+    </changeSet>
+
+    <changeSet id="0003-07-fk-password_resets-user" author="bauti">
+        <addForeignKeyConstraint baseTableName="password_resets"
+                                 baseColumnNames="user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 constraintName="fk_password_resets_user"/>
+    </changeSet>
+
+    <!-- CHECK: users.status -->
+    <changeSet id="0003-08-users-status-check" author="bauti">
+        <sql>
+            ALTER TABLE users ADD CONSTRAINT chk_users_status CHECK (status in ('ACTIVE','LOCKED','DISABLED'));
+        </sql>
+    </changeSet>
+
+    <!-- INDEXES -->
+    <changeSet id="0003-09-idx-user_roles-user" author="bauti">
+        <createIndex tableName="user_roles" indexName="idx_user_roles_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-10-idx-refresh-user" author="bauti">
+        <createIndex tableName="refresh_tokens" indexName="idx_refresh_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-11-idx-users-email" author="bauti">
+        <!-- con citext el UNIQUE ya es case-insensitive, igual creamos índice explícito -->
+        <createIndex tableName="users" indexName="idx_users_email">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-12-idx-users-status" author="bauti">
+        <createIndex tableName="users" indexName="idx_users_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="0004-01-seed-roles" author="bauti" runOnChange="false" runAlways="false">
+        <insert tableName="roles">
+            <column name="code" value="PATIENT"/>
+            <column name="name" value="Paciente"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="code" value="DOCTOR"/>
+            <column name="name" value="Médico"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="code" value="ADMIN"/>
+            <column name="name" value="Administrador"/>
+        </insert>
+    </changeSet>
+
+    <!-- Evitar duplicados en re-ejecución (si ya existen) -->
+    <changeSet id="0004-02-roles-unique-guard" author="bauti" context="guard">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM roles WHERE code IN ('PATIENT','DOCTOR','ADMIN') HAVING COUNT(*)=3
+            </sqlCheck>
+        </preConditions>
+        <!-- Si ya están, se marca como ejecutado sin reinsertar -->
+        <comment>Guarda semilla roles si ya existen</comment>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- USERS -->
+    <changeSet id="0002-01-users" author="bauti">
+        <createTable tableName="users">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="citext">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="text"/>
+            <column name="email_verified" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="text" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_login_at" type="timestamptz"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ROLES -->
+    <changeSet id="0002-02-roles" author="bauti">
+        <createTable tableName="roles">
+            <!-- smallserial -->
+            <column name="id" type="smallint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="text">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- USER_ROLES (N:N) -->
+    <changeSet id="0002-03-user_roles" author="bauti">
+        <createTable tableName="user_roles">
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="smallint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="user_roles" columnNames="user_id, role_id" constraintName="pk_user_roles"/>
+    </changeSet>
+
+    <!-- PATIENT PROFILES -->
+    <changeSet id="0002-04-patient_profiles" author="bauti">
+        <createTable tableName="patient_profiles">
+            <column name="user_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="birth_date" type="date"/>
+            <column name="document_id" type="text"/>
+            <column name="gender" type="text"/>
+            <column name="emergency_contact" type="jsonb"/>
+        </createTable>
+    </changeSet>
+
+    <!-- DOCTOR PROFILES -->
+    <changeSet id="0002-05-doctor_profiles" author="bauti">
+        <createTable tableName="doctor_profiles">
+            <column name="user_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="medical_license" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="specialty" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="clinic_name" type="text"/>
+            <column name="slot_duration_min" type="int" defaultValueNumeric="20">
+                <constraints nullable="false"/>
+            </column>
+            <column name="buffer_min" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- REFRESH TOKENS -->
+    <changeSet id="0002-06-refresh_tokens" author="bauti">
+        <createTable tableName="refresh_tokens">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_agent" type="text"/>
+            <column name="ip_address" type="inet"/>
+            <column name="expires_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked_at" type="timestamptz"/>
+        </createTable>
+    </changeSet>
+
+    <!-- EMAIL VERIFICATIONS -->
+    <changeSet id="0002-07-email_verifications" author="bauti">
+        <createTable tableName="email_verifications">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed_at" type="timestamptz"/>
+        </createTable>
+    </changeSet>
+
+    <!-- PASSWORD RESETS -->
+    <changeSet id="0002-08-password_resets" author="bauti">
+        <createTable tableName="password_resets">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed_at" type="timestamptz"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
