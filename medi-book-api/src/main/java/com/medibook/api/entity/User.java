@@ -42,4 +42,19 @@ public class User {
     @Column(nullable = false)
     private String role = "PATIENT";
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private DoctorProfile doctorProfile;
+
+    public DoctorProfile getDoctorProfile() {
+        return doctorProfile;
+    }
+
+    public void setDoctorProfile(DoctorProfile doctorProfile) {
+        this.doctorProfile = doctorProfile;
+        if (doctorProfile != null) {
+            doctorProfile.setUser(this);
+            doctorProfile.setId(this.getId());
+        }
+    }
+
 }

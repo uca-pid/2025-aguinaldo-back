@@ -1,6 +1,7 @@
 package com.medibook.api.entity;
 
 import org.junit.jupiter.api.Test;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
