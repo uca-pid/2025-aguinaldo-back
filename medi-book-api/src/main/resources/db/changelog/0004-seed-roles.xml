@@ -6,7 +6,7 @@
           http://www.liquibase.org/xml/ns/dbchangelog
           https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
 
-    <changeSet id="0004-01-seed-roles" author="bauti" runOnChange="false" runAlways="false">
+    <changeSet id="0004-01-seed-roles" author="MediBook_Admin" runOnChange="false" runAlways="false">
         <insert tableName="roles">
             <column name="code" value="PATIENT"/>
             <column name="name" value="Paciente"/>
@@ -22,7 +22,7 @@
     </changeSet>
 
     <!-- Evitar duplicados en re-ejecución (si ya existen) -->
-    <changeSet id="0004-02-roles-unique-guard" author="bauti" context="guard">
+    <changeSet id="0004-02-roles-unique-guard" author="MediBook_Admin" context="guard">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT COUNT(*) FROM roles WHERE code IN ('PATIENT','DOCTOR','ADMIN') HAVING COUNT(*)=3
