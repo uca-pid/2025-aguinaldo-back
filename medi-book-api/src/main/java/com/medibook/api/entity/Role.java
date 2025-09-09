@@ -1,4 +1,4 @@
-package com.medibook.api.models;
+package com.medibook.api.entity;
 
 import jakarta.persistence.*;
 

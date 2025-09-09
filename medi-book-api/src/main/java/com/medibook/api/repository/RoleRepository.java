@@ -1,7 +1,8 @@
 package com.medibook.api.repository;
 
-import com.medibook.api.models.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.medibook.api.entity.Role;
 
 import java.util.Optional;
 

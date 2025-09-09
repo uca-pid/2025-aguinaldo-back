@@ -1,7 +1,7 @@
 package com.medibook.api.mappers;
 
 import com.medibook.api.dto.RoleDto;
-import com.medibook.api.models.Role;
+import com.medibook.api.entity.Role;
 
 public final class RoleMapper {
     private RoleMapper() {}
