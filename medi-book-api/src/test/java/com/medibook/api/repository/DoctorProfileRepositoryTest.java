@@ -1,7 +1,7 @@
 package com.medibook.api.repository;
 
 import com.medibook.api.entity.User;
-import com.medibook.api.config.TestConfig;
+import com.medibook.api.config.TestWebConfig;
 import com.medibook.api.entity.DoctorProfile;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @ActiveProfiles("test")
-@Import(TestConfig.class)
+@Import(TestWebConfig.class)
 class DoctorProfileRepositoryTest {
     
     @Autowired

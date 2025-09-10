@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medibook.api.dto.RegisterRequestDTO;
 import com.medibook.api.dto.RegisterResponseDTO;
 import com.medibook.api.service.AuthService;
-import com.medibook.api.config.TestConfig;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -18,11 +21,12 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(AuthController.class)
-@Import(TestConfig.class)
+@WebMvcTest(controllers = AuthController.class)
+@Import(AuthControllerTest.MockConfig.class)
 class AuthControllerTest {
 
     @Autowired
@@ -31,10 +35,25 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
-    private AuthService authService;
+    @Autowired
+    private AuthService authService; 
+
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        @Primary
+        public AuthService authService() {
+            return org.mockito.Mockito.mock(AuthService.class);
+        }
+    }
+
+    @BeforeEach
+    void setUp() {
+        org.mockito.Mockito.reset(authService);
+    }
 
     @Test
+    @WithMockUser
     void whenRegisterPatient_thenSuccess() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "patient@example.com",
@@ -57,18 +76,20 @@ class AuthControllerTest {
             "PATIENT"
         );
 
-        when(authService.registerPatient(any())).thenReturn(response);
+        when(authService.registerPatient(any(RegisterRequestDTO.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/register/patient")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").isNotEmpty())
+            .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.email").value(request.email()))
             .andExpect(jsonPath("$.role").value("PATIENT"));
     }
 
     @Test
+    @WithMockUser
     void whenRegisterDoctor_thenSuccess() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
@@ -91,18 +112,74 @@ class AuthControllerTest {
             "DOCTOR"
         );
 
-        when(authService.registerDoctor(any())).thenReturn(response);
+        when(authService.registerDoctor(any(RegisterRequestDTO.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/register/doctor")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").isNotEmpty())
+            .andExpect(jsonPath("$.id").exists())
             .andExpect(jsonPath("$.email").value(request.email()))
             .andExpect(jsonPath("$.role").value("DOCTOR"));
     }
 
     @Test
+    @WithMockUser
+    void whenRegisterWithExistingEmail_thenBadRequest() throws Exception {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+            "existing@example.com",
+            "password123",
+            "John",
+            "Doe",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        when(authService.registerPatient(any(RegisterRequestDTO.class)))
+            .thenThrow(new IllegalArgumentException("Email already registered"));
+
+        mockMvc.perform(post("/api/auth/register/patient")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("Email already registered"));
+    }
+
+    @Test
+    @WithMockUser
+    void whenRegisterDoctorWithoutLicense_thenBadRequest() throws Exception {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+            "doctor@example.com",
+            "password123",
+            "John",
+            "Doe",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        when(authService.registerDoctor(any(RegisterRequestDTO.class)))
+            .thenThrow(new IllegalArgumentException("Medical license and specialty are required for doctors"));
+
+        mockMvc.perform(post("/api/auth/register/doctor")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string("Medical license and specialty are required for doctors"));
+    }
+
+    @Test
+    @WithMockUser
     void whenInvalidRequest_thenBadRequest() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "invalid-email",
@@ -118,61 +195,9 @@ class AuthControllerTest {
         );
 
         mockMvc.perform(post("/api/auth/register/patient")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
-    }
-    @Test
-    void whenRegisterWithExistingEmail_thenBadRequest() throws Exception {
-        // Arrange
-        RegisterRequestDTO request = new RegisterRequestDTO(
-            "existing@example.com",
-            "password123",
-            "John",
-            "Doe",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-
-        when(authService.registerPatient(any()))
-            .thenThrow(new IllegalArgumentException("Email already registered"));
-
-        // Act & Assert
-        mockMvc.perform(post("/api/auth/register/patient")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(content().string("Email already registered"));
-    }
-
-    @Test
-    void whenRegisterDoctorWithoutLicense_thenBadRequest() throws Exception {
-        // Arrange
-        RegisterRequestDTO request = new RegisterRequestDTO(
-            "doctor@example.com",
-            "password123",
-            "John",
-            "Doe",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-
-        when(authService.registerDoctor(any()))
-            .thenThrow(new IllegalArgumentException("Medical license and specialty are required for doctors"));
-
-        // Act & Assert
-        mockMvc.perform(post("/api/auth/register/doctor")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(content().string("Medical license and specialty are required for doctors"));
     }
 }

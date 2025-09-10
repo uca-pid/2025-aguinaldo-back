@@ -3,6 +3,7 @@ package com.medibook.api.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.UUID;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +16,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", columnDefinition = "citext")
     private String email;
 
     @Column(name = "password_hash", nullable = false)
