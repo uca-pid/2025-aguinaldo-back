@@ -1,22 +1,33 @@
-# changes file
-*.changes
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# system image
-*.image
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
 
-# Pharo Smalltalk Debug log file
-PharoDebug.log
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
 
-# Squeak Smalltalk Debug log file
-SqueakDebug.log
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Monticello package cache
-/package-cache
-
-# playground cache
-/play-cache
-/play-stash
-
-# Metacello-github cache
-/github-cache
-github-*.zip
+### VS Code ###
+.vscode/
