@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- USERS -->
+    <changeSet id="0002-01-users" author="MediBook_Admin">
+        <createTable tableName="users">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="citext">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="surname" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="text"/>
+            <column name="birthdate" type="date"/>
+            <column name="gender" type="text"/>
+            <column name="email_verified" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="text" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="text" defaultValue="PATIENT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ROLES -->
+    <changeSet id="0002-02-roles" author="MediBook_Admin">
+        <createTable tableName="roles">
+            <column name="id" type="smallint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="text">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- USER_ROLES (N:N) -->
+    <changeSet id="0002-03-user_roles" author="MediBook_Admin">
+        <createTable tableName="user_roles">
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="smallint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="user_roles" columnNames="user_id, role_id" constraintName="pk_user_roles"/>
+        <addForeignKeyConstraint baseTableName="user_roles" baseColumnNames="user_id"
+                                constraintName="fk_user_roles_user"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="user_roles" baseColumnNames="role_id"
+                                constraintName="fk_user_roles_role"
+                                referencedTableName="roles" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+    </changeSet>
+
+    <!-- DOCTOR PROFILES -->
+    <changeSet id="0002-05-doctor_profiles" author="MediBook_Admin">
+        <createTable tableName="doctor_profiles">
+            <column name="user_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="medical_license" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="specialty" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="slot_duration_min" type="int" defaultValueNumeric="20">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="doctor_profiles" baseColumnNames="user_id"
+                                constraintName="fk_doctor_profiles_user"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- TURNS ASSIGNED -->
+    <changeSet id="0002-09-turns_assigned" author="MediBook_Admin">
+        <createTable tableName="turns_assigned">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="doctor_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="patient_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scheduled_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="text" defaultValue="SCHEDULED">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="turns_assigned" baseColumnNames="doctor_id"
+                                constraintName="fk_turns_assigned_doctor"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="turns_assigned" baseColumnNames="patient_id"
+                                constraintName="fk_turns_assigned_patient"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+    </changeSet>
+
+    <!-- REFRESH TOKENS -->
+    <changeSet id="0002-06-refresh_tokens" author="MediBook_Admin">
+        <createTable tableName="refresh_tokens">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_agent" type="text"/>
+            <column name="ip_address" type="inet"/>
+            <column name="expires_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked_at" type="timestamptz"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="refresh_tokens" baseColumnNames="user_id"
+                                constraintName="fk_refresh_tokens_user"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- EMAIL VERIFICATIONS -->
+    <changeSet id="0002-07-email_verifications" author="MediBook_Admin">
+        <createTable tableName="email_verifications">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed_at" type="timestamptz"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="email_verifications" baseColumnNames="user_id"
+                                constraintName="fk_email_verifications_user"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- PASSWORD RESETS -->
+    <changeSet id="0002-08-password_resets" author="MediBook_Admin">
+        <createTable tableName="password_resets">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_hash" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumed_at" type="timestamptz"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="password_resets" baseColumnNames="user_id"
+                                constraintName="fk_password_resets_user"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

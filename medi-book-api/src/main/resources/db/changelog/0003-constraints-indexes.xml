@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- CHECK: users.status -->
+    <changeSet id="0003-08-users-status-check" author="MediBook_Admin">
+        <sql>
+            ALTER TABLE users ADD CONSTRAINT chk_users_status CHECK (status in ('ACTIVE','LOCKED','DISABLED'));
+        </sql>
+    </changeSet>
+
+    <!-- INDEXES -->
+    <changeSet id="0003-09-idx-user_roles-user" author="MediBook_Admin">
+        <createIndex tableName="user_roles" indexName="idx_user_roles_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-10-idx-refresh-user" author="MediBook_Admin">
+        <createIndex tableName="refresh_tokens" indexName="idx_refresh_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-11-idx-users-email" author="MediBook_Admin">
+        <!-- con citext el UNIQUE ya es case-insensitive, igual creamos índice explícito -->
+        <createIndex tableName="users" indexName="idx_users_email">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-12-idx-users-status" author="MediBook_Admin">
+        <createIndex tableName="users" indexName="idx_users_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
