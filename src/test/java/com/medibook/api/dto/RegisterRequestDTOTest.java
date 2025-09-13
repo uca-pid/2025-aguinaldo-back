@@ -23,6 +23,7 @@ class RegisterRequestDTOTest {
     void whenAllRequiredFieldsPresent_thenNoViolations() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -42,6 +43,7 @@ class RegisterRequestDTOTest {
     void whenEmailIsInvalid_thenViolation() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "invalid-email",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -62,6 +64,7 @@ class RegisterRequestDTOTest {
     void whenPasswordTooShort_thenViolation() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
+            12345678L,
             "short",
             "John",
             "Doe",
@@ -82,6 +85,7 @@ class RegisterRequestDTOTest {
     void whenOptionalFieldsMissing_thenNoViolations() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -101,6 +105,7 @@ class RegisterRequestDTOTest {
     void whenSlotDurationIsInvalid_thenViolation() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -115,5 +120,68 @@ class RegisterRequestDTOTest {
         var violations = validator.validate(dto);
         assertEquals(1, violations.size());
         assertEquals("Slot duration must be positive", violations.iterator().next().getMessage());
+    }
+
+    @Test
+    void whenDniIsNull_thenViolation() {
+        RegisterRequestDTO dto = new RegisterRequestDTO(
+            "test@example.com",
+            null,
+            "password123",
+            "John",
+            "Doe",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        var violations = validator.validate(dto);
+        assertEquals(1, violations.size());
+        assertEquals("DNI is required", violations.iterator().next().getMessage());
+    }
+
+    @Test
+    void whenDniTooShort_thenViolation() {
+        RegisterRequestDTO dto = new RegisterRequestDTO(
+            "test@example.com",
+            123456L, // 6 digits, too short
+            "password123",
+            "John",
+            "Doe",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        var violations = validator.validate(dto);
+        assertEquals(1, violations.size());
+        assertEquals("DNI must be at least 7 digits", violations.iterator().next().getMessage());
+    }
+
+    @Test
+    void whenDniTooLong_thenViolation() {
+        RegisterRequestDTO dto = new RegisterRequestDTO(
+            "test@example.com",
+            1234567890L, // 10 digits, too long
+            "password123",
+            "John",
+            "Doe",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        var violations = validator.validate(dto);
+        assertEquals(1, violations.size());
+        assertEquals("DNI must be at most 9 digits", violations.iterator().next().getMessage());
     }
 }

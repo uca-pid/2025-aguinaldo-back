@@ -9,7 +9,8 @@
     <include file="0001-extensions.xml" relativeToChangelogFile="true"/>
     <include file="0002-tables.xml" relativeToChangelogFile="true"/>
     <include file="0003-constraints-indexes.xml" relativeToChangelogFile="true"/>
-    <include file="0004-seed-roles.xml" relativeToChangelogFile="true"/>
-
+    <include file="0004-fix-column-types.xml" relativeToChangelogFile="true"/>
+    <include file="0005-seed-roles.xml" relativeToChangelogFile="true"/>
+    
 </databaseChangeLog>
 
