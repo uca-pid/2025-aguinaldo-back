@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.net.InetAddress;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -28,8 +27,8 @@ public class RefreshToken {
     @Column(name = "user_agent")
     private String userAgent;
 
-    @Column(name = "ip_address", columnDefinition = "inet")
-    private InetAddress ipAddress;
+    @Column(name = "ip_address")
+    private String ipAddress;
 
     @Column(name = "expires_at", nullable = false)
     private ZonedDateTime expiresAt;
