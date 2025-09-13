@@ -3,7 +3,9 @@ package com.medibook.api.service;
 import com.medibook.api.dto.RegisterRequestDTO;
 import com.medibook.api.dto.RegisterResponseDTO;
 import com.medibook.api.entity.User;
+import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
+import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,15 +26,19 @@ class AuthServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private AuthMapper authMapper;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, passwordEncoder, userMapper);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper);
     }
 
     @Test

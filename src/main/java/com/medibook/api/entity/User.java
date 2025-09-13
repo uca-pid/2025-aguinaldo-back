@@ -16,7 +16,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "email", columnDefinition = "citext")
+    @Column(name = "email")
     private String email;
 
     @Column(name = "password_hash", nullable = false)
