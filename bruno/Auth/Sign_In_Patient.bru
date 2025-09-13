@@ -1,0 +1,27 @@
+meta {
+  name: Sign_In_Patient
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/auth/signin
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: test
+  password: test
+}
+
+body:json {
+  {
+      "email": "patient@example.com",
+      "password": "password123"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

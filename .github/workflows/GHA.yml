@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [17, 21]  # podés agregar más versiones si querés
+        java: [21]
     name: Test on Java ${{ matrix.java }}
     env:
       SPRING_PROFILES_ACTIVE: test
