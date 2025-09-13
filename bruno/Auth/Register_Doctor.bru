@@ -1,0 +1,39 @@
+meta {
+  name: Register_Doctor
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/auth/register/doctor
+  body: json
+  auth: basic
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:basic {
+  username: test
+  password: test
+}
+
+body:json {
+  {
+      "email": "doctor@example.com",
+      "password": "password123",
+      "name": "Dr. Maria",
+      "surname": "Rodriguez",
+      "phone": "+1234567890",
+      "birthdate": "1985-03-20",
+      "gender": "F",
+      "medicalLicense": "MD123456789",
+      "specialty": "Cardiology",
+      "slotDurationMin": 30
+  }
+}
+
+settings {
+  encodeUrl: true
+}
