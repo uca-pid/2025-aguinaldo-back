@@ -50,6 +50,7 @@ class AuthServiceTest {
     void whenRegisterPatient_thenSuccess() {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "patient@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -76,6 +77,7 @@ class AuthServiceTest {
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("hashed_password");
         when(userMapper.toUser(request, "PATIENT", "hashed_password")).thenReturn(user);
         when(userRepository.save(user)).thenReturn(user);
@@ -89,6 +91,7 @@ class AuthServiceTest {
         assertEquals(expectedResponse.role(), response.role());
 
         verify(userRepository).existsByEmail(request.email());
+        verify(userRepository).existsByDni(request.dni());
         verify(passwordEncoder).encode(request.password());
         verify(userMapper).toUser(request, "PATIENT", "hashed_password");
         verify(userRepository).save(user);
@@ -99,6 +102,7 @@ class AuthServiceTest {
     void whenRegisterPatientWithExistingEmail_thenThrowException() {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "existing@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -126,6 +130,7 @@ class AuthServiceTest {
     void whenRegisterDoctor_thenSuccess() {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
+            87654321L,
             "password123",
             "John",
             "Doe",
@@ -152,6 +157,7 @@ class AuthServiceTest {
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("hashed_password");
         when(userMapper.toUser(request, "DOCTOR", "hashed_password")).thenReturn(user);
         when(userRepository.save(user)).thenReturn(user);
@@ -165,6 +171,7 @@ class AuthServiceTest {
         assertEquals(expectedResponse.role(), response.role());
 
         verify(userRepository).existsByEmail(request.email());
+        verify(userRepository).existsByDni(request.dni());
         verify(passwordEncoder).encode(request.password());
         verify(userMapper).toUser(request, "DOCTOR", "hashed_password");
         verify(userRepository).save(user);
@@ -175,6 +182,7 @@ class AuthServiceTest {
     void whenRegisterDoctorWithoutLicense_thenThrowException() {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
+            87654321L,
             "password123",
             "John",
             "Doe",
@@ -187,6 +195,7 @@ class AuthServiceTest {
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
 
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
@@ -195,6 +204,37 @@ class AuthServiceTest {
 
         assertEquals("Medical license and specialty are required for doctors", exception.getMessage());
         verify(userRepository).existsByEmail(request.email());
+        verify(userRepository).existsByDni(request.dni());
+        verifyNoMoreInteractions(userRepository, passwordEncoder, userMapper);
+    }
+
+    @Test
+    void whenRegisterPatientWithExistingDni_thenThrowException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+            "patient@example.com",
+            12345678L,
+            "password123",
+            "John",
+            "Doe",
+            "+1234567890",
+            LocalDate.of(1990, 1, 1),
+            "MALE",
+            null,
+            null,
+            null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> authService.registerPatient(request)
+        );
+
+        assertEquals("DNI already registered", exception.getMessage());
+        verify(userRepository).existsByEmail(request.email());
+        verify(userRepository).existsByDni(request.dni());
         verifyNoMoreInteractions(userRepository, passwordEncoder, userMapper);
     }
 

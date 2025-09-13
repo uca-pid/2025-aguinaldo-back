@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="0004-01-fix-email-column-type" author="MediBook_Admin">
+        <comment>Convert email column from citext to varchar(255)</comment>
+        <sql>
+            ALTER TABLE users ALTER COLUMN email TYPE varchar(255) USING email::varchar(255);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE users ALTER COLUMN email TYPE citext USING email::citext;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="0004-02-fix-ip-address-column-type" author="MediBook_Admin">
+        <comment>Convert ip_address column from inet to varchar(255)</comment>
+        <sql>
+            ALTER TABLE refresh_tokens ALTER COLUMN ip_address TYPE varchar(255) USING host(ip_address);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE refresh_tokens ALTER COLUMN ip_address TYPE inet USING ip_address::inet;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

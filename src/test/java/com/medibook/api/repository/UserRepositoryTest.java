@@ -23,6 +23,7 @@ class UserRepositoryTest {
     void whenExistsByEmail_thenReturnsTrue() {
         User user = new User();
         user.setEmail("test@example.com");
+        user.setDni(12345678L);
         user.setPasswordHash("hash");
         user.setName("Test");
         user.setSurname("User");
@@ -37,6 +38,29 @@ class UserRepositoryTest {
     @Test
     void whenEmailDoesNotExist_thenReturnsFalse() {
         boolean exists = userRepository.existsByEmail("nonexistent@example.com");
+        
+        assertFalse(exists);
+    }
+
+    @Test
+    void whenExistsByDni_thenReturnsTrue() {
+        User user = new User();
+        user.setEmail("test@example.com");
+        user.setDni(12345678L);
+        user.setPasswordHash("hash");
+        user.setName("Test");
+        user.setSurname("User");
+        
+        entityManager.persistAndFlush(user);
+        
+        boolean exists = userRepository.existsByDni(12345678L);
+        
+        assertTrue(exists);
+    }
+
+    @Test
+    void whenDniDoesNotExist_thenReturnsFalse() {
+        boolean exists = userRepository.existsByDni(99999999L);
         
         assertFalse(exists);
     }
