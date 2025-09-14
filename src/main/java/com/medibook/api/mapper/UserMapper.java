@@ -1,7 +1,7 @@
 package com.medibook.api.mapper;
 
-import com.medibook.api.dto.RegisterRequestDTO;
-import com.medibook.api.dto.RegisterResponseDTO;
+import com.medibook.api.dto.Registration.RegisterRequestDTO;
+import com.medibook.api.dto.Registration.RegisterResponseDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.entity.DoctorProfile;
 import org.springframework.stereotype.Component;

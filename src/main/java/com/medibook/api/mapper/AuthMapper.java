@@ -1,6 +1,6 @@
 package com.medibook.api.mapper;
 
-import com.medibook.api.dto.SignInResponseDTO;
+import com.medibook.api.dto.SignIn.SignInResponseDTO;
 import com.medibook.api.entity.User;
 import org.springframework.stereotype.Component;
 
