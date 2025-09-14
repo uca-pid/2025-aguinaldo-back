@@ -1,7 +1,7 @@
 package com.medibook.api.mapper;
 
-import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
-import com.medibook.api.dto.Turn.TurnResponseDTO;
+import com.medibook.api.dto.TurnCreateRequestDTO;
+import com.medibook.api.dto.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import org.springframework.stereotype.Component;

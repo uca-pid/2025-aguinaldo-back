@@ -3,12 +3,11 @@ package com.medibook.api.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.UUID;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.util.UUID;
 
 @Entity
 @Getter
@@ -54,16 +53,6 @@ public class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private DoctorProfile doctorProfile;
-
-    @Column(name = "created_at", nullable = false)
-    private ZonedDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = ZonedDateTime.now();
-        }
-    }
 
     public DoctorProfile getDoctorProfile() {
         return doctorProfile;
