@@ -1,7 +1,7 @@
 meta {
-  name: Sign_In_Patient
+  name: Sign_In_Doctor
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
@@ -17,7 +17,7 @@ auth:basic {
 
 body:json {
   {
-      "email": "patient@example.com",
+      "email": "doctor@example.com",
       "password": "password123"
   }
 }
@@ -26,9 +26,8 @@ scripts:post-response {
   const body = bru.getBody();
   if (body && body.accessToken) {
     // Guardar access token para usarlo en otros requests
-    bru.setEnvVar('accessToken', body.accessToken);
-    bru.setEnvVar('patientId', body.id);
-    bru.setEnvVar('userId', body.id);
+    bru.setEnvVar('doctorAccessToken', body.accessToken);
+    bru.setEnvVar('doctorId', body.id);
   } else {
     throw new Error('No se recibió access token en la respuesta');
   }

@@ -1,0 +1,31 @@
+package com.medibook.api.mapper;
+
+import com.medibook.api.dto.TurnCreateRequestDTO;
+import com.medibook.api.dto.TurnResponseDTO;
+import com.medibook.api.entity.TurnAssigned;
+import com.medibook.api.entity.User;
+import org.springframework.stereotype.Component;
+
+@Component
+public class TurnAssignedMapper {
+
+    public TurnAssigned toEntity(TurnCreateRequestDTO dto, User doctor) {
+        return TurnAssigned.builder()
+                .doctor(doctor)
+                .scheduledAt(dto.getScheduledAt())
+                .status("AVAILABLE")
+                .build();
+    }
+
+    public TurnResponseDTO toDTO(TurnAssigned turn) {
+        return TurnResponseDTO.builder()
+                .id(turn.getId())
+                .doctorId(turn.getDoctor().getId())
+                .doctorName(turn.getDoctor().getName() + " " + turn.getDoctor().getSurname())
+                .patientId(turn.getPatient() != null ? turn.getPatient().getId() : null)
+                .patientName(turn.getPatient() != null ? turn.getPatient().getName() + " " + turn.getPatient().getSurname() : null)
+                .scheduledAt(turn.getScheduledAt())
+                .status(turn.getStatus())
+                .build();
+    }
+}

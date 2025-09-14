@@ -1,0 +1,37 @@
+meta {
+  name: Get_My_Turns_With_Status_Filter
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{ baseUrl }}/api/turns/my-turns?status=SCHEDULED
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+# Test: obtener mis turnos filtrados por estado SCHEDULED
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!Array.isArray(body)) {
+    throw new Error('Respuesta debe ser un array');
+  }
+  
+  // Verificar que todos los turnos tienen el estado correcto
+  for (const turn of body) {
+    if (turn.status !== 'SCHEDULED') {
+      throw new Error('Todos los turnos deben tener status SCHEDULED, encontrado: ' + turn.status);
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}
