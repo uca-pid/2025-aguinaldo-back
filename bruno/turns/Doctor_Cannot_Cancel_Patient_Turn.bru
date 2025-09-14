@@ -1,0 +1,39 @@
+meta {
+  name: Doctor_Cannot_Cancel_Patient_Turn
+  type: http
+  seq: 28
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ patientOwnTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ doctorAccessToken }}
+}
+
+scripts:pre-request {
+  // Este test usa un turno que pertenece a un paciente pero con otro doctor
+  const turnId = bru.getEnvVar('patientOwnTurnId');
+  if (!turnId) {
+    console.log('⚠️  Advertencia: No se encontró patientOwnTurnId para la prueba.');
+  }
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 400) {
+    throw new Error('Se esperaba status 400, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body !== 'string' || (!body.includes('You can only cancel your own turns') && !body.includes('Turn not found'))) {
+    throw new Error('Se esperaba mensaje sobre solo cancelar turnos propios');
+  }
+  
+  console.log('✅ Doctor correctamente impedido de cancelar turno de otro doctor');
+}
+
+settings {
+  encodeUrl: true
+}

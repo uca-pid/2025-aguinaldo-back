@@ -6,5 +6,4 @@ import org.springframework.context.annotation.Profile;
 @TestConfiguration
 @Profile("test")
 public class TestConfig {
-    // Test configuration class for any test-specific beans
 }

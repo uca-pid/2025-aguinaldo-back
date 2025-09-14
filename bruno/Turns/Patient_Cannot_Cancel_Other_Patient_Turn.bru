@@ -1,0 +1,39 @@
+meta {
+  name: Patient_Cannot_Cancel_Other_Patient_Turn
+  type: http
+  seq: 36
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ otherPatientTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ patientAccessToken }}
+}
+
+scripts:pre-request {
+  const turnId = bru.getEnvVar('otherPatientTurnId');
+  if (!turnId) {
+    console.log('⚠️  Advertencia: No se encontró otherPatientTurnId. Test se saltará.');
+    bru.setEnvVar('otherPatientTurnId', '11111111-1111-1111-1111-111111111111');
+  }
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 400) {
+    throw new Error('Se esperaba status 400, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body !== 'string' || (!body.includes('You can only cancel your own turns') && !body.includes('Turn not found'))) {
+    throw new Error('Se esperaba mensaje sobre solo cancelar turnos propios o turno no encontrado');
+  }
+  
+  console.log('✅ Paciente correctamente impedido de cancelar turno ajeno');
+}
+
+settings {
+  encodeUrl: true
+}

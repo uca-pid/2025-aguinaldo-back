@@ -10,6 +10,4 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SelectPackages("com.medibook.api")
 @SuiteDisplayName("MediBook API Test Suite")
 class MediBookApiApplicationTests {
-    // Test suite configuration class
-    // Will automatically discover and run all tests in com.medibook.api package
 }

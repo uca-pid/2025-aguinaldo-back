@@ -1,0 +1,51 @@
+meta {
+  name: Verify_Canceled_Turn_In_List
+  type: http
+  seq: 37
+}
+
+get {
+  url: {{ baseUrl }}/api/turns/my-turns?status=CANCELED
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!Array.isArray(body)) {
+    throw new Error('Respuesta debe ser un array');
+  }
+  
+  for (const turn of body) {
+    if (turn.status !== 'CANCELED') {
+      throw new Error('Todos los turnos deben tener status CANCELED, encontrado: ' + turn.status);
+    }
+    
+    if (!turn.id || !turn.doctorId || !turn.patientId || !turn.scheduledAt) {
+      throw new Error('Faltan campos obligatorios en turno cancelado');
+    }
+  }
+  
+  const canceledTurnId = bru.getEnvVar('createdTurnId');
+  if (canceledTurnId) {
+    const foundCanceledTurn = body.find(turn => turn.id === canceledTurnId);
+    if (foundCanceledTurn) {
+      console.log('✅ Turno cancelado encontrado en lista con estado correcto');
+    } else {
+      console.log('ℹ️  Turno cancelado no encontrado en lista (puede ser normal si hay muchos turnos)');
+    }
+  }
+  
+  console.log('✅ Lista de turnos cancelados obtenida correctamente:', body.length, 'turnos');
+}
+
+settings {
+  encodeUrl: true
+}

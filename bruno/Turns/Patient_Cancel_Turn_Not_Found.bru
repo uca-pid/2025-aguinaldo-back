@@ -1,0 +1,31 @@
+meta {
+  name: Patient_Cancel_Turn_Not_Found
+  type: http
+  seq: 22
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/12345678-1234-1234-1234-123456789012/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 400) {
+    throw new Error('Se esperaba status 400, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body !== 'string' || !body.includes('Turn not found')) {
+    throw new Error('Se esperaba mensaje "Turn not found"');
+  }
+  
+  console.log('✅ Error correctamente manejado para turno inexistente');
+}
+
+settings {
+  encodeUrl: true
+}
