@@ -81,6 +81,24 @@ class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    public RegisterResponseDTO registerAdmin(RegisterRequestDTO request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+        
+        if (userRepository.existsByDni(request.dni())) {
+            throw new IllegalArgumentException("DNI already registered");
+        }
+
+        String hashedPassword = passwordEncoder.encode(request.password());
+        User user = userMapper.toUser(request, "ADMIN", hashedPassword);
+        user = userRepository.save(user);
+
+        return userMapper.toRegisterResponse(user);
+    }
+
+    @Override
+    @Transactional
     public SignInResponseDTO signIn(SignInRequestDTO request) {
         User user = userRepository.findByEmailAndStatus(request.email(), "ACTIVE")
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));

@@ -1,0 +1,33 @@
+meta {
+  name: Get Turns by Patient
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/turns/patient/{{patientId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get patient turns successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("All turns should belong to the specified patient", function() {
+    res.getBody().forEach(function(turn) {
+      expect(turn.patientId).to.equal(bru.getEnvVar("patientId"));
+    });
+  });
+}

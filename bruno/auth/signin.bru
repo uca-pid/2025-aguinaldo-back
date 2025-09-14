@@ -1,0 +1,42 @@
+meta {
+  name: Sign In
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/signin
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "patient@example.com",
+    "password": "password123"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.accessToken: isDefined
+  res.body.refreshToken: isDefined
+  res.body.user: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setEnvVar("accessToken", res.getBody().accessToken);
+    bru.setEnvVar("refreshToken", res.getBody().refreshToken);
+    bru.setEnvVar("userId", res.getBody().user.id);
+    bru.setEnvVar("userRole", res.getBody().user.role);
+  }
+}
+
+tests {
+  test("Should sign in successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().accessToken).to.be.a('string');
+    expect(res.getBody().refreshToken).to.be.a('string');
+  });
+}

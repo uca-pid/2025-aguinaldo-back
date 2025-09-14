@@ -34,6 +34,13 @@ public class AuthController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @PostMapping("/register/admin")
+    public ResponseEntity<RegisterResponseDTO> registerAdmin(
+            @Valid @RequestBody RegisterRequestDTO request) {
+        RegisterResponseDTO response = authService.registerAdmin(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
     @PostMapping("/signin")
     public ResponseEntity<SignInResponseDTO> signIn(
             @Valid @RequestBody SignInRequestDTO request) {

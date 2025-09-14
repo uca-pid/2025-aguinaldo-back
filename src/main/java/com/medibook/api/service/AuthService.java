@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface AuthService {
     RegisterResponseDTO registerPatient(RegisterRequestDTO request);
     RegisterResponseDTO registerDoctor(RegisterRequestDTO request);
+    RegisterResponseDTO registerAdmin(RegisterRequestDTO request);
     
     SignInResponseDTO signIn(SignInRequestDTO request);
     void signOut(String refreshToken);

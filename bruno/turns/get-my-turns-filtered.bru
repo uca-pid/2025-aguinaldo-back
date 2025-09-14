@@ -1,0 +1,33 @@
+meta {
+  name: Get My Turns with Status Filter
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/turns/my-turns?status=PENDING
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get filtered turns successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("All turns should have the requested status", function() {
+    res.getBody().forEach(function(turn) {
+      expect(turn.status).to.equal("PENDING");
+    });
+  });
+}

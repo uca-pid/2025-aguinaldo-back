@@ -1,0 +1,43 @@
+meta {
+  name: Register Doctor
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register/doctor
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "doctor@example.com",
+    "dni": 87654321,
+    "password": "password123",
+    "name": "Jane",
+    "surname": "Smith",
+    "phone": "+1234567891",
+    "birthdate": "1985-05-15",
+    "gender": "Female",
+    "medicalLicense": "ML123456",
+    "specialty": "Cardiology",
+    "slotDurationMin": 30
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.message: isDefined
+  res.body.user: isDefined
+  res.body.user.email: eq "doctor@example.com"
+  res.body.user.role: eq "DOCTOR"
+}
+
+tests {
+  test("Should register a doctor successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().user.role).to.equal("DOCTOR");
+    expect(res.getBody().user.medicalLicense).to.equal("ML123456");
+  });
+}
