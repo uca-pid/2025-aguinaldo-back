@@ -22,6 +22,8 @@ public class TurnAssignedMapper {
                 .id(turn.getId())
                 .doctorId(turn.getDoctor().getId())
                 .doctorName(turn.getDoctor().getName() + " " + turn.getDoctor().getSurname())
+                .doctorSpecialty(turn.getDoctor().getDoctorProfile() != null ? 
+                    turn.getDoctor().getDoctorProfile().getSpecialty() : null)
                 .patientId(turn.getPatient() != null ? turn.getPatient().getId() : null)
                 .patientName(turn.getPatient() != null ? turn.getPatient().getName() + " " + turn.getPatient().getSurname() : null)
                 .scheduledAt(turn.getScheduledAt())

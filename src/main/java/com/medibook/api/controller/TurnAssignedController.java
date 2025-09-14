@@ -59,8 +59,6 @@ public class TurnAssignedController {
             @RequestParam String date,
             HttpServletRequest request) {
         
-        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
-        
         LocalDate localDate = LocalDate.parse(date);
         LocalTime workStart = LocalTime.of(8, 0);
         LocalTime workEnd = LocalTime.of(18, 0);
