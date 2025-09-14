@@ -24,13 +24,13 @@ public class TurnAvailableService {
         );
 
         List<OffsetDateTime> available = new ArrayList<>();
-        Duration slotDuration = Duration.ofMinutes(15); // o tomalo del DoctorProfile
+        Duration slotDuration = Duration.ofMinutes(15); // o tomarlo del DoctorProfile
 
         OffsetDateTime current = date.atTime(workStart).atOffset(ZoneOffset.UTC);
         OffsetDateTime end = date.atTime(workEnd).atOffset(ZoneOffset.UTC);
 
         while (current.isBefore(end)) {
-            OffsetDateTime iter = current; // necesaria para la lambda
+            OffsetDateTime iter = current;
             boolean occupied = turns.stream().anyMatch(t -> t.getScheduledAt().equals(iter));
             if (!occupied) {
                 available.add(current);

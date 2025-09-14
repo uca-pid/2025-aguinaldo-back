@@ -11,8 +11,8 @@ public class TurnResponseDTO {
     private UUID id;
     private UUID doctorId;
     private String doctorName;
-    private UUID patientId;     // null si está libre
-    private String patientName; // null si está libre
+    private UUID patientId;     
+    private String patientName;
     private OffsetDateTime scheduledAt;
     private String status;
 }

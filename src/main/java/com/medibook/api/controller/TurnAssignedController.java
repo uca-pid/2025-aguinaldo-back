@@ -25,14 +25,12 @@ public class TurnAssignedController {
     private final TurnAssignedService turnService;
     private final TurnAvailableService availableService;
 
-    // Crear turno dinámicamente cuando paciente lo selecciona
     @PostMapping
     public ResponseEntity<TurnResponseDTO> createTurn(@RequestBody TurnCreateRequestDTO dto) {
         TurnResponseDTO result = turnService.createTurn(dto);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
-    // Obtener horarios disponibles para un doctor en una fecha
     @GetMapping("/available")
     public ResponseEntity<List<OffsetDateTime>> getAvailableTurns(
             @RequestParam UUID doctorId,
@@ -48,7 +46,6 @@ public class TurnAssignedController {
         return ResponseEntity.ok(available);
     }
 
-    // Mantener endpoint de reserva por compatibilidad (opcional)
     @PostMapping("/reserve")
     public TurnAssigned reserveTurn(@RequestBody TurnReserveRequestDTO dto) {
         return turnService.reserveTurn(dto.getTurnId(), dto.getPatientId());
