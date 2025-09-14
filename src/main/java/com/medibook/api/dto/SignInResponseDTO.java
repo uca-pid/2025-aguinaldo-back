@@ -1,4 +1,4 @@
-package com.medibook.api.dto.SignIn;
+package com.medibook.api.dto;
 
 import java.util.UUID;
 
