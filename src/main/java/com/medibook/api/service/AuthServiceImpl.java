@@ -45,6 +45,10 @@ class AuthServiceImpl implements AuthService {
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already registered");
         }
+        
+        if (userRepository.existsByDni(request.dni())) {
+            throw new IllegalArgumentException("DNI already registered");
+        }
 
         String hashedPassword = passwordEncoder.encode(request.password());
         User user = userMapper.toUser(request, "PATIENT", hashedPassword);
@@ -58,6 +62,10 @@ class AuthServiceImpl implements AuthService {
     public RegisterResponseDTO registerDoctor(RegisterRequestDTO request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already registered");
+        }
+
+        if (userRepository.existsByDni(request.dni())) {
+            throw new IllegalArgumentException("DNI already registered");
         }
 
         if (request.medicalLicense() == null || request.specialty() == null) {

@@ -24,6 +24,9 @@
             <column name="surname" type="text">
                 <constraints nullable="false"/>
             </column>
+            <column name="dni" type="BIGINT">
+                <constraints nullable="false" unique="true"/>
+            </column>
             <column name="phone" type="text"/>
             <column name="birthdate" type="date"/>
             <column name="gender" type="text"/>

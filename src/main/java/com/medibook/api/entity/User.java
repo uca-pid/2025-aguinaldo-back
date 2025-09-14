@@ -1,6 +1,8 @@
 package com.medibook.api.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -16,8 +18,14 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "email", nullable = false, unique = true, columnDefinition = "citext")
+    @NotNull
+    @Email
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
+
+    @NotNull
+    @Column(name = "dni", nullable = false, unique = true)
+    private Long dni;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;

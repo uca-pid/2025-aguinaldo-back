@@ -12,6 +12,7 @@ public class UserMapper {
     public User toUser(RegisterRequestDTO dto, String role, String passwordHash) {
         User user = new User();
         user.setEmail(dto.email());
+        user.setDni(dto.dni());
         user.setPasswordHash(passwordHash);
         user.setName(dto.name());
         user.setSurname(dto.surname());

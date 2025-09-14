@@ -18,6 +18,7 @@ class UserMapperTest {
     void whenMapPatientRequestToUser_thenSuccess() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -32,6 +33,7 @@ class UserMapperTest {
         User user = mapper.toUser(dto, "PATIENT", "hashed_password");
 
         assertEquals(dto.email(), user.getEmail());
+        assertEquals(dto.dni(), user.getDni());
         assertEquals("hashed_password", user.getPasswordHash());
         assertEquals(dto.name(), user.getName());
         assertEquals(dto.surname(), user.getSurname());
@@ -47,6 +49,7 @@ class UserMapperTest {
     void whenMapDoctorRequestToUser_thenSuccess() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "doctor@example.com",
+            87654321L,
             "password123",
             "John",
             "Doe",
@@ -61,6 +64,7 @@ class UserMapperTest {
         User user = mapper.toUser(dto, "DOCTOR", "hashed_password");
 
         assertEquals(dto.email(), user.getEmail());
+        assertEquals(dto.dni(), user.getDni());
         assertEquals("hashed_password", user.getPasswordHash());
         assertEquals(dto.name(), user.getName());
         assertEquals(dto.surname(), user.getSurname());

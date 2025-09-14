@@ -60,6 +60,7 @@ class AuthControllerTest {
     void whenRegisterPatient_thenSuccess() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "patient@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -96,6 +97,7 @@ class AuthControllerTest {
     void whenRegisterDoctor_thenSuccess() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
+            87654321L,
             "password123",
             "John",
             "Doe",
@@ -132,6 +134,7 @@ class AuthControllerTest {
     void whenRegisterWithExistingEmail_thenBadRequest() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "existing@example.com",
+            12345678L,
             "password123",
             "John",
             "Doe",
@@ -159,6 +162,7 @@ class AuthControllerTest {
     void whenRegisterDoctorWithoutLicense_thenBadRequest() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
+            87654321L,
             "password123",
             "John",
             "Doe",
@@ -186,6 +190,7 @@ class AuthControllerTest {
     void whenInvalidRequest_thenBadRequest() throws Exception {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "invalid-email",
+            null, // Invalid DNI (null)
             "short",
             "",
             "",
