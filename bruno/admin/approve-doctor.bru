@@ -1,0 +1,31 @@
+meta {
+  name: Approve Doctor
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/admin/approve-doctor/{{pendingDoctorId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.message: isDefined
+  res.body.doctorId: isDefined
+  res.body.newStatus: eq "ACTIVE"
+}
+
+tests {
+  test("Should approve doctor successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().message).to.include("approved successfully");
+    expect(res.getBody().newStatus).to.equal("ACTIVE");
+    expect(res.getBody().doctorId).to.be.a('string');
+  });
+}

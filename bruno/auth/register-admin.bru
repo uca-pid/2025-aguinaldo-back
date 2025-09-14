@@ -1,0 +1,39 @@
+meta {
+  name: Register Admin
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register/admin
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "admin@example.com",
+    "dni": 11111111,
+    "password": "password123",
+    "name": "Admin",
+    "surname": "User",
+    "phone": "+1234567892",
+    "birthdate": "1980-01-01",
+    "gender": "Other"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.message: isDefined
+  res.body.user: isDefined
+  res.body.user.email: eq "admin@example.com"
+  res.body.user.role: eq "ADMIN"
+}
+
+tests {
+  test("Should register an admin successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().user.role).to.equal("ADMIN");
+  });
+}

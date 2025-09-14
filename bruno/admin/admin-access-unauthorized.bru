@@ -1,0 +1,31 @@
+meta {
+  name: Admin Access - Unauthorized
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/admin/pending-doctors
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.error: eq "ACCESS_DENIED"
+  res.body.message: isDefined
+}
+
+tests {
+  test("Should deny admin access to non-admin users", function() {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().error).to.equal("ACCESS_DENIED");
+    expect(res.getBody().message).to.include("Only administrators can access");
+    expect(res.getBody().timestamp).to.be.a('string');
+    expect(res.getBody().path).to.equal('/api/admin/pending-doctors');
+  });
+}

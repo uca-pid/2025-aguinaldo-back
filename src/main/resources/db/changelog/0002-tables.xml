@@ -42,42 +42,6 @@
         </createTable>
     </changeSet>
 
-    <!-- ROLES -->
-    <changeSet id="0002-02-roles" author="MediBook_Admin">
-        <createTable tableName="roles">
-            <column name="id" type="smallint" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="code" type="text">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="name" type="text">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <!-- USER_ROLES (N:N) -->
-    <changeSet id="0002-03-user_roles" author="MediBook_Admin">
-        <createTable tableName="user_roles">
-            <column name="user_id" type="uuid">
-                <constraints nullable="false"/>
-            </column>
-            <column name="role_id" type="smallint">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-        <addPrimaryKey tableName="user_roles" columnNames="user_id, role_id" constraintName="pk_user_roles"/>
-        <addForeignKeyConstraint baseTableName="user_roles" baseColumnNames="user_id"
-                                constraintName="fk_user_roles_user"
-                                referencedTableName="users" referencedColumnNames="id"
-                                onDelete="CASCADE"/>
-        <addForeignKeyConstraint baseTableName="user_roles" baseColumnNames="role_id"
-                                constraintName="fk_user_roles_role"
-                                referencedTableName="roles" referencedColumnNames="id"
-                                onDelete="RESTRICT"/>
-    </changeSet>
-
     <!-- DOCTOR PROFILES -->
     <changeSet id="0002-05-doctor_profiles" author="MediBook_Admin">
         <createTable tableName="doctor_profiles">

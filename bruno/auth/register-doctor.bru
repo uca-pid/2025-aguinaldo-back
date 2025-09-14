@@ -1,0 +1,49 @@
+meta {
+  name: Register Doctor
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register/doctor
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "doctor@example.com",
+    "dni": 87654321,
+    "password": "password123",
+    "name": "Jane",
+    "surname": "Smith",
+    "phone": "+1234567891",
+    "birthdate": "1985-05-15",
+    "gender": "Female",
+    "medicalLicense": "ML123456",
+    "specialty": "Cardiology",
+    "slotDurationMin": 30
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.email: eq "doctor@example.com"
+  res.body.role: eq "DOCTOR"
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("pendingDoctorId", res.getBody().id);
+  }
+}
+
+tests {
+  test("Should register a doctor successfully with PENDING status", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().role).to.equal("DOCTOR");
+    expect(res.getBody().email).to.equal("doctor@example.com");
+    expect(res.getBody().id).to.be.a('string');
+  });
+}

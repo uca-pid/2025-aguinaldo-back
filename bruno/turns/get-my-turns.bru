@@ -1,0 +1,36 @@
+meta {
+  name: Get My Turns
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/turns/my-turns
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get my turns successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Each turn should have required fields", function() {
+    if (res.getBody().length > 0) {
+      const turn = res.getBody()[0];
+      expect(turn.id).to.be.a('string');
+      expect(turn.scheduledAt).to.be.a('string');
+      expect(turn.status).to.be.a('string');
+    }
+  });
+}

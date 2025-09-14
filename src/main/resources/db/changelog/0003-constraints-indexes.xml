@@ -9,14 +9,15 @@
     <!-- CHECK: users.status -->
     <changeSet id="0003-01-users-status-check" author="MediBook_Admin">
         <sql>
-            ALTER TABLE users ADD CONSTRAINT chk_users_status CHECK (status in ('ACTIVE','LOCKED','DISABLED'));
+            ALTER TABLE users ADD CONSTRAINT chk_users_status CHECK (status in ('ACTIVE','PENDING', 'REJECTED','DISABLED'));
         </sql>
     </changeSet>
 
     <!-- INDEXES -->
     <changeSet id="0003-02-idx-user_roles-user" author="MediBook_Admin">
-        <createIndex tableName="user_roles" indexName="idx_user_roles_user">
-            <column name="user_id"/>
+        <createIndex tableName="users" indexName="idx_user_roles_user">
+            <column name="id"/>
+            <column name="role"/>
         </createIndex>
     </changeSet>
 

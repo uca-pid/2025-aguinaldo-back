@@ -1,0 +1,35 @@
+meta {
+  name: Get Available Turns
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/turns/available?doctorId={{doctorId}}&date=2024-12-20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get available turns successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Available turns should be datetime strings", function() {
+    if (res.getBody().length > 0) {
+      expect(res.getBody()[0]).to.be.a('string');
+      // Check if it's a valid ISO datetime
+      expect(new Date(res.getBody()[0])).to.be.a('date');
+    }
+  });
+}

@@ -1,0 +1,40 @@
+meta {
+  name: Reserve Turn
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/turns/reserve
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "turnId": "{{turnId}}",
+    "patientId": "{{patientId}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.patientId: isDefined
+  res.body.status: isDefined
+}
+
+tests {
+  test("Should reserve turn successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.be.a('string');
+  });
+  
+  test("Turn should be assigned to correct patient", function() {
+    expect(res.getBody().patientId).to.equal(bru.getEnvVar("patientId"));
+  });
+}

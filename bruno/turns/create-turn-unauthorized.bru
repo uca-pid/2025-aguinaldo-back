@@ -1,0 +1,29 @@
+meta {
+  name: Create Turn - Unauthorized
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/turns
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "doctorId": "{{doctorId}}",
+    "patientId": "{{patientId}}",
+    "scheduledAt": "2024-12-20T10:00:00+00:00"
+  }
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should reject unauthorized request", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

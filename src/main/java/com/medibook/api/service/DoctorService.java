@@ -20,21 +20,21 @@ public class DoctorService {
     private final DoctorMapper doctorMapper;
 
     public List<DoctorDTO> getAllDoctors() {
-        List<User> doctors = userRepository.findAllDoctors();
+        List<User> doctors = userRepository.findDoctorsByStatus("ACTIVE");
         return doctors.stream()
                 .map(doctorMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     public List<DoctorDTO> getDoctorsBySpecialty(String specialty) {
-        List<User> doctors = userRepository.findDoctorsBySpecialty(specialty);
+        List<User> doctors = userRepository.findDoctorsByStatusAndSpecialty("ACTIVE", specialty);
         return doctors.stream()
                 .map(doctorMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     public List<String> getAllSpecialties() {
-        List<User> doctors = userRepository.findAllDoctors();
+        List<User> doctors = userRepository.findDoctorsByStatus("ACTIVE");
         return doctors.stream()
                 .map(user -> user.getDoctorProfile().getSpecialty())
                 .distinct()
