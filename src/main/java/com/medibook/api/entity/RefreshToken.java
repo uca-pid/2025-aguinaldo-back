@@ -27,7 +27,7 @@ public class RefreshToken {
     @Column(name = "user_agent")
     private String userAgent;
 
-    @Column(name = "ip_address")
+    @Column(name = "ip_address", columnDefinition = "inet")
     private String ipAddress;
 
     @Column(name = "expires_at", nullable = false)
