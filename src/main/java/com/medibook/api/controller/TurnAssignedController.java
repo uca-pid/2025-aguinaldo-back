@@ -7,6 +7,8 @@ import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.service.TurnAssignedService;
 import com.medibook.api.service.TurnAvailableService;
+import com.medibook.api.util.AuthorizationUtil;
+import com.medibook.api.util.TurnAuthorizationUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,19 +36,18 @@ public class TurnAssignedController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if ("PATIENT".equals(authenticatedUser.getRole())) {
-            if (!authenticatedUser.getId().equals(dto.getPatientId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Patients can only create turns for themselves");
+        if (AuthorizationUtil.isPatient(authenticatedUser)) {
+            ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnCreation(authenticatedUser, dto.getPatientId());
+            if (validationError != null) {
+                return validationError;
             }
-        } else if ("DOCTOR".equals(authenticatedUser.getRole())) {
-            if (!authenticatedUser.getId().equals(dto.getDoctorId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Doctors can only create turns for themselves");
+        } else if (AuthorizationUtil.isDoctor(authenticatedUser)) {
+            ResponseEntity<Object> validationError = TurnAuthorizationUtil.validateDoctorTurnCreation(authenticatedUser, dto.getDoctorId());
+            if (validationError != null) {
+                return validationError;
             }
         } else {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("Invalid user role");
+            return AuthorizationUtil.createInvalidRoleResponse();
         }
         
         TurnResponseDTO result = turnService.createTurn(dto);
@@ -76,14 +77,9 @@ public class TurnAssignedController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if (!"PATIENT".equals(authenticatedUser.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("Only patients can reserve turns");
-        }
-        
-        if (!authenticatedUser.getId().equals(dto.getPatientId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("Patients can only reserve turns for themselves");
+        ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnReservation(authenticatedUser, dto.getPatientId());
+        if (validationError != null) {
+            return validationError;
         }
         
         TurnAssigned result = turnService.reserveTurn(dto.getTurnId(), dto.getPatientId());
@@ -99,21 +95,20 @@ public class TurnAssignedController {
         
         List<TurnResponseDTO> turns;
         
-        if ("DOCTOR".equals(authenticatedUser.getRole())) {
+        if (AuthorizationUtil.isDoctor(authenticatedUser)) {
             if (status != null && !status.isEmpty()) {
                 turns = turnService.getTurnsByDoctorAndStatus(authenticatedUser.getId(), status);
             } else {
                 turns = turnService.getTurnsByDoctor(authenticatedUser.getId());
             }
-        } else if ("PATIENT".equals(authenticatedUser.getRole())) {
+        } else if (AuthorizationUtil.isPatient(authenticatedUser)) {
             if (status != null && !status.isEmpty()) {
                 turns = turnService.getTurnsByPatientAndStatus(authenticatedUser.getId(), status);
             } else {
                 turns = turnService.getTurnsByPatient(authenticatedUser.getId());
             }
         } else {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("Invalid user role");
+            return AuthorizationUtil.createInvalidRoleResponse();
         }
         
         return ResponseEntity.ok(turns);
@@ -127,10 +122,9 @@ public class TurnAssignedController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if (!"DOCTOR".equals(authenticatedUser.getRole()) || 
-            !authenticatedUser.getId().equals(doctorId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("You can only view your own turns");
+        ResponseEntity<Object> validationError = TurnAuthorizationUtil.validateDoctorTurnAccess(authenticatedUser, doctorId);
+        if (validationError != null) {
+            return validationError;
         }
         
         List<TurnResponseDTO> turns;
@@ -151,10 +145,9 @@ public class TurnAssignedController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if (!"PATIENT".equals(authenticatedUser.getRole()) || 
-            !authenticatedUser.getId().equals(patientId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("You can only view your own turns");
+        ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnAccess(authenticatedUser, patientId);
+        if (validationError != null) {
+            return validationError;
         }
         
         List<TurnResponseDTO> turns;

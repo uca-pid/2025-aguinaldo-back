@@ -3,6 +3,9 @@ package com.medibook.api.controller;
 import com.medibook.api.dto.ErrorResponseDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.repository.UserRepository;
+import com.medibook.api.util.AuthorizationUtil;
+import com.medibook.api.util.ErrorResponseUtil;
+import com.medibook.api.util.UserValidationUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,27 +29,15 @@ public class AdminController {
     public ResponseEntity<?> getPendingDoctors(HttpServletRequest request) {
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if (!"ADMIN".equals(authenticatedUser.getRole())) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
-                "ACCESS_DENIED", 
-                "Only administrators can access this endpoint", 
-                HttpStatus.FORBIDDEN.value(),
-                request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        if (!AuthorizationUtil.isAdmin(authenticatedUser)) {
+            return AuthorizationUtil.createAdminAccessDeniedResponse(request.getRequestURI());
         }
 
         try {
             List<User> pendingDoctors = userRepository.findByRoleAndStatus("DOCTOR", "PENDING");
             return ResponseEntity.ok(pendingDoctors);
         } catch (Exception e) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
-                "DATABASE_ERROR", 
-                "Failed to retrieve pending doctors", 
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
         }
     }
 
@@ -57,38 +48,17 @@ public class AdminController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if (!"ADMIN".equals(authenticatedUser.getRole())) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
-                "ACCESS_DENIED", 
-                "Only administrators can approve doctors", 
-                HttpStatus.FORBIDDEN.value(),
-                request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        if (!AuthorizationUtil.isAdmin(authenticatedUser)) {
+            return AuthorizationUtil.createAdminAccessDeniedResponse(request.getRequestURI());
         }
 
         try {
             User doctor = userRepository.findById(doctorId)
                     .orElseThrow(() -> new IllegalArgumentException("Doctor not found with ID: " + doctorId));
 
-            if (!"DOCTOR".equals(doctor.getRole())) {
-                ErrorResponseDTO error = ErrorResponseDTO.of(
-                    "INVALID_USER_TYPE", 
-                    "User is not a doctor", 
-                    HttpStatus.BAD_REQUEST.value(),
-                    request.getRequestURI()
-                );
-                return ResponseEntity.badRequest().body(error);
-            }
-
-            if (!"PENDING".equals(doctor.getStatus())) {
-                ErrorResponseDTO error = ErrorResponseDTO.of(
-                    "INVALID_STATUS", 
-                    "Doctor is not in pending status. Current status: " + doctor.getStatus(), 
-                    HttpStatus.BAD_REQUEST.value(),
-                    request.getRequestURI()
-                );
-                return ResponseEntity.badRequest().body(error);
+            ResponseEntity<ErrorResponseDTO> validationError = UserValidationUtil.validateDoctorForStatusChange(doctor, request.getRequestURI());
+            if (validationError != null) {
+                return validationError;
             }
 
             doctor.setStatus("ACTIVE");
@@ -100,21 +70,14 @@ public class AdminController {
                 "newStatus", "ACTIVE"
             ));
         } catch (IllegalArgumentException e) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
-                "DOCTOR_NOT_FOUND", 
-                e.getMessage(), 
-                HttpStatus.NOT_FOUND.value(),
-                request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            return ErrorResponseUtil.createDoctorNotFoundResponse(e.getMessage(), request.getRequestURI());
         } catch (Exception e) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
+            return ErrorResponseUtil.createErrorResponse(
                 "APPROVAL_FAILED", 
                 "Failed to approve doctor", 
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR, 
                 request.getRequestURI()
             );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -125,38 +88,17 @@ public class AdminController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        if (!"ADMIN".equals(authenticatedUser.getRole())) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
-                "ACCESS_DENIED", 
-                "Only administrators can reject doctors", 
-                HttpStatus.FORBIDDEN.value(),
-                request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        if (!AuthorizationUtil.isAdmin(authenticatedUser)) {
+            return AuthorizationUtil.createAdminAccessDeniedResponse(request.getRequestURI());
         }
 
         try {
             User doctor = userRepository.findById(doctorId)
                     .orElseThrow(() -> new IllegalArgumentException("Doctor not found with ID: " + doctorId));
 
-            if (!"DOCTOR".equals(doctor.getRole())) {
-                ErrorResponseDTO error = ErrorResponseDTO.of(
-                    "INVALID_USER_TYPE", 
-                    "User is not a doctor", 
-                    HttpStatus.BAD_REQUEST.value(),
-                    request.getRequestURI()
-                );
-                return ResponseEntity.badRequest().body(error);
-            }
-
-            if (!"PENDING".equals(doctor.getStatus())) {
-                ErrorResponseDTO error = ErrorResponseDTO.of(
-                    "INVALID_STATUS", 
-                    "Doctor is not in pending status. Current status: " + doctor.getStatus(), 
-                    HttpStatus.BAD_REQUEST.value(),
-                    request.getRequestURI()
-                );
-                return ResponseEntity.badRequest().body(error);
+            ResponseEntity<ErrorResponseDTO> validationError = UserValidationUtil.validateDoctorForStatusChange(doctor, request.getRequestURI());
+            if (validationError != null) {
+                return validationError;
             }
 
             doctor.setStatus("REJECTED");
@@ -168,21 +110,14 @@ public class AdminController {
                 "newStatus", "REJECTED"
             ));
         } catch (IllegalArgumentException e) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
-                "DOCTOR_NOT_FOUND", 
-                e.getMessage(), 
-                HttpStatus.NOT_FOUND.value(),
-                request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            return ErrorResponseUtil.createDoctorNotFoundResponse(e.getMessage(), request.getRequestURI());
         } catch (Exception e) {
-            ErrorResponseDTO error = ErrorResponseDTO.of(
+            return ErrorResponseUtil.createErrorResponse(
                 "REJECTION_FAILED", 
                 "Failed to reject doctor", 
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR, 
                 request.getRequestURI()
             );
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -190,27 +125,16 @@ public class AdminController {
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(
             IllegalArgumentException ex, HttpServletRequest request) {
         
-        ErrorResponseDTO error = ErrorResponseDTO.of(
-            "BAD_REQUEST", 
-            ex.getMessage(), 
-            HttpStatus.BAD_REQUEST.value(),
-            request.getRequestURI()
-        );
-        
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return ErrorResponseUtil.createBadRequestResponse(ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGenericException(
             Exception ex, HttpServletRequest request) {
         
-        ErrorResponseDTO error = ErrorResponseDTO.of(
-            "INTERNAL_SERVER_ERROR", 
+        return ErrorResponseUtil.createInternalServerErrorResponse(
             "An unexpected error occurred", 
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
             request.getRequestURI()
         );
-        
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
