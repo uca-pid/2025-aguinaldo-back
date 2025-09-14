@@ -1,0 +1,39 @@
+meta {
+  name: No_Auth_Should_Fail
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{ baseUrl }}/api/turns
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "doctorId": "{{ doctorId }}",
+    "patientId": "{{ patientId }}",
+    "scheduledAt": "2025-09-15T12:00:00Z"
+  }
+}
+
+# Test: request sin autenticación (debe fallar con 401)
+scripts:post-response {
+  if (res.getStatus() !== 401) {
+    throw new Error('Se esperaba status 401 (Unauthorized), recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (body && body.error && !body.error.includes('Authorization header required')) {
+    throw new Error('Mensaje de error inesperado: ' + body.error);
+  }
+}
+
+settings {
+  encodeUrl: true
+}

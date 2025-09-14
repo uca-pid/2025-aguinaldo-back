@@ -9,4 +9,12 @@ import java.util.UUID;
 public interface TurnAssignedRepository extends JpaRepository<TurnAssigned, UUID> {
     List<TurnAssigned> findByDoctor_IdAndScheduledAtBetween(UUID doctorId, OffsetDateTime start, OffsetDateTime end);
     boolean existsByDoctor_IdAndScheduledAt(UUID doctorId, OffsetDateTime scheduledAt);
+    
+    List<TurnAssigned> findByDoctor_IdOrderByScheduledAtDesc(UUID doctorId);
+    
+    List<TurnAssigned> findByPatient_IdOrderByScheduledAtDesc(UUID patientId);
+    
+    List<TurnAssigned> findByDoctor_IdAndStatusOrderByScheduledAtDesc(UUID doctorId, String status);
+    
+    List<TurnAssigned> findByPatient_IdAndStatusOrderByScheduledAtDesc(UUID patientId, String status);
 }

@@ -1,7 +1,7 @@
 meta {
-  name: Create_Turn_Dynamic
+  name: Patient_Create_Turn_With_Auth
   type: http
-  seq: 1
+  seq: 10
 }
 
 post {
@@ -22,22 +22,27 @@ body:json {
   {
     "doctorId": "{{ doctorId }}",
     "patientId": "{{ patientId }}",
-    "scheduledAt": "{{ dateTime }}"
+    "scheduledAt": "2025-09-15T10:00:00Z"
   }
 }
 
-# Tests: validar que se crea correctamente y guarda el ID
+# Test: paciente creando turno para sí mismo (debería funcionar)
 scripts:post-response {
   const body = bru.getBody();
-  if (body && body.id) {
-    // Guardar turnId para posibles operaciones futuras
-    bru.setEnvVar('turnId', body.id);
-  } else {
+  if (res.getStatus() !== 201) {
+    throw new Error('Se esperaba status 201, recibido: ' + res.getStatus());
+  }
+  
+  if (!body || !body.id) {
     throw new Error('No se recibió id de turno en la respuesta');
   }
-  if (body.status && body.status !== 'SCHEDULED') {
+  
+  if (body.status !== 'SCHEDULED') {
     throw new Error('Estado esperado SCHEDULED, recibido: ' + body.status);
   }
+  
+  // Guardar turnId para operaciones futuras
+  bru.setEnvVar('createdTurnId', body.id);
 }
 
 settings {

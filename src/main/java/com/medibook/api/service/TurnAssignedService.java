@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -62,5 +64,33 @@ public class TurnAssignedService {
         turn.setStatus("RESERVED");
 
         return turnRepo.save(turn);
+    }
+    
+    public List<TurnResponseDTO> getTurnsByDoctor(UUID doctorId) {
+        List<TurnAssigned> turns = turnRepo.findByDoctor_IdOrderByScheduledAtDesc(doctorId);
+        return turns.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+    
+    public List<TurnResponseDTO> getTurnsByPatient(UUID patientId) {
+        List<TurnAssigned> turns = turnRepo.findByPatient_IdOrderByScheduledAtDesc(patientId);
+        return turns.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+    
+    public List<TurnResponseDTO> getTurnsByDoctorAndStatus(UUID doctorId, String status) {
+        List<TurnAssigned> turns = turnRepo.findByDoctor_IdAndStatusOrderByScheduledAtDesc(doctorId, status);
+        return turns.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+    
+    public List<TurnResponseDTO> getTurnsByPatientAndStatus(UUID patientId, String status) {
+        List<TurnAssigned> turns = turnRepo.findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, status);
+        return turns.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

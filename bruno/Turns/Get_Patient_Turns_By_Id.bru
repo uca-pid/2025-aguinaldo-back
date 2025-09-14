@@ -1,0 +1,37 @@
+meta {
+  name: Get_Patient_Turns_By_Id  
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{ baseUrl }}/api/turns/patient/{{ patientId }}
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+# Test: paciente consultando sus propios turnos por ID
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!Array.isArray(body)) {
+    throw new Error('Respuesta debe ser un array');
+  }
+  
+  // Verificar que todos los turnos pertenecen al paciente correcto
+  for (const turn of body) {
+    if (turn.patientId !== bru.getEnvVar('patientId')) {
+      throw new Error('Todos los turnos deben pertenecer al paciente correcto');
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

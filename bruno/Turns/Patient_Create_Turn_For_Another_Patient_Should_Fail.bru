@@ -1,0 +1,43 @@
+meta {
+  name: Patient_Create_Turn_For_Another_Patient_Should_Fail
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{ baseUrl }}/api/turns
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+body:json {
+  {
+    "doctorId": "{{ doctorId }}",
+    "patientId": "12345678-1234-1234-1234-123456789012",
+    "scheduledAt": "2025-09-15T11:00:00Z"
+  }
+}
+
+# Test: paciente intentando crear turno para otro paciente (debe fallar)
+scripts:post-response {
+  if (res.getStatus() !== 403) {
+    throw new Error('Se esperaba status 403 (Forbidden), recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body === 'string' && !body.includes('Patients can only create turns for themselves')) {
+    throw new Error('Mensaje de error inesperado: ' + body);
+  }
+}
+
+settings {
+  encodeUrl: true
+}

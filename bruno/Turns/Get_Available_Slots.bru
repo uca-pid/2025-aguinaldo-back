@@ -6,12 +6,11 @@ meta {
 
 get {
   url: {{ baseUrl }}/api/turns/available?doctorId={{ doctorId }}&date={{ date }}
-  auth: basic
+  auth: bearer
 }
 
-auth:basic {
-  username: test
-  password: test
+auth:bearer {
+  token: {{ accessToken }}
 }
 
 # Variables requeridas:
