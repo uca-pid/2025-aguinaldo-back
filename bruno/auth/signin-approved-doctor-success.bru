@@ -1,0 +1,38 @@
+meta {
+  name: Sign In Approved Doctor (Should Succeed)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/auth/signin
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "doctor@example.com",
+    "password": "password123"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.accessToken: isDefined
+  res.body.user.role: eq "DOCTOR"
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setEnvVar("doctorAccessToken", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("Should allow approved doctor to sign in", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().user.role).to.equal("DOCTOR");
+    expect(res.getBody().accessToken).to.be.a('string');
+  });
+}

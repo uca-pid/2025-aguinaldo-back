@@ -1,0 +1,31 @@
+meta {
+  name: Reject Doctor
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/admin/reject-doctor/{{pendingDoctorId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.message: isDefined
+  res.body.doctorId: isDefined
+  res.body.newStatus: eq "REJECTED"
+}
+
+tests {
+  test("Should reject doctor successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().message).to.include("rejected successfully");
+    expect(res.getBody().newStatus).to.equal("REJECTED");
+    expect(res.getBody().doctorId).to.be.a('string');
+  });
+}

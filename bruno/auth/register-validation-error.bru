@@ -1,0 +1,38 @@
+meta {
+  name: Register Patient - Validation Error
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register/patient
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "invalid-email",
+    "dni": 12345678,
+    "password": "password123",
+    "name": "John",
+    "surname": "Doe"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq "VALIDATION_ERROR"
+  res.body.message: isDefined
+}
+
+tests {
+  test("Should return validation error for invalid email", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().error).to.equal("VALIDATION_ERROR");
+    expect(res.getBody().message).to.include("email");
+    expect(res.getBody().timestamp).to.be.a('string');
+    expect(res.getBody().path).to.equal('/api/auth/register/patient');
+    expect(res.getBody().status).to.equal(400);
+  });
+}

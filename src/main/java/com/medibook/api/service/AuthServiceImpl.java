@@ -74,6 +74,7 @@ class AuthServiceImpl implements AuthService {
 
         String hashedPassword = passwordEncoder.encode(request.password());
         User user = userMapper.toUser(request, "DOCTOR", hashedPassword);
+        user.setStatus("PENDING");
         user = userRepository.save(user);
 
         return userMapper.toRegisterResponse(user);

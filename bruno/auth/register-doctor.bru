@@ -28,16 +28,22 @@ body:json {
 
 assert {
   res.status: eq 201
-  res.body.message: isDefined
-  res.body.user: isDefined
-  res.body.user.email: eq "doctor@example.com"
-  res.body.user.role: eq "DOCTOR"
+  res.body.id: isDefined
+  res.body.email: eq "doctor@example.com"
+  res.body.role: eq "DOCTOR"
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("pendingDoctorId", res.getBody().id);
+  }
 }
 
 tests {
-  test("Should register a doctor successfully", function() {
+  test("Should register a doctor successfully with PENDING status", function() {
     expect(res.getStatus()).to.equal(201);
-    expect(res.getBody().user.role).to.equal("DOCTOR");
-    expect(res.getBody().user.medicalLicense).to.equal("ML123456");
+    expect(res.getBody().role).to.equal("DOCTOR");
+    expect(res.getBody().email).to.equal("doctor@example.com");
+    expect(res.getBody().id).to.be.a('string');
   });
 }
