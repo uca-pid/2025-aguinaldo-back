@@ -73,7 +73,8 @@ class AuthServiceTest {
             user.getEmail(),
             user.getName(),
             user.getSurname(),
-            user.getRole()
+            user.getRole(),
+            "ACTIVE"
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
@@ -153,7 +154,8 @@ class AuthServiceTest {
             user.getEmail(),
             user.getName(),
             user.getSurname(),
-            user.getRole()
+            user.getRole(),
+            "ACTIVE"
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
@@ -254,6 +256,7 @@ class AuthServiceTest {
             user.getName(),
             user.getSurname(),
             user.getRole(),
+            user.getStatus(),
             "access-token",
             "refresh-token"
         );
@@ -346,6 +349,7 @@ class AuthServiceTest {
             user.getName(),
             user.getSurname(),
             user.getRole(),
+            "ACTIVE",
             "new-access-token",
             "new-refresh-token"
         );

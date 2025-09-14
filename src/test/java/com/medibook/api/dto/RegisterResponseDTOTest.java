@@ -14,12 +14,13 @@ class RegisterResponseDTOTest {
         String surname = "Doe";
         String role = "PATIENT";
 
-        RegisterResponseDTO response = new RegisterResponseDTO(id, email, name, surname, role);
+        RegisterResponseDTO response = new RegisterResponseDTO(id, email, name, surname, role, "ACTIVE");
 
         assertEquals(id, response.id());
         assertEquals(email, response.email());
         assertEquals(name, response.name());
         assertEquals(surname, response.surname());
         assertEquals(role, response.role());
+        assertEquals("ACTIVE", response.status());
     }
 }

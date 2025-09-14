@@ -69,7 +69,8 @@ class AdminRegistrationTest {
             user.getEmail(),
             user.getName(),
             user.getSurname(),
-            user.getRole()
+            user.getRole(),
+            "ACTIVE"
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);

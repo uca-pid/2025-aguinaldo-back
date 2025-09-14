@@ -5,14 +5,10 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
 
-/**
- * Utility class for turn-specific authorization checks
- */
+
 public class TurnAuthorizationUtil {
 
-    /**
-     * Validates if a patient can create turns for themselves
-     */
+
     public static ResponseEntity<Object> validatePatientTurnCreation(User authenticatedUser, UUID patientId) {
         if (!AuthorizationUtil.isPatient(authenticatedUser)) {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Only patients can create turns for themselves");
@@ -22,12 +18,10 @@ public class TurnAuthorizationUtil {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Patients can only create turns for themselves");
         }
         
-        return null; // No validation errors
+        return null;
     }
 
-    /**
-     * Validates if a doctor can create turns for themselves
-     */
+
     public static ResponseEntity<Object> validateDoctorTurnCreation(User authenticatedUser, UUID doctorId) {
         if (!AuthorizationUtil.isDoctor(authenticatedUser)) {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Only doctors can create turns for themselves");
@@ -37,12 +31,10 @@ public class TurnAuthorizationUtil {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Doctors can only create turns for themselves");
         }
         
-        return null; // No validation errors
+        return null;
     }
 
-    /**
-     * Validates if a patient can reserve turns
-     */
+
     public static ResponseEntity<Object> validatePatientTurnReservation(User authenticatedUser, UUID patientId) {
         if (!AuthorizationUtil.isPatient(authenticatedUser)) {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Only patients can reserve turns");
@@ -52,12 +44,9 @@ public class TurnAuthorizationUtil {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Patients can only reserve turns for themselves");
         }
         
-        return null; // No validation errors
+        return null;
     }
 
-    /**
-     * Validates if a doctor can access their own turns
-     */
     public static ResponseEntity<Object> validateDoctorTurnAccess(User authenticatedUser, UUID doctorId) {
         if (!AuthorizationUtil.isDoctor(authenticatedUser)) {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Only doctors can access doctor turns");
@@ -67,12 +56,9 @@ public class TurnAuthorizationUtil {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("You can only view your own turns");
         }
         
-        return null; // No validation errors
+        return null;
     }
 
-    /**
-     * Validates if a patient can access their own turns
-     */
     public static ResponseEntity<Object> validatePatientTurnAccess(User authenticatedUser, UUID patientId) {
         if (!AuthorizationUtil.isPatient(authenticatedUser)) {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("Only patients can access patient turns");
@@ -82,6 +68,6 @@ public class TurnAuthorizationUtil {
             return AuthorizationUtil.createOwnershipAccessDeniedResponse("You can only view your own turns");
         }
         
-        return null; // No validation errors
+        return null;
     }
 }
