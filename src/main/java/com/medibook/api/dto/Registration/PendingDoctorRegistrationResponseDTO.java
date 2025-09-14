@@ -1,7 +1,5 @@
 package com.medibook.api.dto.Registration;
 
-import com.medibook.api.entity.PendingDoctorRegistration;
-
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -17,7 +15,7 @@ public record PendingDoctorRegistrationResponseDTO(
     String medicalLicense,
     String specialty,
     Integer slotDurationMin,
-    PendingDoctorRegistration.RegistrationStatus status,
+    String status,
     ZonedDateTime createdAt,
     ZonedDateTime reviewedAt,
     UUID reviewedBy,
