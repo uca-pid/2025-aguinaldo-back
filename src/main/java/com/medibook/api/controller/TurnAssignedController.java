@@ -1,8 +1,8 @@
 package com.medibook.api.controller;
 
-import com.medibook.api.dto.TurnCreateRequestDTO;
-import com.medibook.api.dto.TurnReserveRequestDTO;
-import com.medibook.api.dto.TurnResponseDTO;
+import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
+import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
+import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.service.TurnAssignedService;
