@@ -1,4 +1,4 @@
-package com.medibook.api.dto;
+package com.medibook.api.dto.Auth;
 
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;

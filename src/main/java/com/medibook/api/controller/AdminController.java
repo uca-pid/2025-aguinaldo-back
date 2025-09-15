@@ -1,7 +1,11 @@
 package com.medibook.api.controller;
 
 import com.medibook.api.dto.ErrorResponseDTO;
+import com.medibook.api.dto.Admin.AdminStatsDTO;
+import com.medibook.api.dto.Admin.DoctorApprovalResponseDTO;
+import com.medibook.api.dto.Admin.PendingDoctorDTO;
 import com.medibook.api.entity.User;
+import com.medibook.api.mapper.AdminMapper;
 import com.medibook.api.repository.UserRepository;
 import com.medibook.api.util.AuthorizationUtil;
 import com.medibook.api.util.ErrorResponseUtil;
@@ -12,17 +16,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
     private final UserRepository userRepository;
+    private final AdminMapper adminMapper;
 
-    public AdminController(UserRepository userRepository) {
+    public AdminController(UserRepository userRepository, AdminMapper adminMapper) {
         this.userRepository = userRepository;
+        this.adminMapper = adminMapper;
     }
 
     @GetMapping("/pending-doctors")
@@ -35,7 +41,11 @@ public class AdminController {
 
         try {
             List<User> pendingDoctors = userRepository.findByRoleAndStatus("DOCTOR", "PENDING");
-            return ResponseEntity.ok(pendingDoctors);
+            List<PendingDoctorDTO> pendingDoctorDTOs = pendingDoctors.stream()
+                .map(adminMapper::convertToPendingDoctorDTO)
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(pendingDoctorDTOs);
         } catch (Exception e) {
             return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
         }
@@ -64,11 +74,13 @@ public class AdminController {
             doctor.setStatus("ACTIVE");
             userRepository.save(doctor);
 
-            return ResponseEntity.ok(Map.of(
-                "message", "Doctor approved successfully",
-                "doctorId", doctorId,
-                "newStatus", "ACTIVE"
-            ));
+            DoctorApprovalResponseDTO response = new DoctorApprovalResponseDTO(
+                "Doctor approved successfully",
+                doctorId.toString(),
+                "ACTIVE"
+            );
+            
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ErrorResponseUtil.createDoctorNotFoundResponse(e.getMessage(), request.getRequestURI());
         } catch (Exception e) {
@@ -104,11 +116,13 @@ public class AdminController {
             doctor.setStatus("REJECTED");
             userRepository.save(doctor);
 
-            return ResponseEntity.ok(Map.of(
-                "message", "Doctor rejected successfully",
-                "doctorId", doctorId,
-                "newStatus", "REJECTED"
-            ));
+            DoctorApprovalResponseDTO response = new DoctorApprovalResponseDTO(
+                "Doctor rejected successfully",
+                doctorId.toString(),
+                "REJECTED"
+            );
+            
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ErrorResponseUtil.createDoctorNotFoundResponse(e.getMessage(), request.getRequestURI());
         } catch (Exception e) {
@@ -118,6 +132,31 @@ public class AdminController {
                 HttpStatus.INTERNAL_SERVER_ERROR, 
                 request.getRequestURI()
             );
+        }
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getAdminStats(HttpServletRequest request) {
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        
+        if (!AuthorizationUtil.isAdmin(authenticatedUser)) {
+            return AuthorizationUtil.createAdminAccessDeniedResponse(request.getRequestURI());
+        }
+
+        try {
+            long patientsCount = userRepository.countByRole("PATIENT");
+            long doctorsCount = userRepository.countByRoleAndStatus("DOCTOR", "ACTIVE");
+            long pendingCount = userRepository.countByRoleAndStatus("DOCTOR", "PENDING");
+
+            AdminStatsDTO stats = new AdminStatsDTO(
+                (int) patientsCount,
+                (int) doctorsCount,
+                (int) pendingCount
+            );
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
         }
     }
 
