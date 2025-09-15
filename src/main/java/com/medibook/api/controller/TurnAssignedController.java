@@ -180,46 +180,4 @@ public class TurnAssignedController {
                 .body(e.getMessage());
         }
     }
-
-    @PatchMapping("/{turnId}/complete")
-    public ResponseEntity<Object> completeTurn(
-            @PathVariable UUID turnId,
-            HttpServletRequest request) {
-        
-        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
-        
-        if (!"DOCTOR".equals(authenticatedUser.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("Only doctors can mark turns as completed");
-        }
-        
-        try {
-            TurnResponseDTO completedTurn = turnService.completeTurn(turnId, authenticatedUser.getId());
-            return ResponseEntity.ok(completedTurn);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(e.getMessage());
-        }
-    }
-
-    @PatchMapping("/{turnId}/absent")
-    public ResponseEntity<Object> markTurnAsAbsent(
-            @PathVariable UUID turnId,
-            HttpServletRequest request) {
-        
-        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
-        
-        if (!"DOCTOR".equals(authenticatedUser.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("Only doctors can mark turns as absent");
-        }
-        
-        try {
-            TurnResponseDTO absentTurn = turnService.markTurnAsAbsent(turnId, authenticatedUser.getId());
-            return ResponseEntity.ok(absentTurn);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(e.getMessage());
-        }
-    }
 }
