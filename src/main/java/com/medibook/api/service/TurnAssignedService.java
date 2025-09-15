@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -92,5 +93,36 @@ public class TurnAssignedService {
         return turns.stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
+    }
+    
+    public TurnResponseDTO cancelTurn(UUID turnId, UUID userId, String userRole) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+        
+        if ("PATIENT".equals(userRole)) {
+            if (turn.getPatient() == null || !turn.getPatient().getId().equals(userId)) {
+                throw new RuntimeException("You can only cancel your own turns");
+            }
+        } else if ("DOCTOR".equals(userRole)) {
+            if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(userId)) {
+                throw new RuntimeException("You can only cancel your own turns");
+            }
+        } else {
+            throw new RuntimeException("Invalid user role for cancellation");
+        }
+        
+        if (!"SCHEDULED".equals(turn.getStatus()) && !"RESERVED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be canceled. Current status: " + turn.getStatus());
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        if (turn.getScheduledAt().isBefore(now)) {
+            throw new RuntimeException("Cannot cancel past turns");
+        }
+        
+        turn.setStatus("CANCELED");
+        TurnAssigned saved = turnRepo.save(turn);
+        
+        return mapper.toDTO(saved);
     }
 }

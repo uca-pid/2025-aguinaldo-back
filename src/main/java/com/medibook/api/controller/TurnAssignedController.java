@@ -159,4 +159,25 @@ public class TurnAssignedController {
         
         return ResponseEntity.ok(turns);
     }
+    
+    @PatchMapping("/{turnId}/cancel")
+    public ResponseEntity<Object> cancelTurn(
+            @PathVariable UUID turnId,
+            HttpServletRequest request) {
+        
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        
+        if (!"PATIENT".equals(authenticatedUser.getRole()) && !"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body("Only patients and doctors can cancel turns");
+        }
+        
+        try {
+            TurnResponseDTO canceledTurn = turnService.cancelTurn(turnId, authenticatedUser.getId(), authenticatedUser.getRole());
+            return ResponseEntity.ok(canceledTurn);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        }
+    }
 }

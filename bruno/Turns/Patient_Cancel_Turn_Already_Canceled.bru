@@ -1,0 +1,31 @@
+meta {
+  name: Patient_Cancel_Turn_Already_Canceled
+  type: http
+  seq: 23
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ createdTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 400) {
+    throw new Error('Se esperaba status 400, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body !== 'string' || !body.includes('Turn cannot be canceled')) {
+    throw new Error('Se esperaba mensaje sobre turno no cancelable');
+  }
+  
+  console.log('✅ Error correctamente manejado para turno ya cancelado');
+}
+
+settings {
+  encodeUrl: true
+}

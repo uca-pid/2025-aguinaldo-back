@@ -92,17 +92,14 @@ class TurnAssignedServiceTest {
 
     @Test
     void createTurn_Success() {
-        // Given
         when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
         when(turnRepo.existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt)).thenReturn(false);
         when(turnRepo.save(any(TurnAssigned.class))).thenReturn(turnEntity);
         when(mapper.toDTO(turnEntity)).thenReturn(turnResponse);
 
-        // When
         TurnResponseDTO result = turnAssignedService.createTurn(createRequest);
 
-        // Then
         assertNotNull(result);
         assertEquals(turnId, result.getId());
         assertEquals(doctorId, result.getDoctorId());
@@ -119,10 +116,8 @@ class TurnAssignedServiceTest {
 
     @Test
     void createTurn_DoctorNotFound_ThrowsException() {
-        // Given
         when(userRepo.findById(doctorId)).thenReturn(Optional.empty());
 
-        // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.createTurn(createRequest);
         });
@@ -136,11 +131,9 @@ class TurnAssignedServiceTest {
 
     @Test
     void createTurn_PatientNotFound_ThrowsException() {
-        // Given
         when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(userRepo.findById(patientId)).thenReturn(Optional.empty());
 
-        // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.createTurn(createRequest);
         });
@@ -154,12 +147,10 @@ class TurnAssignedServiceTest {
 
     @Test
     void createTurn_SlotAlreadyTaken_ThrowsException() {
-        // Given
         when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
         when(turnRepo.existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt)).thenReturn(true);
 
-        // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.createTurn(createRequest);
         });
@@ -173,7 +164,6 @@ class TurnAssignedServiceTest {
 
     @Test
     void reserveTurn_Success() {
-        // Given
         TurnAssigned availableTurn = TurnAssigned.builder()
                 .id(turnId)
                 .doctor(doctor)
@@ -194,10 +184,8 @@ class TurnAssignedServiceTest {
         when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
         when(turnRepo.save(any(TurnAssigned.class))).thenReturn(reservedTurn);
 
-        // When
         TurnAssigned result = turnAssignedService.reserveTurn(turnId, patientId);
 
-        // Then
         assertNotNull(result);
         assertEquals(turnId, result.getId());
         assertEquals(patient, result.getPatient());
@@ -210,10 +198,8 @@ class TurnAssignedServiceTest {
 
     @Test
     void reserveTurn_TurnNotFound_ThrowsException() {
-        // Given
         when(turnRepo.findById(turnId)).thenReturn(Optional.empty());
 
-        // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.reserveTurn(turnId, patientId);
         });
@@ -226,7 +212,6 @@ class TurnAssignedServiceTest {
 
     @Test
     void reserveTurn_TurnNotAvailable_ThrowsException() {
-        // Given
         TurnAssigned scheduledTurn = TurnAssigned.builder()
                 .id(turnId)
                 .doctor(doctor)
@@ -237,7 +222,6 @@ class TurnAssignedServiceTest {
 
         when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
 
-        // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.reserveTurn(turnId, patientId);
         });
@@ -250,7 +234,6 @@ class TurnAssignedServiceTest {
 
     @Test
     void reserveTurn_PatientNotFound_ThrowsException() {
-        // Given
         TurnAssigned availableTurn = TurnAssigned.builder()
                 .id(turnId)
                 .doctor(doctor)
@@ -262,7 +245,6 @@ class TurnAssignedServiceTest {
         when(turnRepo.findById(turnId)).thenReturn(Optional.of(availableTurn));
         when(userRepo.findById(patientId)).thenReturn(Optional.empty());
 
-        // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.reserveTurn(turnId, patientId);
         });
@@ -270,6 +252,229 @@ class TurnAssignedServiceTest {
         assertEquals("Patient not found", exception.getMessage());
         verify(turnRepo).findById(turnId);
         verify(userRepo).findById(patientId);
+        verify(turnRepo, never()).save(any());
+    }
+    
+    @Test
+    void cancelTurn_Success() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1)) 
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(canceledTurn);
+        assertEquals("CANCELED", scheduledTurn.getStatus());
+    }
+
+    @Test
+    void cancelTurn_TurnNotFound_ThrowsException() {
+        when(turnRepo.findById(turnId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+        });
+
+        assertEquals("Turn not found", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_NotPatientTurn_ThrowsException() {
+        UUID differentPatientId = UUID.randomUUID();
+        User differentPatient = new User();
+        differentPatient.setId(differentPatientId);
+        differentPatient.setEmail("other@example.com");
+        differentPatient.setRole("PATIENT");
+
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(differentPatient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+        });
+
+        assertEquals("You can only cancel your own turns", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_TurnAlreadyCompleted_ThrowsException() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+        });
+
+        assertEquals("Turn cannot be canceled. Current status: COMPLETED", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_PastTurn_ThrowsException() {
+        TurnAssigned pastTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1)) 
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(pastTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+        });
+
+        assertEquals("Cannot cancel past turns", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_ReservedTurn_Success() {
+        TurnAssigned reservedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("RESERVED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(reservedTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(reservedTurn);
+        verify(mapper).toDTO(canceledTurn);
+        assertEquals("CANCELED", reservedTurn.getStatus());
+    }
+    
+    @Test
+    void cancelTurn_DoctorCancelOwnTurn_Success() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, doctorId, "DOCTOR");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(canceledTurn);
+        assertEquals("CANCELED", scheduledTurn.getStatus());
+    }
+
+    @Test
+    void cancelTurn_DoctorCannotCancelOtherDoctorTurn_ThrowsException() {
+        UUID differentDoctorId = UUID.randomUUID();
+        User differentDoctor = new User();
+        differentDoctor.setId(differentDoctorId);
+        differentDoctor.setEmail("other@doctor.com");
+        differentDoctor.setRole("DOCTOR");
+
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(differentDoctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, doctorId, "DOCTOR");
+        });
+
+        assertEquals("You can only cancel your own turns", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_InvalidRole_ThrowsException() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, patientId, "ADMIN");
+        });
+
+        assertEquals("Invalid user role for cancellation", exception.getMessage());
+        verify(turnRepo).findById(turnId);
         verify(turnRepo, never()).save(any());
     }
 }

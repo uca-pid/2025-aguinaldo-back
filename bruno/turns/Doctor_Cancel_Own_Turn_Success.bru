@@ -1,0 +1,41 @@
+meta {
+  name: Doctor_Cancel_Own_Turn_Success
+  type: http
+  seq: 26
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ doctorOwnTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ doctorAccessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!body || !body.id) {
+    throw new Error('No se recibió respuesta válida con id del turno');
+  }
+  
+  if (body.status !== 'CANCELED') {
+    throw new Error('Estado esperado CANCELED, recibido: ' + body.status);
+  }
+  
+  if (body.id !== bru.getEnvVar('doctorOwnTurnId')) {
+    throw new Error('ID del turno no coincide con el esperado');
+  }
+  
+  console.log('✅ Turno cancelado exitosamente por doctor:', body.id);
+  console.log('   Fecha:', body.scheduledAt);
+  console.log('   Paciente:', body.patientName || body.patientId);
+}
+
+settings {
+  encodeUrl: true
+}

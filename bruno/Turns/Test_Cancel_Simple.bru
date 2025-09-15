@@ -1,0 +1,18 @@
+meta {
+  name: Test_Cancel_Simple
+  type: http
+  seq: 99
+}
+
+get {
+  url: {{ baseUrl }}/api/turns/my-turns
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+scripts:post-response {
+  console.log('Test simple funcionando');
+}

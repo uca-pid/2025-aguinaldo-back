@@ -49,28 +49,22 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_NoOccupiedSlots_ReturnsAllSlots() {
-        // Given
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(
                 eq(doctorId),
                 eq(testDate.atTime(workStart).atOffset(ZoneOffset.UTC)),
                 eq(testDate.atTime(workEnd).atOffset(ZoneOffset.UTC))
         )).thenReturn(Arrays.asList());
 
-        // When
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
                 doctorId, testDate, workStart, workEnd
         );
 
-        // Then
         assertNotNull(availableSlots);
-        // 10 horas * 4 slots per hora (cada 15 min) = 40 slots
         assertEquals(40, availableSlots.size());
         
-        // Verificar primer slot
         OffsetDateTime firstSlot = testDate.atTime(workStart).atOffset(ZoneOffset.UTC);
         assertEquals(firstSlot, availableSlots.get(0));
         
-        // Verificar último slot
         OffsetDateTime lastSlot = testDate.atTime(workEnd).atOffset(ZoneOffset.UTC).minusMinutes(15);
         assertEquals(lastSlot, availableSlots.get(availableSlots.size() - 1));
 
@@ -79,7 +73,6 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_WithOccupiedSlots_ExcludesOccupiedSlots() {
-        // Given
         OffsetDateTime occupiedSlot1 = testDate.atTime(10, 0).atOffset(ZoneOffset.UTC);
         OffsetDateTime occupiedSlot2 = testDate.atTime(14, 30).atOffset(ZoneOffset.UTC);
 
@@ -103,17 +96,13 @@ class TurnAvailableServiceTest {
                 eq(testDate.atTime(workEnd).atOffset(ZoneOffset.UTC))
         )).thenReturn(Arrays.asList(turn1, turn2));
 
-        // When
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
                 doctorId, testDate, workStart, workEnd
         );
 
-        // Then
         assertNotNull(availableSlots);
-        // 40 slots totales - 2 ocupados = 38 disponibles
         assertEquals(38, availableSlots.size());
         
-        // Verificar que los slots ocupados no están en la lista
         assertFalse(availableSlots.contains(occupiedSlot1));
         assertFalse(availableSlots.contains(occupiedSlot2));
 
@@ -122,7 +111,6 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_AllSlotsOccupied_ReturnsEmptyList() {
-        // Given
         List<TurnAssigned> allSlots = generateAllPossibleTurns();
         
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(
@@ -131,12 +119,10 @@ class TurnAvailableServiceTest {
                 eq(testDate.atTime(workEnd).atOffset(ZoneOffset.UTC))
         )).thenReturn(allSlots);
 
-        // When
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
                 doctorId, testDate, workStart, workEnd
         );
 
-        // Then
         assertNotNull(availableSlots);
         assertEquals(0, availableSlots.size());
 
@@ -145,18 +131,15 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_EmptyWorkDay_ReturnsEmptyList() {
-        // Given
         LocalTime sameTime = LocalTime.of(9, 0);
         
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(any(), any(), any()))
                 .thenReturn(Arrays.asList());
 
-        // When
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
                 doctorId, testDate, sameTime, sameTime
         );
 
-        // Then
         assertNotNull(availableSlots);
         assertEquals(0, availableSlots.size());
 
@@ -165,20 +148,16 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_VerifySlotInterval() {
-        // Given
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(any(), any(), any()))
                 .thenReturn(Arrays.asList());
 
-        // When
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
                 doctorId, testDate, workStart, workEnd
         );
 
-        // Then
         assertNotNull(availableSlots);
         assertTrue(availableSlots.size() > 1);
         
-        // Verificar que cada slot está 15 minutos después del anterior
         for (int i = 1; i < availableSlots.size(); i++) {
             OffsetDateTime previous = availableSlots.get(i - 1);
             OffsetDateTime current = availableSlots.get(i);
@@ -190,19 +169,15 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_VerifyTimeRange() {
-        // Given
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(any(), any(), any()))
                 .thenReturn(Arrays.asList());
 
-        // When
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
                 doctorId, testDate, workStart, workEnd
         );
 
-        // Then
         assertNotNull(availableSlots);
         
-        // Todos los slots deben estar dentro del rango de trabajo
         OffsetDateTime workStartDateTime = testDate.atTime(workStart).atOffset(ZoneOffset.UTC);
         OffsetDateTime workEndDateTime = testDate.atTime(workEnd).atOffset(ZoneOffset.UTC);
         

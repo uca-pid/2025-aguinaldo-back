@@ -1,0 +1,21 @@
+meta {
+  name: Cancel_Turn_No_Auth_Should_Fail
+  type: http
+  seq: 34
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ createdTurnId }}/cancel
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 401) {
+    throw new Error('Se esperaba status 401, recibido: ' + res.getStatus());
+  }
+  
+  console.log('✅ Acceso correctamente denegado sin autenticación');
+}
+
+settings {
+  encodeUrl: true
+}
