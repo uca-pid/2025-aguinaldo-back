@@ -1,0 +1,27 @@
+meta {
+  name: Doctor_Mark_Absent_Other_Doctor_Turn
+  type: http
+  seq: 35
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ otherDoctorTurnId }}/absent
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ doctorAccessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 403) {
+    throw new Error('Se esperaba status 403 (Forbidden), recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (body && body.message) {
+    if (!body.message.includes('autorizado') && !body.message.includes('acceso')) {
+      throw new Error('Mensaje de error esperado sobre falta de autorización');
+    }
+  }
+}

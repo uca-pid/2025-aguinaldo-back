@@ -1,0 +1,33 @@
+meta {
+  name: Doctor_Mark_Patient_Absent_Success
+  type: http
+  seq: 32
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ assignedTurnId }}/absent
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ doctorAccessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!body || !body.id) {
+    throw new Error('No se recibió respuesta válida con id del turno');
+  }
+  
+  if (body.status !== 'ABSENT') {
+    throw new Error('Estado esperado ABSENT, recibido: ' + body.status);
+  }
+  
+  if (body.id !== bru.getEnvVar('assignedTurnId')) {
+    throw new Error('ID del turno no coincide');
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Mark_Absent_No_Auth_Should_Fail
+  type: http
+  seq: 36
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ assignedTurnId }}/absent
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 401) {
+    throw new Error('Se esperaba status 401 (Unauthorized), recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (body && body.message) {
+    if (!body.message.includes('token') && !body.message.includes('autorización')) {
+      throw new Error('Mensaje de error esperado sobre falta de token');
+    }
+  }
+}

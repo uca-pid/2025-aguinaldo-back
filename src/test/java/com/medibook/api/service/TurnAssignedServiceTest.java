@@ -477,4 +477,209 @@ class TurnAssignedServiceTest {
         verify(turnRepo).findById(turnId);
         verify(turnRepo, never()).save(any());
     }
+
+    @Test
+    void completeTurn_Success() {
+        OffsetDateTime pastDate = OffsetDateTime.now().minusHours(1);
+        
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(pastDate)
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(pastDate)
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(completedTurn);
+        when(mapper.toDTO(completedTurn)).thenReturn(turnResponse);
+
+        TurnResponseDTO result = turnAssignedService.completeTurn(turnId, doctorId);
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(completedTurn);
+        assertEquals("COMPLETED", scheduledTurn.getStatus());
+    }
+
+    @Test
+    void completeTurn_TurnNotFound_ThrowsException() {
+        when(turnRepo.findById(turnId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.completeTurn(turnId, doctorId);
+        });
+
+        assertEquals("Turn not found", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void completeTurn_NotDoctorTurn_ThrowsException() {
+        UUID otherDoctorId = UUID.randomUUID();
+        User otherDoctor = new User();
+        otherDoctor.setId(otherDoctorId);
+
+        TurnAssigned otherDoctorTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(otherDoctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(otherDoctorTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.completeTurn(turnId, doctorId);
+        });
+
+        assertEquals("You can only mark your own turns as complete", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void completeTurn_TurnAlreadyCompleted_ThrowsException() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.completeTurn(turnId, doctorId);
+        });
+
+        assertEquals("Turn is already completed or absent", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void markTurnAsAbsent_Success() {
+        OffsetDateTime pastDate = OffsetDateTime.now().minusHours(1);
+        
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(pastDate)
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned absentTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(pastDate)
+                .status("ABSENT")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(absentTurn);
+        when(mapper.toDTO(absentTurn)).thenReturn(turnResponse);
+
+        TurnResponseDTO result = turnAssignedService.markTurnAsAbsent(turnId, doctorId);
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(absentTurn);
+        assertEquals("ABSENT", scheduledTurn.getStatus());
+    }
+
+    @Test
+    void markTurnAsAbsent_TurnNotFound_ThrowsException() {
+        when(turnRepo.findById(turnId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.markTurnAsAbsent(turnId, doctorId);
+        });
+
+        assertEquals("Turn not found", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void markTurnAsAbsent_NotDoctorTurn_ThrowsException() {
+        UUID otherDoctorId = UUID.randomUUID();
+        User otherDoctor = new User();
+        otherDoctor.setId(otherDoctorId);
+
+        TurnAssigned otherDoctorTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(otherDoctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(otherDoctorTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.markTurnAsAbsent(turnId, doctorId);
+        });
+
+        assertEquals("You can only mark your own turns as absent", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void markTurnAsAbsent_TurnAlreadyCompleted_ThrowsException() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.markTurnAsAbsent(turnId, doctorId);
+        });
+
+        assertEquals("Turn is already completed or absent", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void markTurnAsAbsent_TurnAlreadyAbsent_ThrowsException() {
+        TurnAssigned absentTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("ABSENT")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(absentTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.markTurnAsAbsent(turnId, doctorId);
+        });
+
+        assertEquals("Turn is already completed or absent", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
 }

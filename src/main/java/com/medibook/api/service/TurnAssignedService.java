@@ -125,4 +125,50 @@ public class TurnAssignedService {
         
         return mapper.toDTO(saved);
     }
+
+    public TurnResponseDTO completeTurn(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+        
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only mark your own turns as completed");
+        }
+        
+        if (!"SCHEDULED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be completed. Current status: " + turn.getStatus());
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        if (turn.getScheduledAt().isAfter(now)) {
+            throw new RuntimeException("Cannot mark future turns as completed");
+        }
+        
+        turn.setStatus("COMPLETED");
+        TurnAssigned saved = turnRepo.save(turn);
+        
+        return mapper.toDTO(saved);
+    }
+
+    public TurnResponseDTO markTurnAsAbsent(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+        
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only mark your own turns as absent");
+        }
+        
+        if (!"SCHEDULED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be marked as absent. Current status: " + turn.getStatus());
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        if (turn.getScheduledAt().isAfter(now)) {
+            throw new RuntimeException("Cannot mark future turns as absent");
+        }
+        
+        turn.setStatus("ABSENT");
+        TurnAssigned saved = turnRepo.save(turn);
+        
+        return mapper.toDTO(saved);
+    }
 }

@@ -1,0 +1,27 @@
+meta {
+  name: Doctor_Mark_Absent_Non_Existent_Turn
+  type: http
+  seq: 34
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/99999999-9999-9999-9999-999999999999/absent
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ doctorAccessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 404) {
+    throw new Error('Se esperaba status 404 (Not Found), recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (body && body.message) {
+    if (!body.message.includes('encontrado') && !body.message.includes('existe')) {
+      throw new Error('Mensaje de error esperado sobre turno no encontrado');
+    }
+  }
+}
