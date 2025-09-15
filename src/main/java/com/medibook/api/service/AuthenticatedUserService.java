@@ -48,4 +48,5 @@ public class AuthenticatedUserService {
         String accessToken = authorizationHeader.substring("Bearer ".length());
         return validateAccessToken(accessToken);
     }
+
 }
