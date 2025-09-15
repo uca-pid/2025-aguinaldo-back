@@ -1,9 +1,10 @@
 package com.medibook.api.service;
 
-import com.medibook.api.dto.RegisterRequestDTO;
-import com.medibook.api.dto.RegisterResponseDTO;
-import com.medibook.api.dto.SignInRequestDTO;
-import com.medibook.api.dto.SignInResponseDTO;
+import com.medibook.api.dto.Auth.RegisterRequestDTO;
+import com.medibook.api.dto.Auth.RegisterResponseDTO;
+import com.medibook.api.dto.Auth.SignInRequestDTO;
+import com.medibook.api.dto.Auth.SignInResponseDTO;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

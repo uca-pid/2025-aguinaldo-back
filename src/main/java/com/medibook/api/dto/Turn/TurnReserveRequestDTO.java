@@ -1,4 +1,4 @@
-package com.medibook.api.dto;
+package com.medibook.api.dto.Turn;
 
 import lombok.Getter;
 import lombok.Setter;

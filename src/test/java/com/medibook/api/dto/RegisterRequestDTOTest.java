@@ -6,6 +6,8 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.medibook.api.dto.Auth.RegisterRequestDTO;
+
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;

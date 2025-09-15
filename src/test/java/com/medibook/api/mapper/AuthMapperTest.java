@@ -1,6 +1,6 @@
 package com.medibook.api.mapper;
 
-import com.medibook.api.dto.SignInResponseDTO;
+import com.medibook.api.dto.Auth.SignInResponseDTO;
 import com.medibook.api.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

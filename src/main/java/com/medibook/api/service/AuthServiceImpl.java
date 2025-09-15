@@ -1,9 +1,9 @@
 package com.medibook.api.service;
 
-import com.medibook.api.dto.RegisterRequestDTO;
-import com.medibook.api.dto.RegisterResponseDTO;
-import com.medibook.api.dto.SignInRequestDTO;
-import com.medibook.api.dto.SignInResponseDTO;
+import com.medibook.api.dto.Auth.RegisterRequestDTO;
+import com.medibook.api.dto.Auth.RegisterResponseDTO;
+import com.medibook.api.dto.Auth.SignInRequestDTO;
+import com.medibook.api.dto.Auth.SignInResponseDTO;
 import com.medibook.api.entity.RefreshToken;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AuthMapper;
