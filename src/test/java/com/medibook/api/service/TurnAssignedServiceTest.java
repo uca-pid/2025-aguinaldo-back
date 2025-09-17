@@ -59,12 +59,14 @@ class TurnAssignedServiceTest {
         doctor.setName("Dr. Hugo");
         doctor.setSurname("Martinez");
         doctor.setRole("DOCTOR");
+        doctor.setStatus("ACTIVE");
 
         patient = new User();
         patient.setId(patientId);
         patient.setName("Juan");
         patient.setSurname("Perez");
         patient.setRole("PATIENT");
+        patient.setStatus("ACTIVE");
 
         createRequest = new TurnCreateRequestDTO();
         createRequest.setDoctorId(doctorId);
@@ -159,6 +161,72 @@ class TurnAssignedServiceTest {
         verify(userRepo).findById(doctorId);
         verify(userRepo).findById(patientId);
         verify(turnRepo).existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void createTurn_DoctorNotActive_ThrowsException() {
+        doctor.setStatus("PENDING");
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.createTurn(createRequest);
+        });
+
+        assertEquals("Doctor is not active", exception.getMessage());
+        verify(userRepo).findById(doctorId);
+        verify(userRepo, never()).findById(patientId);
+        verify(turnRepo, never()).existsByDoctor_IdAndScheduledAt(any(), any());
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void createTurn_DoctorInvalidRole_ThrowsException() {
+        doctor.setRole("PATIENT");
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.createTurn(createRequest);
+        });
+
+        assertEquals("User is not a doctor", exception.getMessage());
+        verify(userRepo).findById(doctorId);
+        verify(userRepo, never()).findById(patientId);
+        verify(turnRepo, never()).existsByDoctor_IdAndScheduledAt(any(), any());
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void createTurn_PatientNotActive_ThrowsException() {
+        patient.setStatus("INACTIVE");
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.createTurn(createRequest);
+        });
+
+        assertEquals("Patient is not active", exception.getMessage());
+        verify(userRepo).findById(doctorId);
+        verify(userRepo).findById(patientId);
+        verify(turnRepo, never()).existsByDoctor_IdAndScheduledAt(any(), any());
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void createTurn_PatientInvalidRole_ThrowsException() {
+        patient.setRole("ADMIN");
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.createTurn(createRequest);
+        });
+
+        assertEquals("User is not a patient", exception.getMessage());
+        verify(userRepo).findById(doctorId);
+        verify(userRepo).findById(patientId);
+        verify(turnRepo, never()).existsByDoctor_IdAndScheduledAt(any(), any());
         verify(turnRepo, never()).save(any());
     }
 

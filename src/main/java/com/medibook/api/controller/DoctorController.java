@@ -1,12 +1,15 @@
 package com.medibook.api.controller;
 
 import com.medibook.api.dto.DoctorDTO;
+import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.service.DoctorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -31,5 +34,12 @@ public class DoctorController {
     public ResponseEntity<List<String>> getAllSpecialties() {
         List<String> specialties = doctorService.getAllSpecialties();
         return ResponseEntity.ok(specialties);
+    }
+
+    @GetMapping("/{doctorId}/patients")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<List<PatientDTO>> getPatientsByDoctor(@PathVariable UUID doctorId) {
+        List<PatientDTO> patients = doctorService.getPatientsByDoctor(doctorId);
+        return ResponseEntity.ok(patients);
     }
 }

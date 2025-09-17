@@ -1,14 +1,17 @@
 package com.medibook.api.service;
 
 import com.medibook.api.dto.DoctorDTO;
+import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
+import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,6 +20,7 @@ import java.util.stream.Collectors;
 public class DoctorService {
 
     private final UserRepository userRepository;
+    private final TurnAssignedRepository turnAssignedRepository;
     private final DoctorMapper doctorMapper;
 
     public List<DoctorDTO> getAllDoctors() {
@@ -40,5 +44,34 @@ public class DoctorService {
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
+    }
+
+    public List<PatientDTO> getPatientsByDoctor(UUID doctorId) {
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        if (!"DOCTOR".equals(doctor.getRole()) || !"ACTIVE".equals(doctor.getStatus())) {
+            throw new RuntimeException("Invalid doctor or doctor is not active");
+        }
+
+        List<User> patients = turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId);
+        
+        return patients.stream()
+                .map(this::mapPatientToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private PatientDTO mapPatientToDTO(User patient) {
+        return PatientDTO.builder()
+                .id(patient.getId())
+                .name(patient.getName())
+                .surname(patient.getSurname())
+                .email(patient.getEmail())
+                .dni(patient.getDni())
+                .phone(patient.getPhone())
+                .birthdate(patient.getBirthdate())
+                .gender(patient.getGender())
+                .status(patient.getStatus())
+                .build();
     }
 }
