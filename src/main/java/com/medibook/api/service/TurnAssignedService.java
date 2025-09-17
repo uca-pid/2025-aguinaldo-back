@@ -29,8 +29,24 @@ public class TurnAssignedService {
         User doctor = userRepo.findById(dto.getDoctorId())
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         
+        if (!"DOCTOR".equals(doctor.getRole())) {
+            throw new RuntimeException("User is not a doctor");
+        }
+        
+        if (!"ACTIVE".equals(doctor.getStatus())) {
+            throw new RuntimeException("Doctor is not active");
+        }
+        
         User patient = userRepo.findById(dto.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!"PATIENT".equals(patient.getRole())) {
+            throw new RuntimeException("User is not a patient");
+        }
+        
+        if (!"ACTIVE".equals(patient.getStatus())) {
+            throw new RuntimeException("Patient is not active");
+        }
 
         boolean slotTaken = turnRepo.existsByDoctor_IdAndScheduledAt(
                 dto.getDoctorId(), dto.getScheduledAt());

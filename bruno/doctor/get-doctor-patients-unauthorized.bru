@@ -1,0 +1,30 @@
+meta {
+  name: Get Doctor Patients - Unauthorized
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+}
+
+tests {
+  test("should return 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+  
+  test("should have error message", function() {
+    const response = res.getBody();
+    expect(response).to.have.property('message');
+  });
+}
