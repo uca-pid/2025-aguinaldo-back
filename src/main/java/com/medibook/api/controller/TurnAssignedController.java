@@ -1,56 +1,79 @@
 package com.medibook.api.controller;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
+import com.medibook.api.dto.Availability.AvailableSlotDTO;
+import com.medibook.api.service.DoctorAvailabilityService;
 import com.medibook.api.service.TurnAssignedService;
-import com.medibook.api.service.TurnAvailableService;
+import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.util.AuthorizationUtil;
 import com.medibook.api.util.TurnAuthorizationUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/turns")
 @RequiredArgsConstructor
+@Slf4j
 public class TurnAssignedController {
 
     private final TurnAssignedService turnService;
-    private final TurnAvailableService availableService;
+    private final DoctorAvailabilityService doctorAvailabilityService;
+    private final TurnAssignedRepository turnAssignedRepository;
 
     @PostMapping
     public ResponseEntity<Object> createTurn(
-            @RequestBody TurnCreateRequestDTO dto, 
+            @Valid @RequestBody TurnCreateRequestDTO dto, 
             HttpServletRequest request) {
         
+        log.info("Received turn creation request");
+        log.info("Request DTO: {}", dto);
+        log.info("DoctorId: {}", dto.getDoctorId());
+        log.info("PatientId: {}", dto.getPatientId()); 
+        log.info("ScheduledAt: {}", dto.getScheduledAt());
+        
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        log.info("Authenticated user: {} (Role: {})", 
+                authenticatedUser != null ? authenticatedUser.getId() : "null",
+                authenticatedUser != null ? authenticatedUser.getRole() : "null");
         
         if (AuthorizationUtil.isPatient(authenticatedUser)) {
+            log.info("User is patient, validating patient turn creation");
             ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnCreation(authenticatedUser, dto.getPatientId());
             if (validationError != null) {
+                log.warn("Patient turn creation validation failed");
                 return validationError;
             }
         } else if (AuthorizationUtil.isDoctor(authenticatedUser)) {
+            log.info("User is doctor, validating doctor turn creation");
             ResponseEntity<Object> validationError = TurnAuthorizationUtil.validateDoctorTurnCreation(authenticatedUser, dto.getDoctorId());
             if (validationError != null) {
+                log.warn("Doctor turn creation validation failed");
                 return validationError;
             }
         } else {
+            log.warn("User has invalid role for turn creation");
             return AuthorizationUtil.createInvalidRoleResponse();
         }
         
+        log.info("Calling turnService.createTurn with DTO: {}", dto);
         TurnResponseDTO result = turnService.createTurn(dto);
+        log.info("Turn created successfully: {}", result);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
@@ -60,14 +83,43 @@ public class TurnAssignedController {
             @RequestParam String date,
             HttpServletRequest request) {
         
+        log.info("Getting available turns - Doctor ID: {}, Date: {}", doctorId, date);
+        
         LocalDate localDate = LocalDate.parse(date);
-        LocalTime workStart = LocalTime.of(8, 0);
-        LocalTime workEnd = LocalTime.of(18, 0);
         
-        List<OffsetDateTime> available = availableService.getAvailableTurns(
-                doctorId, localDate, workStart, workEnd);
+        // Obtener los slots disponibles del doctor para esta fecha específica
+        List<AvailableSlotDTO> availableSlots = doctorAvailabilityService.getAvailableSlots(
+                doctorId, localDate, localDate);
         
-        return ResponseEntity.ok(available);
+        log.info("Found {} configured slots for doctor on {}", availableSlots.size(), localDate);
+        
+        if (availableSlots.isEmpty()) {
+            log.warn("No availability configured for doctor {} on {}", doctorId, localDate);
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+        
+        // Convertir los slots a OffsetDateTime y filtrar los que están ocupados
+        List<OffsetDateTime> availableTimes = new ArrayList<>();
+        ZoneOffset argentinaOffset = ZoneOffset.of("-03:00");
+        
+        for (AvailableSlotDTO slot : availableSlots) {
+            // Combinar fecha del slot con su hora de inicio
+            OffsetDateTime slotDateTime = slot.getDate().atTime(slot.getStartTime()).atOffset(argentinaOffset);
+            
+            // Verificar si este horario específico ya está ocupado usando el repositorio
+            boolean isOccupied = turnAssignedRepository.existsByDoctor_IdAndScheduledAt(doctorId, slotDateTime);
+            
+            if (!isOccupied) {
+                availableTimes.add(slotDateTime);
+            } else {
+                log.info("Slot {} is already occupied for doctor {}", slotDateTime, doctorId);
+            }
+        }
+        
+        log.info("Found {} available time slots after filtering occupied turns", availableTimes.size());
+        log.info("Available slots: {}", availableTimes);
+        
+        return ResponseEntity.ok(availableTimes);
     }
 
     @PostMapping("/reserve")

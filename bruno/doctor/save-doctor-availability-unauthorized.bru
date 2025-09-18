@@ -1,0 +1,43 @@
+meta {
+  name: Save Doctor Availability - Unauthorized
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{host}}/api/doctors/{{doctorId}}/availability
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  [
+    {
+      "dayOfWeek": "MONDAY",
+      "timeRanges": [
+        {
+          "startTime": "09:00",
+          "endTime": "17:00"
+        }
+      ]
+    }
+  ]
+}
+
+vars:pre-request {
+  doctorId: 1
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should return 401 when no authorization token provided", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

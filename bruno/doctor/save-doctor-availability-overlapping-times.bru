@@ -1,0 +1,75 @@
+meta {
+  name: Save Doctor Availability - Overlapping Times
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{host}}/api/doctors/{{doctorId}}/availability
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  [
+    {
+      "dayOfWeek": "MONDAY",
+      "timeRanges": [
+        {
+          "startTime": "09:00",
+          "endTime": "13:00"
+        },
+        {
+          "startTime": "12:00",
+          "endTime": "16:00"
+        }
+      ]
+    },
+    {
+      "dayOfWeek": "TUESDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "WEDNESDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "THURSDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "FRIDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "SATURDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "SUNDAY",
+      "timeRanges": []
+    }
+  ]
+}
+
+vars:pre-request {
+  doctorId: 1
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for overlapping time ranges", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
