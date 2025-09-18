@@ -57,6 +57,9 @@
             <column name="slot_duration_min" type="int" defaultValueNumeric="20">
                 <constraints nullable="false"/>
             </column>
+            <column name="availability_schedule" type="json">
+                <constraints nullable="true"/>
+            </column>
         </createTable>
         <addForeignKeyConstraint baseTableName="doctor_profiles" baseColumnNames="user_id"
                                 constraintName="fk_doctor_profiles_user"

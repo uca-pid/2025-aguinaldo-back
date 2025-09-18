@@ -1,0 +1,29 @@
+meta {
+  name: Get Doctor Availability - Unauthorized
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{host}}/api/doctors/{{doctorId}}/availability
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+vars:pre-request {
+  doctorId: 1
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should return 401 when no authorization token provided", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

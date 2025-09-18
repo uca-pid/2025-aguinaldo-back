@@ -1,0 +1,47 @@
+meta {
+  name: Save Doctor Availability - Invalid Data
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{host}}/api/doctors/{{doctorId}}/availability
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  [
+    {
+      "dayOfWeek": "INVALID_DAY",
+      "timeRanges": [
+        {
+          "startTime": "25:00",
+          "endTime": "12:00"
+        }
+      ]
+    }
+  ]
+}
+
+vars:pre-request {
+  doctorId: 1
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid data", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

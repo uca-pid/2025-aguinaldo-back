@@ -1,0 +1,103 @@
+meta {
+  name: Save Doctor Availability - Success
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{host}}/api/doctors/{{doctorId}}/availability
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  [
+    {
+      "dayOfWeek": "MONDAY",
+      "timeRanges": [
+        {
+          "startTime": "09:00",
+          "endTime": "12:00"
+        },
+        {
+          "startTime": "14:00",
+          "endTime": "18:00"
+        }
+      ]
+    },
+    {
+      "dayOfWeek": "TUESDAY",
+      "timeRanges": [
+        {
+          "startTime": "08:00",
+          "endTime": "16:00"
+        }
+      ]
+    },
+    {
+      "dayOfWeek": "WEDNESDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "THURSDAY",
+      "timeRanges": [
+        {
+          "startTime": "10:00",
+          "endTime": "15:00"
+        }
+      ]
+    },
+    {
+      "dayOfWeek": "FRIDAY",
+      "timeRanges": [
+        {
+          "startTime": "09:00",
+          "endTime": "17:00"
+        }
+      ]
+    },
+    {
+      "dayOfWeek": "SATURDAY",
+      "timeRanges": []
+    },
+    {
+      "dayOfWeek": "SUNDAY",
+      "timeRanges": []
+    }
+  ]
+}
+
+vars:pre-request {
+  doctorId: 1
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Should save doctor availability successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    
+    const responseJson = res.getBody();
+    expect(responseJson).to.be.an('array');
+    expect(responseJson).to.have.lengthOf(7);
+    
+    // Verify specific day configurations
+    const monday = responseJson.find(day => day.dayOfWeek === 'MONDAY');
+    expect(monday.timeRanges).to.have.lengthOf(2);
+    expect(monday.timeRanges[0].startTime).to.equal('09:00');
+    expect(monday.timeRanges[0].endTime).to.equal('12:00');
+    
+    const wednesday = responseJson.find(day => day.dayOfWeek === 'WEDNESDAY');
+    expect(wednesday.timeRanges).to.have.lengthOf(0);
+  });
+}

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Getter
@@ -30,4 +32,8 @@ public class DoctorProfile {
 
     @Column(name = "slot_duration_min", nullable = false)
     private int slotDurationMin = 15;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "availability_schedule", columnDefinition = "json")
+    private String availabilitySchedule;
 }

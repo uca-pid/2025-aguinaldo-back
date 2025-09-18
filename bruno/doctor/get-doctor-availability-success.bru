@@ -1,0 +1,50 @@
+meta {
+  name: Get Doctor Availability - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{host}}/api/doctors/{{doctorId}}/availability
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+vars:pre-request {
+  doctorId: 1
+}
+
+assert {
+  res.status: eq 200
+  res.body: isJson
+}
+
+tests {
+  test("Should return doctor availability", function() {
+    const responseJson = res.getBody();
+    expect(responseJson).to.be.an('array');
+    expect(responseJson).to.have.lengthOf(7); // 7 days of the week
+    
+    responseJson.forEach(dayAvailability => {
+      expect(dayAvailability).to.have.property('dayOfWeek');
+      expect(dayAvailability).to.have.property('timeRanges');
+      expect(dayAvailability.dayOfWeek).to.be.oneOf(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
+      expect(dayAvailability.timeRanges).to.be.an('array');
+      
+      dayAvailability.timeRanges.forEach(timeRange => {
+        expect(timeRange).to.have.property('startTime');
+        expect(timeRange).to.have.property('endTime');
+        expect(timeRange.startTime).to.match(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/);
+        expect(timeRange.endTime).to.match(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/);
+      });
+    });
+  });
+}
