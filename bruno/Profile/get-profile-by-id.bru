@@ -1,0 +1,55 @@
+meta {
+  name: Get Profile By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/profile/{{userId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.email: isDefined
+  res.body.name: isDefined
+  res.body.surname: isDefined
+  res.body.role: isDefined
+}
+
+tests {
+  test("Should get profile by ID successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().id).to.be.a('string');
+    expect(res.getBody().email).to.be.a('string');
+    expect(res.getBody().name).to.be.a('string');
+    expect(res.getBody().surname).to.be.a('string');
+    expect(res.getBody().role).to.be.a('string');
+  });
+  
+  test("Should return the correct user profile", function() {
+    const profile = res.getBody();
+    expect(profile.id).to.equal(bru.getEnvVar("userId"));
+  });
+  
+  test("Should have complete user data", function() {
+    const profile = res.getBody();
+    expect(profile).to.have.property('id');
+    expect(profile).to.have.property('email');
+    expect(profile).to.have.property('name');
+    expect(profile).to.have.property('surname');
+    expect(profile).to.have.property('dni');
+    expect(profile).to.have.property('role');
+    expect(profile).to.have.property('status');
+  });
+}

@@ -1,0 +1,98 @@
+meta {
+  name: Profile Workflow - Complete Test
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/profile/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.email: isDefined
+  res.body.name: isDefined
+  res.body.surname: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const profile = res.getBody();
+    
+    // Store original profile data for restoration later
+    bru.setEnvVar("originalName", profile.name);
+    bru.setEnvVar("originalSurname", profile.surname);
+    bru.setEnvVar("originalPhone", profile.phone || "");
+    bru.setEnvVar("originalGender", profile.gender || "");
+    
+    // Store profile data for subsequent tests
+    bru.setEnvVar("currentProfileId", profile.id);
+    bru.setEnvVar("currentProfileEmail", profile.email);
+    bru.setEnvVar("currentProfileRole", profile.role);
+    
+    console.log("✅ Profile retrieved successfully");
+    console.log("User Role:", profile.role);
+    console.log("Profile ID:", profile.id);
+    
+    if (profile.role === 'DOCTOR') {
+      bru.setEnvVar("originalMedicalLicense", profile.medicalLicense || "");
+      bru.setEnvVar("originalSpecialty", profile.specialty || "");
+      bru.setEnvVar("originalSlotDuration", profile.slotDurationMin || 20);
+      console.log("Doctor-specific fields stored");
+    }
+  }
+}
+
+tests {
+  test("Profile Workflow - Initial Profile Retrieval", function() {
+    expect(res.getStatus()).to.equal(200);
+    
+    const profile = res.getBody();
+    expect(profile).to.have.property('id');
+    expect(profile).to.have.property('email');
+    expect(profile).to.have.property('name');
+    expect(profile).to.have.property('surname');
+    expect(profile).to.have.property('dni');
+    expect(profile).to.have.property('role');
+    expect(profile).to.have.property('status');
+    
+    console.log("✅ Complete Profile Workflow Test Started");
+    console.log("Initial profile structure validated");
+  });
+  
+  test("Profile should have consistent data types", function() {
+    const profile = res.getBody();
+    expect(profile.id).to.be.a('string');
+    expect(profile.email).to.be.a('string');
+    expect(profile.name).to.be.a('string');
+    expect(profile.surname).to.be.a('string');
+    expect(profile.role).to.be.a('string');
+    expect(profile.status).to.be.a('string');
+    
+    if (profile.dni !== null) expect(profile.dni).to.be.a('number');
+  });
+  
+  test("Doctor profiles should include medical fields", function() {
+    const profile = res.getBody();
+    if (profile.role === 'DOCTOR') {
+      expect(profile).to.have.property('medicalLicense');
+      expect(profile).to.have.property('specialty');
+      expect(profile).to.have.property('slotDurationMin');
+      
+      if (profile.medicalLicense !== null) expect(profile.medicalLicense).to.be.a('string');
+      if (profile.specialty !== null) expect(profile.specialty).to.be.a('string');
+      if (profile.slotDurationMin !== null) expect(profile.slotDurationMin).to.be.a('number');
+    }
+  });
+}

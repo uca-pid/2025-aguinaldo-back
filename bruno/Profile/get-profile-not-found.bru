@@ -1,0 +1,44 @@
+meta {
+  name: Get Profile - Non-Existent User
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/profile/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+assert {
+  res.status: eq 404
+  res.body.errorCode: eq "NOT_FOUND"
+}
+
+tests {
+  test("Should return 404 for non-existent user", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+  
+  test("Should return proper error response", function() {
+    const error = res.getBody();
+    expect(error.errorCode).to.equal("NOT_FOUND");
+    expect(error).to.have.property('message');
+  });
+  
+  test("Should have complete error structure", function() {
+    const error = res.getBody();
+    expect(error).to.have.property('errorCode');
+    expect(error).to.have.property('message');
+    expect(error).to.have.property('status');
+    expect(error).to.have.property('path');
+  });
+}

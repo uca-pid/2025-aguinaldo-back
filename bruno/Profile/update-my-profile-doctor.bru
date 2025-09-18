@@ -1,0 +1,73 @@
+meta {
+  name: Update My Profile - Doctor
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/profile/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Updated Dr. Jane",
+    "surname": "Updated Smith",
+    "phone": "+0987654321",
+    "gender": "FEMALE",
+    "medicalLicense": "ML456789",
+    "specialty": "Updated Cardiology",
+    "slotDurationMin": 25
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.name: eq "Updated Dr. Jane"
+  res.body.surname: eq "Updated Smith"
+  res.body.medicalLicense: eq "ML456789"
+  res.body.specialty: eq "Updated Cardiology"
+  res.body.slotDurationMin: eq 25
+}
+
+tests {
+  test("Should update doctor profile successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().name).to.equal("Updated Dr. Jane");
+    expect(res.getBody().surname).to.equal("Updated Smith");
+    expect(res.getBody().phone).to.equal("+0987654321");
+    expect(res.getBody().gender).to.equal("FEMALE");
+  });
+  
+  test("Should update doctor-specific fields", function() {
+    const profile = res.getBody();
+    expect(profile.medicalLicense).to.equal("ML456789");
+    expect(profile.specialty).to.equal("Updated Cardiology");
+    expect(profile.slotDurationMin).to.equal(25);
+  });
+  
+  test("Should maintain role as DOCTOR", function() {
+    const profile = res.getBody();
+    expect(profile.role).to.equal("DOCTOR");
+  });
+  
+  test("Should have all required doctor fields", function() {
+    const profile = res.getBody();
+    expect(profile).to.have.property('medicalLicense');
+    expect(profile).to.have.property('specialty');
+    expect(profile).to.have.property('slotDurationMin');
+    expect(profile.medicalLicense).to.be.a('string');
+    expect(profile.specialty).to.be.a('string');
+    expect(profile.slotDurationMin).to.be.a('number');
+  });
+}

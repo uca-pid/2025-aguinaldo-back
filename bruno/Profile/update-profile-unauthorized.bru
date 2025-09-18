@@ -1,0 +1,52 @@
+meta {
+  name: Update Profile - Unauthorized
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/profile/{{pendingDoctorId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Unauthorized Update",
+    "surname": "Should Fail"
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.errorCode: eq "ACCESS_DENIED"
+}
+
+tests {
+  test("Should deny unauthorized profile update", function() {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().errorCode).to.equal("ACCESS_DENIED");
+  });
+  
+  test("Should return proper error message", function() {
+    const error = res.getBody();
+    expect(error).to.have.property('message');
+    expect(error.message).to.include('only');
+  });
+  
+  test("Should have error response structure", function() {
+    const error = res.getBody();
+    expect(error).to.have.property('errorCode');
+    expect(error).to.have.property('message');
+    expect(error).to.have.property('status');
+    expect(error).to.have.property('path');
+  });
+}

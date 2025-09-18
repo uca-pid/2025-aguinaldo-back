@@ -1,0 +1,47 @@
+meta {
+  name: Update Profile - Duplicate Email
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/profile/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@example.com"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.message: contains "already in use"
+}
+
+tests {
+  test("Should reject duplicate email", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Should return proper error message", function() {
+    const error = res.getBody();
+    expect(error.message).to.include("already in use");
+  });
+  
+  test("Should have proper error structure", function() {
+    const error = res.getBody();
+    expect(error).to.have.property('errorCode');
+    expect(error).to.have.property('message');
+  });
+}
