@@ -198,7 +198,7 @@ class TurnAssignedServiceTest {
 
     @Test
     void createTurn_PatientNotActive_ThrowsException() {
-        patient.setStatus("INACTIVE");
+        patient.setStatus("DISABLED");
         when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
 

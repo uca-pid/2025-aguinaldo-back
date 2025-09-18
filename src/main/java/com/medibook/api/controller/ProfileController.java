@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -107,6 +109,23 @@ public class ProfileController {
                 request.getRequestURI()
             );
         } catch (Exception e) {
+            return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
+        }
+    }
+
+    @DeleteMapping("/me/deactivate")
+    public ResponseEntity<?> deactivateMyAccount(HttpServletRequest request) {
+        try {
+            User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+            profileService.deactivateUser(authenticatedUser.getId());
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Account deactivated successfully");
+            response.put("status", "DISABLED");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error deactivating account: " + e.getMessage());
             return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
         }
     }

@@ -66,7 +66,6 @@ class DoctorProfileJsonIntegrationTest {
 
     @Test
     void testSaveAndRetrieveJsonAvailability() throws Exception {
-        // Arrange - Create availability data
         List<DayAvailabilityDTO> availabilityData = List.of(
             new DayAvailabilityDTO("MONDAY", true, List.of(
                 new TimeRangeDTO("09:00", "12:00"),
@@ -89,12 +88,10 @@ class DoctorProfileJsonIntegrationTest {
         String jsonAvailability = objectMapper.writeValueAsString(availabilityData);
         doctorProfile.setAvailabilitySchedule(jsonAvailability);
 
-        // Act - Save to database
         DoctorProfile savedProfile = doctorProfileRepository.save(doctorProfile);
         entityManager.flush();
         entityManager.clear();
 
-        // Assert - Retrieve and verify
         Optional<DoctorProfile> retrievedProfileOpt = doctorProfileRepository.findById(savedProfile.getId());
         assertTrue(retrievedProfileOpt.isPresent());
 
