@@ -24,7 +24,7 @@ public class TurnAvailableService {
         );
 
         List<OffsetDateTime> available = new ArrayList<>();
-        Duration slotDuration = Duration.ofMinutes(15); // o tomarlo del DoctorProfile
+        Duration slotDuration = Duration.ofMinutes(15); 
 
         OffsetDateTime current = date.atTime(workStart).atOffset(ZoneOffset.UTC);
         OffsetDateTime end = date.atTime(workEnd).atOffset(ZoneOffset.UTC);

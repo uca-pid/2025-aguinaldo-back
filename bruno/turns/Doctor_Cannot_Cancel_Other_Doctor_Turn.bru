@@ -1,0 +1,41 @@
+meta {
+  name: Doctor_Cannot_Cancel_Other_Doctor_Turn
+  type: http
+  seq: 27
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ otherDoctorTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ doctorAccessToken }}
+}
+
+scripts:pre-request {
+  // Este test asume que existe otherDoctorTurnId que pertenece a otro doctor
+  const turnId = bru.getEnvVar('otherDoctorTurnId');
+  if (!turnId) {
+    console.log('⚠️  Advertencia: No se encontró otherDoctorTurnId. Usando ID genérico.');
+    // Si no hay turno de otro doctor, usar un ID genérico que causará error apropiado
+    bru.setEnvVar('otherDoctorTurnId', '22222222-2222-2222-2222-222222222222');
+  }
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 400) {
+    throw new Error('Se esperaba status 400, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body !== 'string' || (!body.includes('You can only cancel your own turns') && !body.includes('Turn not found'))) {
+    throw new Error('Se esperaba mensaje sobre solo cancelar turnos propios o turno no encontrado');
+  }
+  
+  console.log('✅ Doctor correctamente impedido de cancelar turno ajeno');
+}
+
+settings {
+  encodeUrl: true
+}

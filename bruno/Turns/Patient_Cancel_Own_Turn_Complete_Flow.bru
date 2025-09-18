@@ -1,0 +1,50 @@
+meta {
+  name: Patient_Cancel_Own_Turn_Complete_Flow
+  type: http
+  seq: 25
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ patientOwnTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ patientAccessToken }}
+}
+
+scripts:pre-request {
+  // Este test asume que existe una variable patientOwnTurnId
+  // que contiene un turno creado por el paciente autenticado
+  const turnId = bru.getEnvVar('patientOwnTurnId');
+  if (!turnId) {
+    throw new Error('Se requiere patientOwnTurnId en las variables de entorno');
+  }
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!body || !body.id) {
+    throw new Error('No se recibió respuesta válida con id del turno');
+  }
+  
+  if (body.status !== 'CANCELED') {
+    throw new Error('Estado esperado CANCELED, recibido: ' + body.status);
+  }
+  
+  if (!body.doctorId || !body.patientId || !body.scheduledAt) {
+    throw new Error('Faltan campos obligatorios en la respuesta');
+  }
+  
+  console.log('✅ Flujo completo de cancelación exitoso para turno:', body.id);
+  console.log('   Doctor:', body.doctorName || body.doctorId);
+  console.log('   Fecha:', body.scheduledAt);
+}
+
+settings {
+  encodeUrl: true
+}

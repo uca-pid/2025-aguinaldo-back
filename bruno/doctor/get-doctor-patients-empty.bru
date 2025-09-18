@@ -1,0 +1,36 @@
+meta {
+  name: Get Doctor Patients - Empty List
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorWithNoPatientsId}}/patients
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorWithNoPatientsAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorWithNoPatientsAccessToken}}
+}
+
+vars:pre-request {
+  doctorWithNoPatientsId: {{$processEnv.DOCTOR_NO_PATIENTS_ID}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return empty array", function() {
+    const patients = res.getBody();
+    expect(patients).to.be.an('array');
+    expect(patients).to.have.length(0);
+  });
+}
