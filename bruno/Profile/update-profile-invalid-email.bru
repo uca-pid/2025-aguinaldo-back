@@ -1,0 +1,42 @@
+meta {
+  name: Update Profile - Invalid Email
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/profile/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "invalid-email",
+    "name": "Test"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should reject invalid email format", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Should return validation error", function() {
+    const error = res.getBody();
+    expect(error).to.have.property('message');
+    expect(error.message.toLowerCase()).to.include('email');
+  });
+}

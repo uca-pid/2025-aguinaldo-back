@@ -1,0 +1,64 @@
+meta {
+  name: Update My Profile - Patient
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/profile/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Updated John",
+    "surname": "Updated Doe",
+    "phone": "+1234567890",
+    "gender": "MALE"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.name: eq "Updated John"
+  res.body.surname: eq "Updated Doe"
+  res.body.phone: eq "+1234567890"
+  res.body.gender: eq "MALE"
+}
+
+tests {
+  test("Should update patient profile successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().name).to.equal("Updated John");
+    expect(res.getBody().surname).to.equal("Updated Doe");
+    expect(res.getBody().phone).to.equal("+1234567890");
+    expect(res.getBody().gender).to.equal("MALE");
+  });
+  
+  test("Should maintain unchanged fields", function() {
+    const profile = res.getBody();
+    expect(profile.id).to.be.a('string');
+    expect(profile.email).to.be.a('string');
+    expect(profile.role).to.be.a('string');
+    expect(profile.dni).to.exist;
+  });
+  
+  test("Should not have doctor-specific fields for patient", function() {
+    const profile = res.getBody();
+    if (profile.role === 'PATIENT') {
+      expect(profile.medicalLicense).to.be.null;
+      expect(profile.specialty).to.be.null;
+      expect(profile.slotDurationMin).to.be.null;
+    }
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Get Profile - No Auth
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/profile/me
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should reject request without authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+  
+  test("Should return unauthorized error", function() {
+    // This will depend on your security configuration
+    // Could be 401 or 403 depending on implementation
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}

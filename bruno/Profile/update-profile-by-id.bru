@@ -1,0 +1,57 @@
+meta {
+  name: Update Profile By ID
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/profile/{{userId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Admin Updated Name",
+    "surname": "Admin Updated Surname",
+    "phone": "+1111111111"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.name: eq "Admin Updated Name"
+  res.body.surname: eq "Admin Updated Surname"
+  res.body.phone: eq "+1111111111"
+}
+
+tests {
+  test("Should update profile by ID successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().name).to.equal("Admin Updated Name");
+    expect(res.getBody().surname).to.equal("Admin Updated Surname");
+    expect(res.getBody().phone).to.equal("+1111111111");
+  });
+  
+  test("Should return updated profile with correct ID", function() {
+    const profile = res.getBody();
+    expect(profile.id).to.equal(bru.getEnvVar("userId"));
+  });
+  
+  test("Should maintain other profile fields", function() {
+    const profile = res.getBody();
+    expect(profile.email).to.be.a('string');
+    expect(profile.role).to.be.a('string');
+    expect(profile.status).to.be.a('string');
+    expect(profile.dni).to.exist;
+  });
+}
