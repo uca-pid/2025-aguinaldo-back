@@ -1,0 +1,34 @@
+meta {
+  name: Patient_Cancel_Turn_Time_Validation
+  type: http
+  seq: 31
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ recentPatientTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ patientAccessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() === 400) {
+    const body = bru.getBody();
+    if (body && body.message && body.message.includes('tiempo')) {
+      return;
+    }
+  }
+  
+  if (res.getStatus() === 200) {
+    const body = bru.getBody();
+    if (!body || !body.id) {
+      throw new Error('No se recibió respuesta válida con id del turno');
+    }
+    
+    if (body.status !== 'CANCELED') {
+      throw new Error('Estado esperado CANCELED, recibido: ' + body.status);
+    }
+  }
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Get Doctor Patients - Patient Role Forbidden
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{patientAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+}
+
+tests {
+  test("should return 403", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+  
+  test("should have error message", function() {
+    const response = res.getBody();
+    expect(response).to.have.property('message');
+  });
+}

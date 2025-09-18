@@ -1,10 +1,10 @@
 package com.medibook.api.controller;
 
 import com.medibook.api.dto.ErrorResponseDTO;
-import com.medibook.api.dto.RegisterRequestDTO;
-import com.medibook.api.dto.RegisterResponseDTO;
-import com.medibook.api.dto.SignInRequestDTO;
-import com.medibook.api.dto.SignInResponseDTO;
+import com.medibook.api.dto.Auth.RegisterRequestDTO;
+import com.medibook.api.dto.Auth.RegisterResponseDTO;
+import com.medibook.api.dto.Auth.SignInRequestDTO;
+import com.medibook.api.dto.Auth.SignInResponseDTO;
 import com.medibook.api.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

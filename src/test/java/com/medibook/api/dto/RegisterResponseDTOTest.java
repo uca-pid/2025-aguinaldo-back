@@ -1,6 +1,9 @@
 package com.medibook.api.dto;
 
 import org.junit.jupiter.api.Test;
+
+import com.medibook.api.dto.Auth.RegisterResponseDTO;
+
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 

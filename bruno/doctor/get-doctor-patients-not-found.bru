@@ -1,0 +1,31 @@
+meta {
+  name: Get Doctor Patients - Doctor Not Found
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/550e8400-e29b-41d4-a716-446655440000/patients
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminAccessToken}}
+}
+
+tests {
+  test("should return 500 for non-existent doctor", function() {
+    expect(res.getStatus()).to.equal(500);
+  });
+  
+  test("should have error message", function() {
+    const response = res.getBody();
+    expect(response).to.have.property('message');
+  });
+}

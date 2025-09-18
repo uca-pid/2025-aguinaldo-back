@@ -1,0 +1,39 @@
+meta {
+  name: Patient_Cancel_Turn_Success
+  type: http
+  seq: 21
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ createdTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ accessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 200) {
+    throw new Error('Se esperaba status 200, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (!body || !body.id) {
+    throw new Error('No se recibió respuesta válida con id del turno');
+  }
+  
+  if (body.status !== 'CANCELED') {
+    throw new Error('Estado esperado CANCELED, recibido: ' + body.status);
+  }
+  
+  if (body.id !== bru.getEnvVar('createdTurnId')) {
+    throw new Error('ID del turno no coincide con el esperado');
+  }
+  
+  console.log('✅ Turno cancelado exitosamente:', body.id);
+}
+
+settings {
+  encodeUrl: true
+}

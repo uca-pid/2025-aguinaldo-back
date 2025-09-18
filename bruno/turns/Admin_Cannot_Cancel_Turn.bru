@@ -1,0 +1,31 @@
+meta {
+  name: Admin_Cannot_Cancel_Turn
+  type: http
+  seq: 24
+}
+
+patch {
+  url: {{ baseUrl }}/api/turns/{{ createdTurnId }}/cancel
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{ adminAccessToken }}
+}
+
+scripts:post-response {
+  if (res.getStatus() !== 403) {
+    throw new Error('Se esperaba status 403, recibido: ' + res.getStatus());
+  }
+  
+  const body = bru.getBody();
+  if (typeof body !== 'string' || !body.includes('Only patients and doctors can cancel turns')) {
+    throw new Error('Se esperaba mensaje sobre solo pacientes y doctores pueden cancelar');
+  }
+  
+  console.log('✅ Acceso correctamente denegado para usuario no autorizado');
+}
+
+settings {
+  encodeUrl: true
+}

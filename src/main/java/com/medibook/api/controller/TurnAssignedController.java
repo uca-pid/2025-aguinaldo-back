@@ -1,8 +1,8 @@
 package com.medibook.api.controller;
 
-import com.medibook.api.dto.TurnCreateRequestDTO;
-import com.medibook.api.dto.TurnReserveRequestDTO;
-import com.medibook.api.dto.TurnResponseDTO;
+import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
+import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
+import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.service.TurnAssignedService;
@@ -158,5 +158,26 @@ public class TurnAssignedController {
         }
         
         return ResponseEntity.ok(turns);
+    }
+    
+    @PatchMapping("/{turnId}/cancel")
+    public ResponseEntity<Object> cancelTurn(
+            @PathVariable UUID turnId,
+            HttpServletRequest request) {
+        
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        
+        if (!"PATIENT".equals(authenticatedUser.getRole()) && !"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body("Only patients and doctors can cancel turns");
+        }
+        
+        try {
+            TurnResponseDTO canceledTurn = turnService.cancelTurn(turnId, authenticatedUser.getId(), authenticatedUser.getRole());
+            return ResponseEntity.ok(canceledTurn);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        }
     }
 }
