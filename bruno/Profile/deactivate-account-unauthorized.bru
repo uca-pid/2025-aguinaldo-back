@@ -1,0 +1,17 @@
+meta {
+  name: deactivate-account-unauthorized
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{baseUrl}}/api/profile/me/deactivate
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return 401 when no token provided", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

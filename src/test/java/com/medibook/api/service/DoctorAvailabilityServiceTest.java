@@ -60,12 +60,10 @@ class DoctorAvailabilityServiceTest {
 
     @Test
     void saveAvailability_DoctorNotFound() {
-        // Arrange
         UUID doctorId = UUID.randomUUID();
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, 
             () -> doctorAvailabilityService.saveAvailability(doctorId, testRequest));
         
@@ -76,13 +74,11 @@ class DoctorAvailabilityServiceTest {
 
     @Test
     void saveAvailability_NoDoctorProfile() {
-        // Arrange
         UUID doctorId = doctorUser.getId();
         doctorUser.setDoctorProfile(null); // No doctor profile
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctorUser));
 
-        // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, 
             () -> doctorAvailabilityService.saveAvailability(doctorId, testRequest));
         
@@ -93,12 +89,10 @@ class DoctorAvailabilityServiceTest {
 
     @Test
     void getAvailability_DoctorNotFound() {
-        // Arrange
         UUID doctorId = UUID.randomUUID();
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, 
             () -> doctorAvailabilityService.getAvailability(doctorId));
         
@@ -108,16 +102,13 @@ class DoctorAvailabilityServiceTest {
 
     @Test
     void getAvailability_NoScheduleReturnsEmpty() {
-        // Arrange
         UUID doctorId = doctorUser.getId();
         doctorProfile.setAvailabilitySchedule(null);
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctorUser));
 
-        // Act
         DoctorAvailabilityResponseDTO result = doctorAvailabilityService.getAvailability(doctorId);
 
-        // Assert
         assertNotNull(result);
         assertEquals(30, result.getSlotDurationMin());
         assertNotNull(result.getWeeklyAvailability());
@@ -128,13 +119,11 @@ class DoctorAvailabilityServiceTest {
 
     @Test 
     void getAvailability_NoDoctorProfile() {
-        // Arrange
         UUID doctorId = doctorUser.getId();
         doctorUser.setDoctorProfile(null);
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctorUser));
 
-        // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, 
             () -> doctorAvailabilityService.getAvailability(doctorId));
         
