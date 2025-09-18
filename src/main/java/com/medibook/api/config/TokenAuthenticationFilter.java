@@ -31,7 +31,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         
         String requestPath = request.getRequestURI();
-        if (!requestPath.startsWith("/api/turns") && !requestPath.startsWith("/api/admin")) {
+        if (!requestPath.startsWith("/api/turns") && 
+            !requestPath.startsWith("/api/admin") && 
+            !requestPath.startsWith("/api/profile")) {
             filterChain.doFilter(request, response);
             return;
         }
