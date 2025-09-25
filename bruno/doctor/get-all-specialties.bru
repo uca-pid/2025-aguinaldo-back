@@ -1,0 +1,32 @@
+meta {
+  name: Get All Specialties
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/specialties
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get all specialties successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Specialties should be strings", function() {
+    const specialties = res.getBody();
+    if (specialties.length > 0) {
+      specialties.forEach(specialty => {
+        expect(specialty).to.be.a('string');
+      });
+    }
+  });
+}

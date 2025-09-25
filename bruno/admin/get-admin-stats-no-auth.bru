@@ -1,0 +1,21 @@
+meta {
+  name: Get Admin Stats - No Auth
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/admin/stats
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should return 401 without authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

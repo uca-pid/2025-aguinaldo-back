@@ -1,0 +1,33 @@
+meta {
+  name: Update Profile - Invalid ID
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{baseUrl}}/api/profiles/invalid-uuid
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Name",
+    "surname": "Updated Surname",
+    "email": "updated@example.com"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid user ID", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Get Available Slots - Invalid Doctor ID
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/invalid-uuid/available-slots?fromDate=2025-09-25&toDate=2025-09-30
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid doctor ID", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

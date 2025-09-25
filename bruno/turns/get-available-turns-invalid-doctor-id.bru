@@ -1,0 +1,21 @@
+meta {
+  name: Get Available Turns - Invalid Doctor ID
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/api/turns/available?doctorId=invalid-uuid&date=2025-09-25
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid doctor ID", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

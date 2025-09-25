@@ -1,0 +1,25 @@
+meta {
+  name: Cancel Turn - Invalid Turn ID
+  type: http
+  seq: 31
+}
+
+patch {
+  url: {{baseUrl}}/api/turns/invalid-uuid/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid turn ID", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

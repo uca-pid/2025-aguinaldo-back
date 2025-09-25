@@ -1,0 +1,24 @@
+meta {
+  name: Get Doctors by Invalid Specialty
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/specialty/INVALID_SPECIALTY
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should return empty array for invalid specialty", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+    expect(res.getBody()).to.have.lengthOf(0);
+  });
+}
