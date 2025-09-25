@@ -127,6 +127,20 @@ class AuthorizationUtilTest {
     }
 
     @Test
+    void hasOwnership_NullUserId_ReturnsFalse() {
+        User userWithNullId = createUser("user@test.com", 12345678L, "PATIENT", null);
+        userWithNullId.setId(null); // Explicitly set ID to null
+        assertFalse(AuthorizationUtil.hasOwnership(userWithNullId, resourceOwnerId));
+    }
+
+    @Test
+    void constructor_CanBeInstantiated() {
+        // Test constructor coverage for utility class
+        AuthorizationUtil authUtil = new AuthorizationUtil();
+        assertNotNull(authUtil);
+    }
+
+    @Test
     void createAdminAccessDeniedResponse_ReturnsCorrectFormat() {
         String requestUri = "/api/admin/users";
         ResponseEntity<ErrorResponseDTO> response = AuthorizationUtil.createAdminAccessDeniedResponse(requestUri);

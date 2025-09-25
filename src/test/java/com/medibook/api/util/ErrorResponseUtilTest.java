@@ -12,6 +12,13 @@ class ErrorResponseUtilTest {
     private final String requestUri = "/api/test";
 
     @Test
+    void constructor_CanBeInstantiated() {
+        // Test constructor coverage for utility class
+        ErrorResponseUtil util = new ErrorResponseUtil();
+        assertNotNull(util);
+    }
+
+    @Test
     void createErrorResponse_ValidParameters_ReturnsCorrectResponse() {
         String errorCode = "TEST_ERROR";
         String message = "Test error message";

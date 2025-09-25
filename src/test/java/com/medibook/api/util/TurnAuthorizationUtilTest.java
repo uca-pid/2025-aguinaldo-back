@@ -18,6 +18,13 @@ class TurnAuthorizationUtilTest {
     private UUID patientId;
     private UUID doctorId;
 
+    @Test
+    void constructor_CanBeInstantiated() {
+        // Test constructor coverage for utility class
+        TurnAuthorizationUtil util = new TurnAuthorizationUtil();
+        assertNotNull(util);
+    }
+
     @BeforeEach
     void setUp() {
         patientId = UUID.randomUUID();

@@ -250,6 +250,35 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void registerDoctor_EmailAlreadyExists_ThrowsException() {
+        when(userRepository.existsByEmail(validDoctorRequest.email())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(validDoctorRequest)
+        );
+        
+        assertTrue(exception.getMessage().contains("Email already registered"));
+        verify(userRepository).existsByEmail(validDoctorRequest.email());
+        verify(userRepository, never()).existsByDni(any());
+    }
+
+    @Test
+    void registerDoctor_DniAlreadyExists_ThrowsException() {
+        when(userRepository.existsByEmail(validDoctorRequest.email())).thenReturn(false);
+        when(userRepository.existsByDni(validDoctorRequest.dni())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(validDoctorRequest)
+        );
+        
+        assertTrue(exception.getMessage().contains("DNI already registered"));
+        verify(userRepository).existsByEmail(validDoctorRequest.email());
+        verify(userRepository).existsByDni(validDoctorRequest.dni());
+    }
+
+    @Test
     void registerAdmin_ValidRequest_Success() {
         when(userRepository.existsByEmail(validAdminRequest.email())).thenReturn(false);
         when(userRepository.existsByDni(validAdminRequest.dni())).thenReturn(false);
@@ -277,6 +306,35 @@ class AuthServiceImplTest {
         assertEquals(adminUser.getEmail(), result.email());
         assertEquals("ADMIN", result.role());
         assertEquals("ACTIVE", result.status());
+    }
+
+    @Test
+    void registerAdmin_EmailAlreadyExists_ThrowsException() {
+        when(userRepository.existsByEmail(validAdminRequest.email())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerAdmin(validAdminRequest)
+        );
+        
+        assertTrue(exception.getMessage().contains("Email already registered"));
+        verify(userRepository).existsByEmail(validAdminRequest.email());
+        verify(userRepository, never()).existsByDni(any());
+    }
+
+    @Test
+    void registerAdmin_DniAlreadyExists_ThrowsException() {
+        when(userRepository.existsByEmail(validAdminRequest.email())).thenReturn(false);
+        when(userRepository.existsByDni(validAdminRequest.dni())).thenReturn(true);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerAdmin(validAdminRequest)
+        );
+        
+        assertTrue(exception.getMessage().contains("DNI already registered"));
+        verify(userRepository).existsByEmail(validAdminRequest.email());
+        verify(userRepository).existsByDni(validAdminRequest.dni());
     }
 
     @Test

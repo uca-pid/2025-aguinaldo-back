@@ -17,6 +17,13 @@ class UserValidationUtilTest {
     private User patientUser;
     private String requestUri;
 
+    @Test
+    void constructor_CanBeInstantiated() {
+        // Test constructor coverage for utility class
+        UserValidationUtil util = new UserValidationUtil();
+        assertNotNull(util);
+    }
+
     @BeforeEach
     void setUp() {
         doctorUser = new User();
