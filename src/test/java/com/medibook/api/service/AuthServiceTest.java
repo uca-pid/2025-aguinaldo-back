@@ -395,7 +395,7 @@ class AuthServiceTest {
         RefreshToken expiredToken = new RefreshToken();
         expiredToken.setUser(user);
         expiredToken.setTokenHash(expiredTokenHash);
-        expiredToken.setExpiresAt(ZonedDateTime.now().minusDays(1)); // Expired
+        expiredToken.setExpiresAt(ZonedDateTime.now().minusDays(1));
         expiredToken.setCreatedAt(ZonedDateTime.now().minusDays(31));
 
         when(refreshTokenRepository.findByTokenHash(expiredTokenHash)).thenReturn(Optional.of(expiredToken));

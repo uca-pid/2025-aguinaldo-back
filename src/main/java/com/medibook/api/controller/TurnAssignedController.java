@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
@@ -41,39 +42,29 @@ public class TurnAssignedController {
             @Valid @RequestBody TurnCreateRequestDTO dto, 
             HttpServletRequest request) {
         
-        log.info("Received turn creation request");
-        log.info("Request DTO: {}", dto);
-        log.info("DoctorId: {}", dto.getDoctorId());
-        log.info("PatientId: {}", dto.getPatientId()); 
-        log.info("ScheduledAt: {}", dto.getScheduledAt());
-        
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
-        log.info("Authenticated user: {} (Role: {})", 
-                authenticatedUser != null ? authenticatedUser.getId() : "null",
-                authenticatedUser != null ? authenticatedUser.getRole() : "null");
         
-        if (AuthorizationUtil.isPatient(authenticatedUser)) {
-            log.info("User is patient, validating patient turn creation");
-            ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnCreation(authenticatedUser, dto.getPatientId());
-            if (validationError != null) {
-                log.warn("Patient turn creation validation failed");
-                return validationError;
-            }
-        } else if (AuthorizationUtil.isDoctor(authenticatedUser)) {
-            log.info("User is doctor, validating doctor turn creation");
-            ResponseEntity<Object> validationError = TurnAuthorizationUtil.validateDoctorTurnCreation(authenticatedUser, dto.getDoctorId());
-            if (validationError != null) {
-                log.warn("Doctor turn creation validation failed");
-                return validationError;
-            }
-        } else {
-            log.warn("User has invalid role for turn creation");
-            return AuthorizationUtil.createInvalidRoleResponse();
+        // Solo los pacientes pueden crear turnos
+        if (!AuthorizationUtil.isPatient(authenticatedUser)) {
+            return new ResponseEntity<>(
+                Map.of("error", "Forbidden", "message", "Only patients can create turns"), 
+                HttpStatus.FORBIDDEN);
         }
         
-        log.info("Calling turnService.createTurn with DTO: {}", dto);
+        // Validar que el paciente solo pueda crear turnos para sí mismo
+        ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnCreation(authenticatedUser, dto.getPatientId());
+        if (validationError != null) {
+            return validationError;
+        }
+        
+        // Validar que la fecha no sea en el pasado
+        if (dto.getScheduledAt() != null && dto.getScheduledAt().isBefore(OffsetDateTime.now())) {
+            return new ResponseEntity<>(
+                Map.of("error", "Bad Request", "message", "Cannot schedule turns in the past"), 
+                HttpStatus.BAD_REQUEST);
+        }
+        
         TurnResponseDTO result = turnService.createTurn(dto);
-        log.info("Turn created successfully: {}", result);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
@@ -83,18 +74,13 @@ public class TurnAssignedController {
             @RequestParam String date,
             HttpServletRequest request) {
         
-        log.info("Getting available turns - Doctor ID: {}, Date: {}", doctorId, date);
-        
         LocalDate localDate = LocalDate.parse(date);
         
         // Obtener los slots disponibles del doctor para esta fecha específica
         List<AvailableSlotDTO> availableSlots = doctorAvailabilityService.getAvailableSlots(
                 doctorId, localDate, localDate);
         
-        log.info("Found {} configured slots for doctor on {}", availableSlots.size(), localDate);
-        
         if (availableSlots.isEmpty()) {
-            log.warn("No availability configured for doctor {} on {}", doctorId, localDate);
             return ResponseEntity.ok(new ArrayList<>());
         }
         
@@ -111,13 +97,8 @@ public class TurnAssignedController {
             
             if (!isOccupied) {
                 availableTimes.add(slotDateTime);
-            } else {
-                log.info("Slot {} is already occupied for doctor {}", slotDateTime, doctorId);
             }
         }
-        
-        log.info("Found {} available time slots after filtering occupied turns", availableTimes.size());
-        log.info("Available slots: {}", availableTimes);
         
         return ResponseEntity.ok(availableTimes);
     }

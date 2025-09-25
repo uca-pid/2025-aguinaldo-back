@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,7 +47,6 @@ class DoctorAvailabilityServiceTest {
         
         doctorUser.setDoctorProfile(doctorProfile);
 
-        // Create test request data
         List<DayAvailabilityDTO> weeklyAvailability = List.of(
             new DayAvailabilityDTO("MONDAY", true, List.of(
                 new TimeRangeDTO("09:00", "12:00")
@@ -75,7 +73,7 @@ class DoctorAvailabilityServiceTest {
     @Test
     void saveAvailability_NoDoctorProfile() {
         UUID doctorId = doctorUser.getId();
-        doctorUser.setDoctorProfile(null); // No doctor profile
+        doctorUser.setDoctorProfile(null);
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctorUser));
 

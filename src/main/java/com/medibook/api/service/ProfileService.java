@@ -50,14 +50,9 @@ public class ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
-        System.out.println("Desactivando usuario: " + user.getEmail() + " - Estado anterior: " + user.getStatus());
-        
         user.setStatus("DISABLED");
         userRepository.save(user);
         
         refreshTokenRepository.revokeAllTokensByUserId(userId, ZonedDateTime.now());
-        
-        System.out.println("Usuario desactivado: " + user.getEmail() + " - Estado actual: " + user.getStatus());
-        System.out.println("Tokens revocados para usuario: " + user.getEmail());
     }
 }

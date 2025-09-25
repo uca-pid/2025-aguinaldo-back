@@ -59,7 +59,7 @@ public class TurnAssignedService {
                 .doctor(doctor)
                 .patient(patient)
                 .scheduledAt(dto.getScheduledAt())
-                .status("SCHEDULED")
+                .status("PENDING")
                 .build();
 
         TurnAssigned saved = turnRepo.save(turn);

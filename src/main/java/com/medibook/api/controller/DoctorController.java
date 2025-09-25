@@ -57,27 +57,6 @@ public class DoctorController {
             @PathVariable UUID doctorId,
             @Valid @RequestBody DoctorAvailabilityRequestDTO request) {
         
-        log.info("Received availability save request for doctorId: {}", doctorId);
-        log.info("Request payload: {}", request);
-        log.info("SlotDurationMin: {}", request.getSlotDurationMin());
-        log.info("WeeklyAvailability size: {}", request.getWeeklyAvailability() != null ? request.getWeeklyAvailability().size() : "null");
-        
-        if (request.getWeeklyAvailability() != null) {
-            for (int i = 0; i < request.getWeeklyAvailability().size(); i++) {
-                DayAvailabilityDTO day = request.getWeeklyAvailability().get(i);
-                log.info("Day {}: day={}, enabled={}, ranges size={}", 
-                    i, day.getDay(), day.getEnabled(), 
-                    day.getRanges() != null ? day.getRanges().size() : "null");
-                
-                if (day.getRanges() != null) {
-                    for (int j = 0; j < day.getRanges().size(); j++) {
-                        TimeRangeDTO range = day.getRanges().get(j);
-                        log.info("  Range {}: start={}, end={}", j, range.getStart(), range.getEnd());
-                    }
-                }
-            }
-        }
-        
         availabilityService.saveAvailability(doctorId, request);
         return ResponseEntity.ok().build();
     }

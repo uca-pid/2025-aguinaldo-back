@@ -101,18 +101,10 @@ class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public SignInResponseDTO signIn(SignInRequestDTO request) {
-        System.out.println("Intentando login para email: " + request.email());
-        
         User user = userRepository.findByEmailAndStatus(request.email(), "ACTIVE")
-                .orElseThrow(() -> {
-                    System.out.println("Usuario no encontrado o no activo para email: " + request.email());
-                    return new IllegalArgumentException("Invalid email or password");
-                });
-
-        System.out.println("Usuario encontrado: " + user.getEmail() + " - Estado: " + user.getStatus());
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            System.out.println("Contraseña incorrecta para usuario: " + user.getEmail());
             throw new IllegalArgumentException("Invalid email or password");
         }
 
@@ -121,7 +113,6 @@ class AuthServiceImpl implements AuthService {
 
         String accessToken = generateAccessToken(user);
 
-        System.out.println("Login exitoso para usuario: " + user.getEmail());
         return authMapper.toSignInResponse(user, accessToken, refreshToken.getTokenHash());
     }
 

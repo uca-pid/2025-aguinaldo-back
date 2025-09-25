@@ -24,7 +24,11 @@ public record RegisterRequestDTO(
     String surname,
 
     String phone,
+    
+    @Past(message = "Birthdate must be in the past")
     LocalDate birthdate,
+    
+    @Pattern(regexp = "^(MALE|FEMALE|OTHER)$", message = "Gender must be MALE, FEMALE, or OTHER")
     String gender,
 
 

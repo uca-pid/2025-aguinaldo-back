@@ -56,6 +56,7 @@ class ProfileControllerDeactivationTest {
         
         @SuppressWarnings("unchecked")
         Map<String, String> responseBody = (Map<String, String>) response.getBody();
+        assertNotNull(responseBody);
         assertEquals("Account deactivated successfully", responseBody.get("message"));
         assertEquals("DISABLED", responseBody.get("status"));
         
