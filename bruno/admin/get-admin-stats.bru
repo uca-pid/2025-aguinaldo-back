@@ -1,0 +1,46 @@
+meta {
+  name: Get Admin Stats
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/admin/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.patientsCount: isDefined
+  res.body.doctorsCount: isDefined
+  res.body.pendingCount: isDefined
+}
+
+tests {
+  test("Should get admin stats successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('object');
+  });
+  
+  test("Stats should have correct structure", function() {
+    const stats = res.getBody();
+    expect(stats).to.have.property('patientsCount');
+    expect(stats).to.have.property('doctorsCount');
+    expect(stats).to.have.property('pendingCount');
+    expect(stats.patientsCount).to.be.a('number');
+    expect(stats.doctorsCount).to.be.a('number');
+    expect(stats.pendingCount).to.be.a('number');
+  });
+  
+  test("Counts should be non-negative", function() {
+    const stats = res.getBody();
+    expect(stats.patientsCount).to.be.at.least(0);
+    expect(stats.doctorsCount).to.be.at.least(0);
+    expect(stats.pendingCount).to.be.at.least(0);
+  });
+}

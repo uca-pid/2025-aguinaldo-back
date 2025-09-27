@@ -1,0 +1,33 @@
+meta {
+  name: Create Turn - Invalid Data
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/api/turns
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "doctorId": "invalid-uuid",
+    "patientId": "{{patientId}}",
+    "scheduledAt": "invalid-date"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid turn data", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

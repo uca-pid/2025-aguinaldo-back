@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -542,6 +544,118 @@ class TurnAssignedServiceTest {
         });
 
         assertEquals("Invalid user role for cancellation", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void getTurnsByDoctor_Success() {
+        List<TurnAssigned> turns = Arrays.asList(turnEntity);
+        List<TurnResponseDTO> expectedResponse = Arrays.asList(turnResponse);
+
+        when(turnRepo.findByDoctor_IdOrderByScheduledAtDesc(doctorId)).thenReturn(turns);
+        when(mapper.toDTO(turnEntity)).thenReturn(turnResponse);
+
+        List<TurnResponseDTO> result = turnAssignedService.getTurnsByDoctor(doctorId);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(expectedResponse.get(0).getId(), result.get(0).getId());
+        verify(turnRepo).findByDoctor_IdOrderByScheduledAtDesc(doctorId);
+        verify(mapper).toDTO(turnEntity);
+    }
+
+    @Test
+    void getTurnsByPatient_Success() {
+        List<TurnAssigned> turns = Arrays.asList(turnEntity);
+        List<TurnResponseDTO> expectedResponse = Arrays.asList(turnResponse);
+
+        when(turnRepo.findByPatient_IdOrderByScheduledAtDesc(patientId)).thenReturn(turns);
+        when(mapper.toDTO(turnEntity)).thenReturn(turnResponse);
+
+        List<TurnResponseDTO> result = turnAssignedService.getTurnsByPatient(patientId);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(expectedResponse.get(0).getId(), result.get(0).getId());
+        verify(turnRepo).findByPatient_IdOrderByScheduledAtDesc(patientId);
+        verify(mapper).toDTO(turnEntity);
+    }
+
+    @Test
+    void getTurnsByDoctorAndStatus_Success() {
+        String status = "SCHEDULED";
+        List<TurnAssigned> turns = Arrays.asList(turnEntity);
+        List<TurnResponseDTO> expectedResponse = Arrays.asList(turnResponse);
+
+        when(turnRepo.findByDoctor_IdAndStatusOrderByScheduledAtDesc(doctorId, status)).thenReturn(turns);
+        when(mapper.toDTO(turnEntity)).thenReturn(turnResponse);
+
+        List<TurnResponseDTO> result = turnAssignedService.getTurnsByDoctorAndStatus(doctorId, status);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(expectedResponse.get(0).getId(), result.get(0).getId());
+        verify(turnRepo).findByDoctor_IdAndStatusOrderByScheduledAtDesc(doctorId, status);
+        verify(mapper).toDTO(turnEntity);
+    }
+
+    @Test
+    void getTurnsByPatientAndStatus_Success() {
+        String status = "SCHEDULED";
+        List<TurnAssigned> turns = Arrays.asList(turnEntity);
+        List<TurnResponseDTO> expectedResponse = Arrays.asList(turnResponse);
+
+        when(turnRepo.findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, status)).thenReturn(turns);
+        when(mapper.toDTO(turnEntity)).thenReturn(turnResponse);
+
+        List<TurnResponseDTO> result = turnAssignedService.getTurnsByPatientAndStatus(patientId, status);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(expectedResponse.get(0).getId(), result.get(0).getId());
+        verify(turnRepo).findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, status);
+        verify(mapper).toDTO(turnEntity);
+    }
+
+    @Test
+    void cancelTurn_PatientRoleWithNullPatient_ThrowsException() {
+        TurnAssigned turnWithNullPatient = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(null)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(turnWithNullPatient));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+        });
+
+        assertEquals("You can only cancel your own turns", exception.getMessage());
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_DoctorRoleWithNullDoctor_ThrowsException() {
+        TurnAssigned turnWithNullDoctor = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(null)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(turnWithNullDoctor));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.cancelTurn(turnId, doctorId, "DOCTOR");
+        });
+
+        assertEquals("You can only cancel your own turns", exception.getMessage());
         verify(turnRepo).findById(turnId);
         verify(turnRepo, never()).save(any());
     }

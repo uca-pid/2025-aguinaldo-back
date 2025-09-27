@@ -1,0 +1,21 @@
+meta {
+  name: Get Available Slots - Invalid Date Range
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/available-slots?fromDate=invalid&toDate=invalid
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid date range", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

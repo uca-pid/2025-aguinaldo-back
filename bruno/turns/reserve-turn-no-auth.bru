@@ -1,0 +1,28 @@
+meta {
+  name: Reserve Turn - No Auth
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/api/turns/reserve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "doctorId": "{{doctorId}}",
+    "scheduledAt": "2025-09-25T10:00:00-03:00"
+  }
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should return 401 without authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

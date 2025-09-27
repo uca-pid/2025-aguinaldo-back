@@ -71,8 +71,6 @@ class RefreshTokenRepositorySimpleTest {
             .count();
         
         assertThat(revokedTokens).isEqualTo(3);
-        
-        System.out.println("Tokens revocados exitosamente: " + revokedCount);
     }
 
     @Test
@@ -83,8 +81,6 @@ class RefreshTokenRepositorySimpleTest {
         int revokedCount = refreshTokenRepository.revokeAllTokensByUserId(nonExistentUserId, now);
 
         assertThat(revokedCount).isEqualTo(0);
-        
-        System.out.println("No se encontraron tokens para el usuario inexistente");
     }
 
     @Test
@@ -101,8 +97,6 @@ class RefreshTokenRepositorySimpleTest {
         int revokedCount = refreshTokenRepository.revokeAllTokensByUserId(testUser.getId(), now);
 
         assertThat(revokedCount).isEqualTo(0);
-        
-        System.out.println("No se revocaron tokens ya revocados: " + revokedCount);
     }
 
     private RefreshToken createRefreshToken(User user, String tokenHash, ZonedDateTime revokedAt) {

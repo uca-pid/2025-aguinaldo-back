@@ -114,6 +114,10 @@
 					<excludes>
 						<exclude>**/MediBookApiApplication.*</exclude>
 						<exclude>**/config/**</exclude>
+						<exclude>**/dto/**</exclude>
+						<exclude>**/mapper/**</exclude>
+						<exclude>**/controller/**</exclude>
+						<exclude>**/entity/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>
@@ -138,11 +142,16 @@
 							<rules>
 								<rule>
 									<element>PACKAGE</element>
+									<includes>
+										<include>com.medibook.api.service.*</include>
+										<include>com.medibook.api.util.*</include>
+										<include>com.medibook.api.repository.*</include>
+									</includes>
 									<limits>
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.50</minimum>
+											<minimum>0.80</minimum>
 										</limit>
 									</limits>
 								</rule>

@@ -1,0 +1,35 @@
+meta {
+  name: Get Doctors by Specialty
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/specialty/CARDIOLOGY
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get doctors by specialty successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Doctors should have correct structure", function() {
+    if (res.getBody().length > 0) {
+      const doctor = res.getBody()[0];
+      expect(doctor).to.have.property('id');
+      expect(doctor).to.have.property('name');
+      expect(doctor).to.have.property('surname');
+      expect(doctor).to.have.property('email');
+      expect(doctor).to.have.property('specialty');
+      expect(doctor.specialty).to.equal('CARDIOLOGY');
+    }
+  });
+}

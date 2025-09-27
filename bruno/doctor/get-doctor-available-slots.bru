@@ -1,0 +1,32 @@
+meta {
+  name: Get Doctor Available Slots
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/available-slots?fromDate=2025-09-25&toDate=2025-09-30
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get available slots successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Slots should have correct structure", function() {
+    if (res.getBody().length > 0) {
+      const slot = res.getBody()[0];
+      expect(slot).to.have.property('date');
+      expect(slot).to.have.property('availableTimes');
+      expect(slot.availableTimes).to.be.an('array');
+    }
+  });
+}

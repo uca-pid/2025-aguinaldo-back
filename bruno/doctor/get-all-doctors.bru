@@ -1,0 +1,33 @@
+meta {
+  name: Get All Doctors
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/doctors
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get all doctors successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Doctors should have correct structure", function() {
+    if (res.getBody().length > 0) {
+      const doctor = res.getBody()[0];
+      expect(doctor).to.have.property('id');
+      expect(doctor).to.have.property('name');
+      expect(doctor).to.have.property('surname');
+      expect(doctor).to.have.property('email');
+    }
+  });
+}

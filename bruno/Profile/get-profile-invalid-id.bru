@@ -1,0 +1,25 @@
+meta {
+  name: Get Profile - Invalid ID
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/profiles/invalid-uuid
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid user ID", function() {
+    expect(res.getStatus()).to.equal(400);  
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Reject Doctor - Invalid ID
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/admin/reject-doctor/invalid-uuid
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid doctor ID", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -16,7 +16,7 @@ import java.util.List;
 public class DayAvailabilityDTO {
     
     @NotBlank(message = "Day is required")
-    @Pattern(regexp = "^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$", 
+    @Pattern(regexp = "^(?i)(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$", 
              message = "Day must be one of: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY")
     private String day;  // "MONDAY", "TUESDAY", etc.
     

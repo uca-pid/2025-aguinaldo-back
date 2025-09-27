@@ -125,7 +125,6 @@ public class ProfileController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("Error deactivating account: " + e.getMessage());
             return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
         }
     }

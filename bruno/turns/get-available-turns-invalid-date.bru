@@ -1,0 +1,21 @@
+meta {
+  name: Get Available Turns - Invalid Date Format
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/api/turns/available?doctorId={{doctorId}}&date=invalid-date
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for invalid date format", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
