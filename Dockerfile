@@ -26,7 +26,10 @@ RUN ./mvnw clean package -DskipTests
 # Create a startup script to wait for database
 RUN echo '#!/bin/bash\n\
 echo "Starting MediBook API..."\n\
-echo "Database URL: $DATABASE_URL"\n\
+echo "Database Host: $DB_HOST"\n\
+echo "Database Port: $DB_PORT"\n\
+echo "Database Name: $DB_NAME"\n\
+echo "Database User: $DB_USERNAME"\n\
 \n\
 # Give database a moment to be ready (Render databases can take time to initialize)\n\
 sleep 10\n\
