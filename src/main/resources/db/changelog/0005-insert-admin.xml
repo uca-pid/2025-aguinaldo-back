@@ -10,7 +10,7 @@
         <sql>
             CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-            DO $$
+            DO $body$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@medibook.com') THEN
                     INSERT INTO users (
@@ -32,7 +32,7 @@
                     );
                 END IF;
             END
-            $$;
+            $body$;
         </sql>
     </changeSet>
 
