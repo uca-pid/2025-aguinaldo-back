@@ -23,4 +23,6 @@ public interface TurnAssignedRepository extends JpaRepository<TurnAssigned, UUID
     
     @Query("SELECT DISTINCT t.patient FROM TurnAssigned t WHERE t.doctor.id = :doctorId AND t.patient IS NOT NULL ORDER BY t.patient.name, t.patient.surname")
     List<User> findDistinctPatientsByDoctorId(@Param("doctorId") UUID doctorId);
+    
+    boolean existsByDoctor_IdAndPatient_Id(UUID doctorId, UUID patientId);
 }

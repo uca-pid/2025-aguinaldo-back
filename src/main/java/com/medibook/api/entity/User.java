@@ -55,6 +55,9 @@ public class User {
     @Column(nullable = false)
     private String role = "PATIENT";
 
+    @Column(name = "medical_history", columnDefinition = "TEXT")
+    private String medicalHistory;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private DoctorProfile doctorProfile;

@@ -1,0 +1,42 @@
+meta {
+  name: Update Patient Medical History - Clear History (Empty String)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "{{patientId}}",
+    "medicalHistory": ""
+  }
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+  patientId: {{$processEnv.PATIENT_ID}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should be successful", function() {
+    expect(res.getStatus()).to.be.within(200, 299);
+  });
+}
