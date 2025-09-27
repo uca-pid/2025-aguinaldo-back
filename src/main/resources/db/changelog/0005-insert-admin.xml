@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="0005-01-insert-admin" author="MediBook_Admin">
+        <sql>
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@medibook.com') THEN
+                    INSERT INTO users (
+                        id, email, password_hash, name, surname, dni, phone, birthdate, gender, email_verified, medical_history, status, role
+                    ) VALUES (
+                        '550e8400-e29b-41d4-a716-446655440000',
+                        'admin@medibook.com',
+                        crypt('MediBook2025', gen_salt('bf', 10)),
+                        'Admin',
+                        'MediBook',
+                        '12345678',
+                        '+1234567890',
+                        '1990-01-01'::date,
+                        'OTHER',
+                        true,
+                        NULL,
+                        'ACTIVE',
+                        'ADMIN'
+                    );
+                END IF;
+            END
+            $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
