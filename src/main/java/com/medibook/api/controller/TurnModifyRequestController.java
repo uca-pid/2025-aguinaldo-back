@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/turn-modify-requests")
+@RequestMapping("/api/turns/modify-requests")
 @RequiredArgsConstructor
 @Slf4j
 public class TurnModifyRequestController {
