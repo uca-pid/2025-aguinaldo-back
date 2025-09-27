@@ -6,34 +6,23 @@
           http://www.liquibase.org/xml/ns/dbchangelog
           https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
 
+    <!-- INSERT DEFAULT ADMIN USER -->
     <changeSet id="0005-01-insert-admin" author="MediBook_Admin">
-        <sql>
-            CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-            DO $body$
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@medibook.com') THEN
-                    INSERT INTO users (
-                        id, email, password_hash, name, surname, dni, phone, birthdate, gender, email_verified, medical_history, status, role
-                    ) VALUES (
-                        '550e8400-e29b-41d4-a716-446655440000',
-                        'admin@medibook.com',
-                        crypt('MediBook2025', gen_salt('bf', 10)),
-                        'Admin',
-                        'MediBook',
-                        '12345678',
-                        '+1234567890',
-                        '1990-01-01'::date,
-                        'OTHER',
-                        true,
-                        NULL,
-                        'ACTIVE',
-                        'ADMIN'
-                    );
-                END IF;
-            END
-            $body$;
-        </sql>
+        <insert tableName="users">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440000"/>
+            <column name="email" value="admin@medibook.com"/>
+            <column name="password_hash" value="$2a$10$KcblsmHicVfDTvAyX7e4c.bsdMSfeXSCI9fY9Fgrxl4SkBNUt3SQG"/>
+            <column name="name" value="Admin"/>
+            <column name="surname" value="MediBook"/>
+            <column name="dni" value="12345678"/>
+            <column name="phone" value="+1234567890"/>
+            <column name="birthdate" value="1990-01-01"/>
+            <column name="gender" value="MALE"/>
+            <column name="email_verified" valueBoolean="true"/>
+            <column name="medical_history"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="role" value="ADMIN"/>
+        </insert>
     </changeSet>
 
 </databaseChangeLog>
