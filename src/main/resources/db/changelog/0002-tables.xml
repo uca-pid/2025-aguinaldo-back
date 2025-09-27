@@ -170,4 +170,43 @@
                                 onDelete="CASCADE"/>
     </changeSet>
 
+    <!-- TURN MODIFY REQUESTS -->
+    <changeSet id="0002-10-turn_modify_requests" author="MediBook_Admin">
+        <createTable tableName="turn_modify_requests">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="turn_assigned_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="patient_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="doctor_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_scheduled_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requested_scheduled_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="text" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="turn_modify_requests" baseColumnNames="turn_assigned_id"
+                                constraintName="fk_turn_modify_requests_turn_assigned"
+                                referencedTableName="turns_assigned" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="turn_modify_requests" baseColumnNames="patient_id"
+                                constraintName="fk_turn_modify_requests_patient"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="turn_modify_requests" baseColumnNames="doctor_id"
+                                constraintName="fk_turn_modify_requests_doctor"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+    </changeSet>
+
 </databaseChangeLog>

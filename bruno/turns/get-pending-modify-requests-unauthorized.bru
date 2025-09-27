@@ -1,0 +1,24 @@
+meta {
+  name: Get Pending Modify Requests - Unauthorized
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/turn-modify-requests/pending
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("Should reject patient access", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

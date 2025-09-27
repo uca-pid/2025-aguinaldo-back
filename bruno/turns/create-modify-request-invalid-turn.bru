@@ -1,0 +1,35 @@
+meta {
+  name: Create Turn Modify Request - Invalid Turn ID
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/turn-modify-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+body:json {
+  {
+    "turnId": "00000000-0000-0000-0000-000000000000",
+    "newScheduledAt": "2025-12-25T14:00:00-03:00"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq "Bad Request"
+  res.body.message: eq "Turn not found"
+}
+
+tests {
+  test("Should reject invalid turn ID", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().message).to.equal("Turn not found");
+  });
+}

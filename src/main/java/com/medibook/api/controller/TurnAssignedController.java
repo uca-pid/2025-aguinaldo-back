@@ -44,20 +44,17 @@ public class TurnAssignedController {
         
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
         
-        // Solo los pacientes pueden crear turnos
         if (!AuthorizationUtil.isPatient(authenticatedUser)) {
             return new ResponseEntity<>(
                 Map.of("error", "Forbidden", "message", "Only patients can create turns"), 
                 HttpStatus.FORBIDDEN);
         }
         
-        // Validar que el paciente solo pueda crear turnos para sí mismo
         ResponseEntity<Object> validationError = TurnAuthorizationUtil.validatePatientTurnCreation(authenticatedUser, dto.getPatientId());
         if (validationError != null) {
             return validationError;
         }
         
-        // Validar que la fecha no sea en el pasado
         if (dto.getScheduledAt() != null && dto.getScheduledAt().isBefore(OffsetDateTime.now())) {
             return new ResponseEntity<>(
                 Map.of("error", "Bad Request", "message", "Cannot schedule turns in the past"), 
@@ -76,7 +73,6 @@ public class TurnAssignedController {
         
         LocalDate localDate = LocalDate.parse(date);
         
-        // Obtener los slots disponibles del doctor para esta fecha específica
         List<AvailableSlotDTO> availableSlots = doctorAvailabilityService.getAvailableSlots(
                 doctorId, localDate, localDate);
         
@@ -84,15 +80,12 @@ public class TurnAssignedController {
             return ResponseEntity.ok(new ArrayList<>());
         }
         
-        // Convertir los slots a OffsetDateTime y filtrar los que están ocupados
         List<OffsetDateTime> availableTimes = new ArrayList<>();
         ZoneOffset argentinaOffset = ZoneOffset.of("-03:00");
         
         for (AvailableSlotDTO slot : availableSlots) {
-            // Combinar fecha del slot con su hora de inicio
             OffsetDateTime slotDateTime = slot.getDate().atTime(slot.getStartTime()).atOffset(argentinaOffset);
             
-            // Verificar si este horario específico ya está ocupado usando el repositorio
             boolean isOccupied = turnAssignedRepository.existsByDoctor_IdAndScheduledAt(doctorId, slotDateTime);
             
             if (!isOccupied) {
