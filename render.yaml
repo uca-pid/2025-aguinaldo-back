@@ -7,14 +7,22 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /actuator/health
     envVars:
-      - key: DATABASE_URL
+      - key: DB_HOST
         fromDatabase:
           name: medi-book-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: medi-book-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: medi-book-db
+          property: database
       - key: DB_USERNAME
         fromDatabase:
           name: medi-book-db
-          property: user
+          property: username
       - key: DB_PASSWORD
         fromDatabase:
           name: medi-book-db
@@ -29,6 +37,6 @@ services:
 databases:
   - name: medi-book-db
     databaseName: medibook
-    user: medibook
+    user: medi_book_user
     region: oregon
     plan: starter
