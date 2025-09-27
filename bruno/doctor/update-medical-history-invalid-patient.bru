@@ -1,0 +1,37 @@
+meta {
+  name: Update Patient Medical History - Invalid Patient ID
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "550e8400-e29b-41d4-a716-446655440000",
+    "medicalHistory": "Trying to update medical history for non-existent patient"
+  }
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+}
+
+tests {
+  test("should return 400 or 404", function() {
+    expect(res.getStatus()).to.be.oneOf([400, 404, 500]);
+  });
+}

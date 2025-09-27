@@ -61,6 +61,35 @@ public class DoctorService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void updatePatientMedicalHistory(UUID doctorId, UUID patientId, String medicalHistory) {
+        // Verify doctor exists and is active
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        if (!"DOCTOR".equals(doctor.getRole()) || !"ACTIVE".equals(doctor.getStatus())) {
+            throw new RuntimeException("Invalid doctor or doctor is not active");
+        }
+
+        // Verify patient exists and is a patient
+        User patient = userRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        
+        if (!"PATIENT".equals(patient.getRole()) || !"ACTIVE".equals(patient.getStatus())) {
+            throw new RuntimeException("Invalid patient or patient is not active");
+        }
+
+        // Verify the doctor has had appointments with this patient
+        boolean hasAppointments = turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId);
+        if (!hasAppointments) {
+            throw new RuntimeException("Doctor can only update medical history for patients they have treated");
+        }
+
+        // Update medical history
+        patient.setMedicalHistory(medicalHistory);
+        userRepository.save(patient);
+    }
+
     private PatientDTO mapPatientToDTO(User patient) {
         return PatientDTO.builder()
                 .id(patient.getId())
@@ -72,6 +101,7 @@ public class DoctorService {
                 .birthdate(patient.getBirthdate())
                 .gender(patient.getGender())
                 .status(patient.getStatus())
+                .medicalHistory(patient.getMedicalHistory())
                 .build();
     }
 }

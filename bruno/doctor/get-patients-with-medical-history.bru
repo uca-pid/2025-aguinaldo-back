@@ -1,0 +1,58 @@
+meta {
+  name: Get Doctor Patients - Verify Medical History Field
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return array of patients", function() {
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("patient should have medical history field", function() {
+    const patients = res.getBody();
+    if (patients.length > 0) {
+      const patient = patients[0];
+      expect(patient).to.have.property('id');
+      expect(patient).to.have.property('name');
+      expect(patient).to.have.property('surname');
+      expect(patient).to.have.property('email');
+      expect(patient).to.have.property('dni');
+      expect(patient).to.have.property('status');
+      expect(patient).to.have.property('medicalHistory');
+    }
+  });
+  
+  test("medicalHistory should be string or null", function() {
+    const patients = res.getBody();
+    if (patients.length > 0) {
+      const patient = patients[0];
+      expect(patient.medicalHistory).to.satisfy(function(value) {
+        return value === null || typeof value === 'string';
+      });
+    }
+  });
+}
