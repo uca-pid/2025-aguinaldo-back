@@ -8,7 +8,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,7 +34,6 @@ class UserEntityTest {
         validUser.setBirthdate(LocalDate.of(1990, 1, 1));
         validUser.setGender("MALE");
         validUser.setEmailVerified(false);
-        validUser.setCreatedAt(OffsetDateTime.now());
         validUser.setStatus("ACTIVE");
         validUser.setRole("PATIENT");
     }
@@ -125,7 +123,6 @@ class UserEntityTest {
         assertFalse(newUser.isEmailVerified());
         assertEquals("ACTIVE", newUser.getStatus());
         assertEquals("PATIENT", newUser.getRole());
-        assertNotNull(newUser.getCreatedAt());
     }
 
     @Test
@@ -179,14 +176,6 @@ class UserEntityTest {
         user2.setId(UUID.randomUUID());
         
         assertNotEquals(user1.getId(), user2.getId());
-    }
-
-    @Test
-    void user_CreatedAt_IsImmutableAfterSet() {
-        OffsetDateTime newCreatedAt = OffsetDateTime.now().plusDays(1);
-        validUser.setCreatedAt(newCreatedAt);
-        
-        assertNotNull(validUser.getCreatedAt());
     }
 
     @Test

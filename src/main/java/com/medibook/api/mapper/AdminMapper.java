@@ -19,7 +19,6 @@ public class AdminMapper {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setStatus(user.getStatus());
-        dto.setCreatedAt(user.getCreatedAt().toString());
         
         if (user.getDoctorProfile() != null) {
             dto.setSpecialty(user.getDoctorProfile().getSpecialty());

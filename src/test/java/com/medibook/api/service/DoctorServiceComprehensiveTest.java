@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -117,7 +116,6 @@ class DoctorServiceComprehensiveTest {
         user.setBirthdate(LocalDate.of(1990, 1, 1));
         user.setGender("MALE");
         user.setEmailVerified(true);
-        user.setCreatedAt(OffsetDateTime.now());
         user.setStatus(status);
         user.setRole(role);
         return user;

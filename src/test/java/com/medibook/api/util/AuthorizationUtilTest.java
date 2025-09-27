@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,7 +39,6 @@ class AuthorizationUtilTest {
         user.setBirthdate(LocalDate.of(1990, 1, 1));
         user.setGender("OTHER");
         user.setEmailVerified(true);
-        user.setCreatedAt(OffsetDateTime.now());
         user.setStatus("ACTIVE");
         user.setRole(role);
         return user;

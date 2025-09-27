@@ -72,7 +72,6 @@ class TurnAssignedMapperTest {
         user.setBirthdate(LocalDate.of(1990, 1, 1));
         user.setGender("MALE");
         user.setEmailVerified(true);
-        user.setCreatedAt(OffsetDateTime.now());
         user.setStatus(status);
         user.setRole(role);
         return user;

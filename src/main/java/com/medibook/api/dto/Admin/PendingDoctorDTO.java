@@ -20,6 +20,4 @@ public class PendingDoctorDTO {
     private String medicalLicense;
     private String role = "DOCTOR";
     private String status = "PENDING";
-    private String createdAt;
-    private String updatedAt;
 }

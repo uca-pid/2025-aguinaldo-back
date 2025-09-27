@@ -115,7 +115,6 @@ class TurnAssignedControllerTest {
         patient.setGender("MALE");
         patient.setRole("PATIENT");
         patient.setStatus("ACTIVE");
-        patient.setCreatedAt(OffsetDateTime.now());
         return userRepository.save(patient);
     }
 
@@ -131,7 +130,6 @@ class TurnAssignedControllerTest {
         doctor.setGender("FEMALE");
         doctor.setRole("DOCTOR");
         doctor.setStatus("ACTIVE");
-        doctor.setCreatedAt(OffsetDateTime.now());
         return userRepository.save(doctor);
     }
 
