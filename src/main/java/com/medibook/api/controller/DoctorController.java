@@ -3,6 +3,7 @@ package com.medibook.api.controller;
 import com.medibook.api.dto.Availability.*;
 import com.medibook.api.dto.DoctorDTO;
 import com.medibook.api.dto.PatientDTO;
+import com.medibook.api.dto.UpdateMedicalHistoryRequestDTO;
 import com.medibook.api.service.DoctorAvailabilityService;
 import com.medibook.api.service.DoctorService;
 import jakarta.validation.Valid;
@@ -75,5 +76,15 @@ public class DoctorController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         List<AvailableSlotDTO> slots = availabilityService.getAvailableSlots(doctorId, fromDate, toDate);
         return ResponseEntity.ok(slots);
+    }
+
+    @PutMapping("/{doctorId}/patients/medical-history")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<Void> updatePatientMedicalHistory(
+            @PathVariable UUID doctorId,
+            @Valid @RequestBody UpdateMedicalHistoryRequestDTO request) {
+        
+        doctorService.updatePatientMedicalHistory(doctorId, request.getPatientId(), request.getMedicalHistory());
+        return ResponseEntity.ok().build();
     }
 }

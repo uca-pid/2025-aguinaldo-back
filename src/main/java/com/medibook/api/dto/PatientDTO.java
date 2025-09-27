@@ -17,4 +17,5 @@ public class PatientDTO {
     private LocalDate birthdate;
     private String gender;
     private String status;
+    private String medicalHistory;
 }
