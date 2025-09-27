@@ -30,6 +30,12 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, 
                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         
+        // Allow CORS preflight requests
+        if ("OPTIONS".equals(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         String requestPath = request.getRequestURI();
         if (!requestPath.startsWith("/api/turns") && 
             !requestPath.startsWith("/api/admin") && 
