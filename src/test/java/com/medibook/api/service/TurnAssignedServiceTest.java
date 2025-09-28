@@ -1,3 +1,4 @@
+
 package com.medibook.api.service;
 
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
@@ -26,7 +27,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TurnAssignedServiceTest {
-
     @Mock
     private TurnAssignedRepository turnRepo;
 
@@ -38,6 +38,9 @@ class TurnAssignedServiceTest {
 
     @InjectMocks
     private TurnAssignedService turnAssignedService;
+
+    @Mock
+    private com.medibook.api.repository.TurnModifyRequestRepository turnModifyRequestRepository;
 
     private UUID doctorId;
     private UUID patientId;
@@ -658,5 +661,78 @@ class TurnAssignedServiceTest {
         assertEquals("You can only cancel your own turns", exception.getMessage());
         verify(turnRepo).findById(turnId);
         verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelTurn_WithPendingModifyRequest_DeletesRequest() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        // Simular que existe una solicitud PENDING
+        com.medibook.api.entity.TurnModifyRequest pendingRequest = new com.medibook.api.entity.TurnModifyRequest();
+        pendingRequest.setId(UUID.randomUUID());
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+        when(turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING"))
+            .thenReturn(Optional.of(pendingRequest));
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(canceledTurn);
+        verify(turnModifyRequestRepository).findByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        verify(turnModifyRequestRepository).deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        assertEquals("CANCELED", scheduledTurn.getStatus());
+    }
+    
+    @Test
+    void cancelTurn_NoPendingModifyRequest_DoesNotDeleteRequest() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+        when(turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING"))
+                .thenReturn(Optional.empty());
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(canceledTurn);
+        verify(turnModifyRequestRepository).findByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        verify(turnModifyRequestRepository, never()).deleteByTurnAssigned_IdAndStatus(any(UUID.class), eq("PENDING"));
+        assertEquals("CANCELED", scheduledTurn.getStatus());
     }
 }

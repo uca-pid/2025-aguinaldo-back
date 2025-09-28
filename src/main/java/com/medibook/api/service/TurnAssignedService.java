@@ -111,8 +111,7 @@ public class TurnAssignedService {
                 .collect(Collectors.toList());
     }
     
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.medibook.api.repository.TurnModifyRequestRepository turnModifyRequestRepository;
+    private final com.medibook.api.repository.TurnModifyRequestRepository turnModifyRequestRepository;
 
     public TurnResponseDTO cancelTurn(UUID turnId, UUID userId, String userRole) {
         TurnAssigned turn = turnRepo.findById(turnId)
@@ -142,7 +141,11 @@ public class TurnAssignedService {
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
 
-        turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        // Solo eliminar si existe una solicitud de modificación PENDING para este turno
+        boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();
+        if (hasPendingRequest) {
+            turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        }
 
         return mapper.toDTO(saved);
     }
