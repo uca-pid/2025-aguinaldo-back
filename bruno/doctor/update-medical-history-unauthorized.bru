@@ -1,0 +1,37 @@
+meta {
+  name: Update Patient Medical History - Unauthorized (Patient trying to update)
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/api/doctors/{{patientId}}/patients/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "patientId": "{{patientId}}",
+    "medicalHistory": "Trying to update my own medical history as a patient"
+  }
+}
+
+vars:pre-request {
+  patientId: {{$processEnv.PATIENT_ID}}
+}
+
+tests {
+  test("should return 403 Forbidden", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

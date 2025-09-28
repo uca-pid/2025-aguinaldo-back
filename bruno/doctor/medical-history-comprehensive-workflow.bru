@@ -1,0 +1,42 @@
+meta {
+  name: Medical History Complete Workflow
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "{{patientId}}",
+    "medicalHistory": "COMPREHENSIVE MEDICAL HISTORY:\n\n1. CURRENT CONDITIONS:\n   - Hypertension (diagnosed 2020)\n   - Type 2 Diabetes Mellitus (diagnosed 2019)\n   - Mild asthma (childhood onset)\n\n2. CURRENT MEDICATIONS:\n   - Metformin 500mg twice daily\n   - Lisinopril 10mg once daily\n   - Albuterol inhaler as needed\n\n3. ALLERGIES:\n   - Penicillin (rash)\n   - Shellfish (mild reaction)\n\n4. SURGICAL HISTORY:\n   - Appendectomy (2015)\n   - Gallbladder removal (2018)\n\n5. FAMILY HISTORY:\n   - Father: Diabetes, Hypertension\n   - Mother: Breast cancer (survivor)\n\n6. SOCIAL HISTORY:\n   - Non-smoker\n   - Occasional alcohol consumption\n   - Regular exercise 3x/week\n\n7. RECENT VISITS:\n   - 2024-01-15: Routine check-up, BP stable\n   - 2024-02-20: Diabetes follow-up, HbA1c 6.8%\n   - 2024-03-10: Minor respiratory infection, resolved\n\n8. NOTES:\n   Patient is compliant with medications and lifestyle modifications. Blood pressure well controlled. Diabetes management satisfactory. Next comprehensive exam due in 6 months."
+  }
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+  patientId: {{$processEnv.PATIENT_ID}}
+}
+
+tests {
+  test("should successfully update comprehensive medical history", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should be successful", function() {
+    expect(res.getStatus()).to.be.within(200, 299);
+  });
+}

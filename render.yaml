@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: medi-book-api
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: medi-book-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: medi-book-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: medi-book-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: medi-book-db
+          property: username
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: medi-book-db
+          property: password
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://medi-book-web.onrender.com
+      - key: ADMIN_USERNAME
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true
+
+databases:
+  - name: medi-book-db
+    databaseName: medibook
+    user: medi_book_user
+    region: oregon
+    plan: starter
