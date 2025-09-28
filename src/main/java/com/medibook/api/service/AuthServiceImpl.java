@@ -101,7 +101,7 @@ class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public SignInResponseDTO signIn(SignInRequestDTO request) {
-        User user = userRepository.findByEmailAndStatus(request.email(), "ACTIVE")
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
