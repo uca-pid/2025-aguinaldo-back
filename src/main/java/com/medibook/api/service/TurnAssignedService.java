@@ -59,7 +59,7 @@ public class TurnAssignedService {
                 .doctor(doctor)
                 .patient(patient)
                 .scheduledAt(dto.getScheduledAt())
-                .status("PENDING")
+                .status("SCHEDULED")
                 .build();
 
         TurnAssigned saved = turnRepo.save(turn);
@@ -111,6 +111,8 @@ public class TurnAssignedService {
                 .collect(Collectors.toList());
     }
     
+    private final com.medibook.api.repository.TurnModifyRequestRepository turnModifyRequestRepository;
+
     public TurnResponseDTO cancelTurn(UUID turnId, UUID userId, String userRole) {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
@@ -138,7 +140,13 @@ public class TurnAssignedService {
         
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
-        
+
+        // Solo eliminar si existe una solicitud de modificación PENDING para este turno
+        boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();
+        if (hasPendingRequest) {
+            turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        }
+
         return mapper.toDTO(saved);
     }
 }

@@ -1,0 +1,35 @@
+meta {
+  name: Get My Modify Requests - Success
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/turn-modify-requests/my-requests
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get patient's modify requests", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Should contain valid request structure if not empty", function() {
+    if (res.getBody().length > 0) {
+      const request = res.getBody()[0];
+      expect(request).to.have.property('id');
+      expect(request).to.have.property('turnId');
+      expect(request).to.have.property('status');
+    }
+  });
+}

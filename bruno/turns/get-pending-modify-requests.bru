@@ -1,0 +1,36 @@
+meta {
+  name: Get Pending Modify Requests - Success
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/turn-modify-requests/pending
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("Should get doctor's pending requests", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("Should contain valid request structure if not empty", function() {
+    if (res.getBody().length > 0) {
+      const request = res.getBody()[0];
+      expect(request).to.have.property('id');
+      expect(request).to.have.property('turnId');
+      expect(request).to.have.property('status');
+      expect(request.status).to.equal('PENDING');
+    }
+  });
+}

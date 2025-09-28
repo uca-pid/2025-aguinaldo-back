@@ -1,0 +1,27 @@
+meta {
+  name: Create Turn Modify Request - No Auth
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/turn-modify-requests
+  body: json
+}
+
+body:json {
+  {
+    "turnId": "{{existingTurnId}}",
+    "newScheduledAt": "2025-12-25T14:00:00-03:00"
+  }
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("Should require authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

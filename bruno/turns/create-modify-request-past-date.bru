@@ -1,0 +1,35 @@
+meta {
+  name: Create Turn Modify Request - Past Date
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/turn-modify-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+body:json {
+  {
+    "turnId": "{{existingTurnId}}",
+    "newScheduledAt": "2023-01-01T10:00:00-03:00"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq "Bad Request"
+  res.body.message: eq "Cannot schedule appointments in the past"
+}
+
+tests {
+  test("Should reject past date", function() {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().message).to.equal("Cannot schedule appointments in the past");
+  });
+}
