@@ -111,6 +111,9 @@ public class TurnAssignedService {
                 .collect(Collectors.toList());
     }
     
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.medibook.api.repository.TurnModifyRequestRepository turnModifyRequestRepository;
+
     public TurnResponseDTO cancelTurn(UUID turnId, UUID userId, String userRole) {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
@@ -138,7 +141,9 @@ public class TurnAssignedService {
         
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
-        
+
+        turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
+
         return mapper.toDTO(saved);
     }
 }

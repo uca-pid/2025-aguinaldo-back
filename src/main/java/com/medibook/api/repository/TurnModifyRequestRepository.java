@@ -26,4 +26,8 @@ public interface TurnModifyRequestRepository extends JpaRepository<TurnModifyReq
     Optional<TurnModifyRequest> findPendingRequestByTurnAndPatient(
             @Param("turnId") UUID turnId, 
             @Param("patientId") UUID patientId);
+
+       @org.springframework.data.jpa.repository.Modifying
+       @org.springframework.data.jpa.repository.Query("DELETE FROM TurnModifyRequest t WHERE t.turnAssigned.id = :turnId AND t.status = :status")
+       void deleteByTurnAssigned_IdAndStatus(@Param("turnId") UUID turnId, @Param("status") String status);
 }
