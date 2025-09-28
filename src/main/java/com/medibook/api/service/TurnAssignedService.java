@@ -48,7 +48,7 @@ public class TurnAssignedService {
             throw new RuntimeException("Patient is not active");
         }
 
-        boolean slotTaken = turnRepo.existsByDoctor_IdAndScheduledAt(
+        boolean slotTaken = turnRepo.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(
                 dto.getDoctorId(), dto.getScheduledAt());
         
         if (slotTaken) {

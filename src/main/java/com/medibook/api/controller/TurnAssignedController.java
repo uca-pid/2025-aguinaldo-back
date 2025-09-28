@@ -86,7 +86,7 @@ public class TurnAssignedController {
         for (AvailableSlotDTO slot : availableSlots) {
             OffsetDateTime slotDateTime = slot.getDate().atTime(slot.getStartTime()).atOffset(argentinaOffset);
             
-            boolean isOccupied = turnAssignedRepository.existsByDoctor_IdAndScheduledAt(doctorId, slotDateTime);
+            boolean isOccupied = turnAssignedRepository.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, slotDateTime);
             
             if (!isOccupied) {
                 availableTimes.add(slotDateTime);
