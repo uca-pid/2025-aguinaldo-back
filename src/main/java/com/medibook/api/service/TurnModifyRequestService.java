@@ -83,4 +83,54 @@ public class TurnModifyRequestService {
                 .map(mapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public TurnModifyRequestResponseDTO approveModifyRequest(UUID requestId, User doctor) {
+        Optional<TurnModifyRequest> requestOpt = turnModifyRequestRepository.findById(requestId);
+        if (requestOpt.isEmpty()) {
+            throw new IllegalArgumentException("Modify request not found");
+        }
+
+        TurnModifyRequest request = requestOpt.get();
+
+        if (!request.getDoctor().getId().equals(doctor.getId())) {
+            throw new IllegalArgumentException("You can only approve requests for your own appointments");
+        }
+
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new IllegalArgumentException("Request is not pending");
+        }
+
+        TurnAssigned turn = request.getTurnAssigned();
+        turn.setScheduledAt(request.getRequestedScheduledAt());
+        turnAssignedRepository.save(turn);
+
+        request.setStatus("APPROVED");
+        TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
+
+        return mapper.toResponseDTO(savedRequest);
+    }
+
+    @Transactional
+    public TurnModifyRequestResponseDTO rejectModifyRequest(UUID requestId, User doctor) {
+        Optional<TurnModifyRequest> requestOpt = turnModifyRequestRepository.findById(requestId);
+        if (requestOpt.isEmpty()) {
+            throw new IllegalArgumentException("Modify request not found");
+        }
+
+        TurnModifyRequest request = requestOpt.get();
+
+        if (!request.getDoctor().getId().equals(doctor.getId())) {
+            throw new IllegalArgumentException("You can only reject requests for your own appointments");
+        }
+
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new IllegalArgumentException("Request is not pending");
+        }
+
+        request.setStatus("REJECTED");
+        TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
+
+        return mapper.toResponseDTO(savedRequest);
+    }
 }

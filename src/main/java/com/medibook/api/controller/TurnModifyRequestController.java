@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/turns/modify-requests")
@@ -74,5 +75,61 @@ public class TurnModifyRequestController {
         
         List<TurnModifyRequestResponseDTO> requests = turnModifyRequestService.getDoctorPendingRequests(authenticatedUser.getId());
         return ResponseEntity.ok(requests);
+    }
+
+    @PostMapping("/{requestId}/approve")
+    public ResponseEntity<Object> approveModifyRequest(
+            @PathVariable UUID requestId,
+            HttpServletRequest request) {
+        
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        
+        if (!AuthorizationUtil.isDoctor(authenticatedUser)) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Forbidden", "message", "Only doctors can approve modification requests"),
+                    HttpStatus.FORBIDDEN);
+        }
+        
+        try {
+            TurnModifyRequestResponseDTO result = turnModifyRequestService.approveModifyRequest(requestId, authenticatedUser);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Bad Request", "message", e.getMessage()),
+                    HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            log.error("Error approving modify request", e);
+            return new ResponseEntity<>(
+                    Map.of("error", "Internal Server Error", "message", "An unexpected error occurred"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/{requestId}/reject")
+    public ResponseEntity<Object> rejectModifyRequest(
+            @PathVariable UUID requestId,
+            HttpServletRequest request) {
+        
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        
+        if (!AuthorizationUtil.isDoctor(authenticatedUser)) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Forbidden", "message", "Only doctors can reject modification requests"),
+                    HttpStatus.FORBIDDEN);
+        }
+        
+        try {
+            TurnModifyRequestResponseDTO result = turnModifyRequestService.rejectModifyRequest(requestId, authenticatedUser);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Bad Request", "message", e.getMessage()),
+                    HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            log.error("Error rejecting modify request", e);
+            return new ResponseEntity<>(
+                    Map.of("error", "Internal Server Error", "message", "An unexpected error occurred"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
