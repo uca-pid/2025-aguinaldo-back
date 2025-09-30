@@ -69,7 +69,7 @@ class TurnAssignedControllerTest {
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.doctorId").value(doctor.getId().toString()))
                 .andExpect(jsonPath("$.patientId").value(patient.getId().toString()))
-                .andExpect(jsonPath("$.status").value("PENDING"));  // Era SCHEDULED
+                .andExpect(jsonPath("$.status").value("SCHEDULED"));  // Ahora es SCHEDULED
     }
 
     // Test 2: createTurn_AsDoctor_Forbidden - problema de autorización (era 201 Created en lugar de 403 Forbidden)

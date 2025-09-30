@@ -1,0 +1,24 @@
+meta {
+  name: Get My Modify Requests - Unauthorized
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/turn-modify-requests/my-requests
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("Should reject doctor access", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

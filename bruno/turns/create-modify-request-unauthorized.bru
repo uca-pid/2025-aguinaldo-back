@@ -1,0 +1,35 @@
+meta {
+  name: Create Turn Modify Request - Unauthorized
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/turn-modify-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "turnId": "{{existingTurnId}}",
+    "newScheduledAt": "2025-12-25T14:00:00-03:00"
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.error: eq "Forbidden"
+  res.body.message: eq "Only patients can request turn modifications"
+}
+
+tests {
+  test("Should reject doctor trying to create modify request", function() {
+    expect(res.getStatus()).to.equal(403);
+    expect(res.getBody().error).to.equal("Forbidden");
+  });
+}

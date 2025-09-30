@@ -1,0 +1,44 @@
+meta {
+  name: Create Turn Modify Request - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/turn-modify-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+body:json {
+  {
+    "turnId": "{{existingTurnId}}",
+    "newScheduledAt": "2025-12-25T14:00:00-03:00"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.turnId: eq {{existingTurnId}}
+  res.body.patientId: isDefined
+  res.body.doctorId: isDefined
+  res.body.status: eq "PENDING"
+}
+
+tests {
+  test("Should create a modify request successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().id).to.be.a('string');
+    expect(res.getBody().status).to.equal("PENDING");
+  });
+  
+  test("Should have correct turn details", function() {
+    expect(res.getBody().turnId).to.equal(bru.getEnvVar("existingTurnId"));
+    expect(res.getBody().requestedScheduledAt).to.equal("2025-12-25T14:00:00-03:00");
+  });
+}

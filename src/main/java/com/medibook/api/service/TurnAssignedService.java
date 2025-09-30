@@ -24,6 +24,7 @@ public class TurnAssignedService {
     private final TurnAssignedRepository turnRepo;
     private final UserRepository userRepo;
     private final TurnAssignedMapper mapper;
+    private final NotificationService notificationService;
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
         User doctor = userRepo.findById(dto.getDoctorId())
@@ -48,7 +49,7 @@ public class TurnAssignedService {
             throw new RuntimeException("Patient is not active");
         }
 
-        boolean slotTaken = turnRepo.existsByDoctor_IdAndScheduledAt(
+        boolean slotTaken = turnRepo.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(
                 dto.getDoctorId(), dto.getScheduledAt());
         
         if (slotTaken) {
@@ -59,7 +60,7 @@ public class TurnAssignedService {
                 .doctor(doctor)
                 .patient(patient)
                 .scheduledAt(dto.getScheduledAt())
-                .status("PENDING")
+                .status("SCHEDULED")
                 .build();
 
         TurnAssigned saved = turnRepo.save(turn);
@@ -111,6 +112,8 @@ public class TurnAssignedService {
                 .collect(Collectors.toList());
     }
     
+    private final com.medibook.api.repository.TurnModifyRequestRepository turnModifyRequestRepository;
+
     public TurnResponseDTO cancelTurn(UUID turnId, UUID userId, String userRole) {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
@@ -138,7 +141,25 @@ public class TurnAssignedService {
         
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
-        
+
+        // Create notification for the other party
+        UUID notificationUserId;
+        String cancelledBy;
+        if ("PATIENT".equals(userRole)) {
+            notificationUserId = turn.getDoctor().getId();
+            cancelledBy = "patient";
+        } else {
+            notificationUserId = turn.getPatient().getId();
+            cancelledBy = "doctor";
+        }
+        notificationService.createTurnCancellationNotification(notificationUserId, turnId, cancelledBy);
+
+        // Solo eliminar si existe una solicitud de modificación PENDING para este turno
+        boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();
+        if (hasPendingRequest) {
+            turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
+        }
+
         return mapper.toDTO(saved);
     }
 }
