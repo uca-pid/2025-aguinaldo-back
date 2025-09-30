@@ -11,6 +11,6 @@
     <include file="0003-constraints-indexes.xml" relativeToChangelogFile="true"/>
     <include file="0004-fix-column-types.xml" relativeToChangelogFile="true"/>
     <include file="0005-insert-admin.xml" relativeToChangelogFile="true"/>
-    
-</databaseChangeLog>
+    <include file="0006-notifications.xml" relativeToChangelogFile="true"/>
 
+</databaseChangeLog>

@@ -39,7 +39,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         if (!requestPath.startsWith("/api/turns") && 
             !requestPath.startsWith("/api/admin") && 
-            !requestPath.startsWith("/api/profile")) {
+            !requestPath.startsWith("/api/profile") &&
+            !requestPath.startsWith("/api/notifications") &&
+            !requestPath.startsWith("/api/doctors")) {
             filterChain.doFilter(request, response);
             return;
         }

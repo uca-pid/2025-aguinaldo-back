@@ -24,6 +24,7 @@ public class TurnAssignedService {
     private final TurnAssignedRepository turnRepo;
     private final UserRepository userRepo;
     private final TurnAssignedMapper mapper;
+    private final NotificationService notificationService;
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
         User doctor = userRepo.findById(dto.getDoctorId())
@@ -140,6 +141,18 @@ public class TurnAssignedService {
         
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
+
+        // Create notification for the other party
+        UUID notificationUserId;
+        String cancelledBy;
+        if ("PATIENT".equals(userRole)) {
+            notificationUserId = turn.getDoctor().getId();
+            cancelledBy = "patient";
+        } else {
+            notificationUserId = turn.getPatient().getId();
+            cancelledBy = "doctor";
+        }
+        notificationService.createTurnCancellationNotification(notificationUserId, turnId, cancelledBy);
 
         // Solo eliminar si existe una solicitud de modificación PENDING para este turno
         boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();
