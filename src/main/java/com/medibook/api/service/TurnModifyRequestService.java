@@ -27,6 +27,7 @@ public class TurnModifyRequestService {
     private final TurnModifyRequestRepository turnModifyRequestRepository;
     private final TurnAssignedRepository turnAssignedRepository;
     private final TurnModifyRequestMapper mapper;
+    private final NotificationService notificationService;
     
     @Transactional
     public TurnModifyRequestResponseDTO createModifyRequest(TurnModifyRequestDTO dto, User patient) {
@@ -108,6 +109,10 @@ public class TurnModifyRequestService {
         request.setStatus("APPROVED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
 
+        // Create notification for the patient
+        notificationService.createModifyRequestApprovedNotification(
+                request.getPatient().getId(), requestId);
+
         return mapper.toResponseDTO(savedRequest);
     }
 
@@ -130,6 +135,10 @@ public class TurnModifyRequestService {
 
         request.setStatus("REJECTED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
+
+        // Create notification for the patient
+        notificationService.createModifyRequestRejectedNotification(
+                request.getPatient().getId(), requestId, null);
 
         return mapper.toResponseDTO(savedRequest);
     }
