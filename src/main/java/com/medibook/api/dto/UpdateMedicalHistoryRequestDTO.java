@@ -1,6 +1,7 @@
 package com.medibook.api.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.UUID;
@@ -10,5 +11,6 @@ public class UpdateMedicalHistoryRequestDTO {
     @NotNull
     private UUID patientId;
     
+    @Size(max = 5000, message = "Medical history must be less than 5000 characters")
     private String medicalHistory; // Can be null or empty to clear the history
 }
