@@ -31,7 +31,7 @@ public class DoctorProfile {
     private String specialty;
 
     @Column(name = "slot_duration_min", nullable = false)
-    private int slotDurationMin = 15;
+    private Integer slotDurationMin;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "availability_schedule", columnDefinition = "json")
