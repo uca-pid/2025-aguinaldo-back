@@ -249,6 +249,7 @@ class AuthServiceTest {
         user.setEmail(request.email());
         user.setPasswordHash("hashed_password");
         user.setStatus("ACTIVE");
+        user.setRole("PATIENT"); // Agregamos el rol
 
         SignInResponseDTO expectedResponse = new SignInResponseDTO(
             user.getId(),
@@ -261,7 +262,7 @@ class AuthServiceTest {
             "refresh-token"
         );
 
-        when(userRepository.findByEmailAndStatus(request.email(), "ACTIVE")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
         when(authMapper.toSignInResponse(eq(user), anyString(), anyString())).thenReturn(expectedResponse);
 
@@ -272,7 +273,7 @@ class AuthServiceTest {
         assertEquals(expectedResponse.email(), response.email());
         assertEquals(expectedResponse.accessToken(), response.accessToken());
 
-        verify(userRepository).findByEmailAndStatus(request.email(), "ACTIVE");
+        verify(userRepository).findByEmail(request.email());
         verify(passwordEncoder).matches(request.password(), user.getPasswordHash());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
         verify(authMapper).toSignInResponse(eq(user), anyString(), anyString());
@@ -282,7 +283,7 @@ class AuthServiceTest {
     void whenSignInWithInvalidEmail_thenThrowException() {
         SignInRequestDTO request = new SignInRequestDTO("invalid@example.com", "password123");
 
-        when(userRepository.findByEmailAndStatus(request.email(), "ACTIVE")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
@@ -290,7 +291,7 @@ class AuthServiceTest {
         );
 
         assertEquals("Invalid email or password", exception.getMessage());
-        verify(userRepository).findByEmailAndStatus(request.email(), "ACTIVE");
+        verify(userRepository).findByEmail(request.email());
         verifyNoMoreInteractions(passwordEncoder, refreshTokenRepository, authMapper);
     }
 
@@ -302,8 +303,9 @@ class AuthServiceTest {
         user.setEmail(request.email());
         user.setPasswordHash("hashed_password");
         user.setStatus("ACTIVE");
+        user.setRole("PATIENT"); // Agregamos el rol
 
-        when(userRepository.findByEmailAndStatus(request.email(), "ACTIVE")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(false);
 
         IllegalArgumentException exception = assertThrows(
@@ -312,7 +314,7 @@ class AuthServiceTest {
         );
 
         assertEquals("Invalid email or password", exception.getMessage());
-        verify(userRepository).findByEmailAndStatus(request.email(), "ACTIVE");
+        verify(userRepository).findByEmail(request.email());
         verify(passwordEncoder).matches(request.password(), user.getPasswordHash());
         verifyNoMoreInteractions(refreshTokenRepository, authMapper);
     }
