@@ -31,10 +31,10 @@ class DTOValidationTest {
         RegisterRequestDTO validRequest = new RegisterRequestDTO(
                 "patient@test.com",
                 12345678L,
-                "password123",
+                "Password123",  // Corregido para cumplir patrón
                 "John",
                 "Doe",
-                "1234567890",
+                "+1234567890",  // Corregido para cumplir patrón de teléfono
                 LocalDate.of(1990, 1, 1),
                 "MALE",
                 null,
@@ -440,10 +440,10 @@ class DTOValidationTest {
         RegisterRequestDTO xssRequest = new RegisterRequestDTO(
                 "user@test.com",
                 12345678L,
-                "password123",
+                "Password123",  // Corregido para cumplir patrón
                 "<script>alert('xss')</script>", // XSS attempt in name
                 "Doe",
-                "1234567890",
+                "+1234567890",  // Corregido para cumplir patrón de teléfono
                 LocalDate.of(1990, 1, 1),
                 "MALE",
                 null,
@@ -452,8 +452,9 @@ class DTOValidationTest {
         );
 
         Set<ConstraintViolation<RegisterRequestDTO>> violations = validator.validate(xssRequest);
-        // Should pass validation but be sanitized by the application layer
-        assertTrue(violations.isEmpty());
+        // Debería tener violaciones por el nombre con caracteres no permitidos
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Name can only contain letters and spaces")));
     }
 
     @Test
@@ -484,10 +485,10 @@ class DTOValidationTest {
         RegisterRequestDTO excessiveLengthRequest = new RegisterRequestDTO(
                 "user@test.com",
                 12345678L,
-                "password123",
+                "Password123",  // Corregido para cumplir patrón
                 longString,
                 "Doe",
-                "1234567890",
+                "+1234567890",  // Corregido para cumplir patrón de teléfono
                 LocalDate.of(1990, 1, 1),
                 "MALE",
                 null,
@@ -496,8 +497,9 @@ class DTOValidationTest {
         );
 
         Set<ConstraintViolation<RegisterRequestDTO>> violations = validator.validate(excessiveLengthRequest);
-        // Should pass basic validation - length limits would be enforced at database/service layer
-        assertTrue(violations.isEmpty());
+        // Debería tener violaciones por el nombre demasiado largo (máximo 50 caracteres)
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Name must be between 2 and 50 characters")));
     }
 
     @Test
@@ -505,12 +507,12 @@ class DTOValidationTest {
         RegisterRequestDTO minRequest = new RegisterRequestDTO(
                 "a@b.co", // Minimum valid email
                 1000000L, // Minimum valid DNI
-                "password", // Minimum password length
-                "A",
-                "B",
-                null, // Optional phone
-                LocalDate.of(1900, 1, 1), // Very old birthdate
-                "OTHER", // Valid gender
+                "Password1", // Mínimo password que cumple patrón (mayúscula, minúscula, número)
+                "Jo", // Mínimo 2 caracteres para name
+                "Do", // Mínimo 2 caracteres para surname
+                "+12345678", // Phone obligatorio, mínimo 8 dígitos
+                LocalDate.of(1900, 1, 1), // Birthdate obligatorio
+                "MALE", // Gender obligatorio, debe ser MALE o FEMALE
                 null,
                 null,
                 null
@@ -525,10 +527,10 @@ class DTOValidationTest {
         RegisterRequestDTO leapYearRequest = new RegisterRequestDTO(
                 "user@test.com",
                 12345678L,
-                "password123",
+                "Password123",  // Corregido para cumplir patrón
                 "John",
                 "Doe",
-                "1234567890",
+                "+1234567890",  // Corregido para cumplir patrón de teléfono
                 LocalDate.of(2000, 2, 29), // Leap year date
                 "MALE",
                 null,

@@ -76,7 +76,7 @@ class AuthServiceImplTest {
                 "0987654321",
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
-                "ML12345",
+                "123456",
                 "CARDIOLOGY",
                 30
         );
@@ -89,7 +89,7 @@ class AuthServiceImplTest {
                 "User",
                 "1111111111",
                 LocalDate.of(1985, 1, 1),
-                "OTHER",
+                "MALE",
                 null,
                 null,
                 null
@@ -225,7 +225,7 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(invalidRequest)
         );
         
-        assertTrue(exception.getMessage().contains("Medical license and specialty are required"));
+        assertTrue(exception.getMessage().contains("Medical license is required for doctors"));
     }
 
     @Test
@@ -238,7 +238,7 @@ class AuthServiceImplTest {
                 "0987654321",
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
-                "ML12345",
+                "123456",
                 null,
                 30
         );        IllegalArgumentException exception = assertThrows(
@@ -246,7 +246,7 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(invalidRequest)
         );
         
-        assertTrue(exception.getMessage().contains("Medical license and specialty are required"));
+        assertTrue(exception.getMessage().contains("Specialty is required for doctors"));
     }
 
     @Test

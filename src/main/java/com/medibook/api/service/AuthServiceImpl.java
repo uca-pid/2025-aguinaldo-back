@@ -42,6 +42,9 @@ class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public RegisterResponseDTO registerPatient(RegisterRequestDTO request) {
+        // Validate required fields
+        validateCommonFields(request);
+        
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already registered");
         }
@@ -60,16 +63,16 @@ class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public RegisterResponseDTO registerDoctor(RegisterRequestDTO request) {
+        // Validate required fields
+        validateCommonFields(request);
+        validateDoctorFields(request);
+        
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already registered");
         }
 
         if (userRepository.existsByDni(request.dni())) {
             throw new IllegalArgumentException("DNI already registered");
-        }
-
-        if (request.medicalLicense() == null || request.specialty() == null) {
-            throw new IllegalArgumentException("Medical license and specialty are required for doctors");
         }
 
         String hashedPassword = passwordEncoder.encode(request.password());
@@ -180,5 +183,77 @@ class AuthServiceImpl implements AuthService {
 
     private String generateAccessToken(User user) {
         return "jwt-token-for-user-" + user.getId();
+    }
+
+    private void validateCommonFields(RegisterRequestDTO request) {
+        if (request.birthdate() == null) {
+            throw new IllegalArgumentException("Birthdate is required");
+        }
+        
+        if (request.gender() == null || request.gender().trim().isEmpty()) {
+            throw new IllegalArgumentException("Gender is required");
+        }
+        
+        if (request.phone() == null || request.phone().trim().isEmpty()) {
+            throw new IllegalArgumentException("Phone is required");
+        }
+        
+        // DNI validation - ensure it matches frontend format (7-8 digits)
+        if (request.dni() != null) {
+            String dniStr = request.dni().toString();
+            if (!dniStr.matches("^[0-9]{7,8}$")) {
+                throw new IllegalArgumentException("Invalid DNI format (7-8 digits)");
+            }
+            if (request.dni() < 1000000L || request.dni() > 999999999L) {
+                throw new IllegalArgumentException("DNI out of valid range");
+            }
+        }
+        
+        // Additional validation for age (must be at least 18 years old and at most 120 years old)
+        if (request.birthdate().isAfter(java.time.LocalDate.now().minusYears(18))) {
+            throw new IllegalArgumentException("Must be at least 18 years old");
+        }
+        
+        if (request.birthdate().isBefore(java.time.LocalDate.now().minusYears(120))) {
+            throw new IllegalArgumentException("Invalid birth date");
+        }
+    }
+
+    private void validateDoctorFields(RegisterRequestDTO request) {
+        if (request.medicalLicense() == null || request.medicalLicense().trim().isEmpty()) {
+            throw new IllegalArgumentException("Medical license is required for doctors");
+        }
+        
+        if (request.specialty() == null || request.specialty().trim().isEmpty()) {
+            throw new IllegalArgumentException("Specialty is required for doctors");
+        }
+        
+        if (request.slotDurationMin() == null) {
+            throw new IllegalArgumentException("Slot duration is required for doctors");
+        }
+        
+        // Validate medical license format (4-10 digits)
+        if (!request.medicalLicense().matches("^[0-9]{4,10}$")) {
+            throw new IllegalArgumentException("Medical license must be 4-10 digits");
+        }
+        
+        // Validate specialty (letters and spaces only)
+        if (!request.specialty().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
+            throw new IllegalArgumentException("Specialty can only contain letters and spaces");
+        }
+        
+        // Validate specialty length (consistent with frontend)
+        if (request.specialty().length() < 2) {
+            throw new IllegalArgumentException("Specialty minimum 2 characters");
+        }
+        
+        if (request.specialty().length() > 50) {
+            throw new IllegalArgumentException("Specialty maximum 50 characters");
+        }
+        
+        // Validate slot duration is a valid number and in range
+        if (request.slotDurationMin() < 5 || request.slotDurationMin() > 180) {
+            throw new IllegalArgumentException("Slot duration must be between 5 and 180 minutes");
+        }
     }
 }
