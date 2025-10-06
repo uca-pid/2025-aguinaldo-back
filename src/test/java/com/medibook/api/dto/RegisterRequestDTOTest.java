@@ -26,7 +26,7 @@ class RegisterRequestDTOTest {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
             12345678L,
-            "password123",
+            "Password123",  // Cambiado para cumplir con el patrón
             "John",
             "Doe",
             "+1234567890",
@@ -58,8 +58,11 @@ class RegisterRequestDTOTest {
         );
 
         var violations = validator.validate(dto);
-        assertEquals(1, violations.size());
-        assertEquals("Invalid email format", violations.iterator().next().getMessage());
+        assertEquals(2, violations.size());
+        // Verificar que contiene los mensajes de error esperados
+        var messages = violations.stream().map(violation -> violation.getMessage()).collect(java.util.stream.Collectors.toSet());
+        assertTrue(messages.contains("Invalid email format"));
+        assertTrue(messages.contains("Password must contain at least one lowercase letter, one uppercase letter, and one digit"));
     }
 
     @Test
@@ -79,8 +82,11 @@ class RegisterRequestDTOTest {
         );
 
         var violations = validator.validate(dto);
-        assertEquals(1, violations.size());
-        assertEquals("Password must be at least 8 characters long", violations.iterator().next().getMessage());
+        assertEquals(2, violations.size());
+        // Verificar que contiene los mensajes de error esperados
+        var messages = violations.stream().map(violation -> violation.getMessage()).collect(java.util.stream.Collectors.toSet());
+        assertTrue(messages.contains("Password must be between 8 and 128 characters"));
+        assertTrue(messages.contains("Password must contain at least one lowercase letter, one uppercase letter, and one digit"));
     }
 
     @Test 
@@ -88,15 +94,15 @@ class RegisterRequestDTOTest {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
             12345678L,
-            "password123",
+            "Password123",  // Cambiado para cumplir con el patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
+            "+1234567890",  // Phone es obligatorio ahora
+            LocalDate.of(1990, 1, 1),  // Birthdate es obligatorio ahora
+            "MALE",  // Gender es obligatorio ahora
+            null,  // medicalLicense sigue siendo opcional
+            null,  // specialty sigue siendo opcional
+            null   // slotDurationMin sigue siendo opcional
         );
 
         var violations = validator.validate(dto);
@@ -108,12 +114,12 @@ class RegisterRequestDTOTest {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
             12345678L,
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
+            "+1234567890",  // Agregado phone obligatorio
+            LocalDate.of(1990, 1, 1),  // Agregado birthdate obligatorio
+            "MALE",  // Agregado gender obligatorio
             "ML123",
             "Cardiology",
             -1
@@ -121,7 +127,7 @@ class RegisterRequestDTOTest {
 
         var violations = validator.validate(dto);
         assertEquals(1, violations.size());
-        assertEquals("Slot duration must be positive", violations.iterator().next().getMessage());
+        assertEquals("Slot duration must be at least 5 minutes", violations.iterator().next().getMessage());
     }
 
     @Test
@@ -129,12 +135,12 @@ class RegisterRequestDTOTest {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
             null,
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
+            "+1234567890",  // Agregado phone obligatorio
+            LocalDate.of(1990, 1, 1),  // Agregado birthdate obligatorio
+            "MALE",  // Agregado gender obligatorio
             null,
             null,
             null
@@ -150,12 +156,12 @@ class RegisterRequestDTOTest {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
             123456L, // 6 digits, too short
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
+            "+1234567890",  // Agregado phone obligatorio
+            LocalDate.of(1990, 1, 1),  // Agregado birthdate obligatorio
+            "MALE",  // Agregado gender obligatorio
             null,
             null,
             null
@@ -171,12 +177,12 @@ class RegisterRequestDTOTest {
         RegisterRequestDTO dto = new RegisterRequestDTO(
             "test@example.com",
             1234567890L, // 10 digits, too long
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
+            "+1234567890",  // Agregado phone obligatorio
+            LocalDate.of(1990, 1, 1),  // Agregado birthdate obligatorio
+            "MALE",  // Agregado gender obligatorio
             null,
             null,
             null

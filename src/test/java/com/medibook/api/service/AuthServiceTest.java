@@ -104,12 +104,12 @@ class AuthServiceTest {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "existing@example.com",
             12345678L,
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
+            "+1234567890",  // Agregado phone obligatorio
+            LocalDate.of(1990, 1, 1),  // Agregado birthdate obligatorio
+            "MALE",  // Agregado gender obligatorio
             null,
             null,
             null
@@ -132,13 +132,13 @@ class AuthServiceTest {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
             87654321L,
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
             "+1234567890",
             LocalDate.of(1990, 1, 1),
             "MALE",
-            "ML123",
+            "1234567890",  // Corregido: licencia médica debe ser 4-10 dígitos
             "Cardiology",
             30
         );
@@ -185,29 +185,25 @@ class AuthServiceTest {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
             87654321L,
-            "password123",
+            "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
-            null,
-            null,
-            null,
-            null,
-            null,
+            "+1234567890",  // Agregado phone obligatorio
+            LocalDate.of(1990, 1, 1),  // Agregado birthdate obligatorio
+            "MALE",  // Agregado gender obligatorio
+            null,  // Sin licencia médica
+            null,  // Sin especialidad
             null
         );
-
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
-        when(userRepository.existsByDni(request.dni())).thenReturn(false);
 
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
             () -> authService.registerDoctor(request)
         );
 
-        assertEquals("Medical license and specialty are required for doctors", exception.getMessage());
-        verify(userRepository).existsByEmail(request.email());
-        verify(userRepository).existsByDni(request.dni());
-        verifyNoMoreInteractions(userRepository, passwordEncoder, userMapper);
+        assertEquals("Medical license is required for doctors", exception.getMessage());
+        // No verificamos interacciones con el repositorio porque la excepción se lanza
+        // en validateDoctorFields antes de llegar a las verificaciones de email/DNI
     }
 
     @Test
