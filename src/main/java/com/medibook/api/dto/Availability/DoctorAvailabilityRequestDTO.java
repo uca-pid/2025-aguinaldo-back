@@ -14,10 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 public class DoctorAvailabilityRequestDTO {
     
-    @NotNull(message = "Slot duration is required")
-    @Min(value = 5, message = "Slot duration must be at least 5 minutes")
-    private Integer slotDurationMin;
-    
     @Valid
     @NotNull(message = "Weekly availability is required")
     private List<DayAvailabilityDTO> weeklyAvailability;

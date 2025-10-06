@@ -58,7 +58,7 @@
             <column name="specialty" type="text">
                 <constraints nullable="false"/>
             </column>
-            <column name="slot_duration_min" type="int" defaultValueNumeric="20">
+            <column name="slot_duration_min" type="int">
                 <constraints nullable="false"/>
             </column>
             <column name="availability_schedule" type="json">

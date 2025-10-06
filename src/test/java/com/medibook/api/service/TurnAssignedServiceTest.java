@@ -8,6 +8,7 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
+import com.medibook.api.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,9 @@ class TurnAssignedServiceTest {
 
     @Mock
     private TurnAssignedMapper mapper;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private TurnAssignedService turnAssignedService;
@@ -101,7 +105,7 @@ class TurnAssignedServiceTest {
     void createTurn_Success() {
         when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
-        when(turnRepo.existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt)).thenReturn(false);
+        when(turnRepo.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, scheduledAt)).thenReturn(false);
         when(turnRepo.save(any(TurnAssigned.class))).thenReturn(turnEntity);
         when(mapper.toDTO(turnEntity)).thenReturn(turnResponse);
 
@@ -116,7 +120,7 @@ class TurnAssignedServiceTest {
 
         verify(userRepo).findById(doctorId);
         verify(userRepo).findById(patientId);
-        verify(turnRepo).existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt);
+        verify(turnRepo).existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, scheduledAt);
         verify(turnRepo).save(any(TurnAssigned.class));
         verify(mapper).toDTO(turnEntity);
     }
@@ -156,7 +160,7 @@ class TurnAssignedServiceTest {
     void createTurn_SlotAlreadyTaken_ThrowsException() {
         when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
-        when(turnRepo.existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt)).thenReturn(true);
+        when(turnRepo.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, scheduledAt)).thenReturn(true);
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             turnAssignedService.createTurn(createRequest);
@@ -165,7 +169,7 @@ class TurnAssignedServiceTest {
         assertEquals("Time slot is already taken", exception.getMessage());
         verify(userRepo).findById(doctorId);
         verify(userRepo).findById(patientId);
-        verify(turnRepo).existsByDoctor_IdAndScheduledAt(doctorId, scheduledAt);
+        verify(turnRepo).existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, scheduledAt);
         verify(turnRepo, never()).save(any());
     }
 

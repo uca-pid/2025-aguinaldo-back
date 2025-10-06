@@ -104,6 +104,10 @@ class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
+        if (!isUserAuthorizedToSignIn(user)) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid email or password");
         }
@@ -114,6 +118,21 @@ class AuthServiceImpl implements AuthService {
         String accessToken = generateAccessToken(user);
 
         return authMapper.toSignInResponse(user, accessToken, refreshToken.getTokenHash());
+    }
+
+    private boolean isUserAuthorizedToSignIn(User user) {
+        String role = user.getRole();
+        String status = user.getStatus();
+        
+        if (role == null || status == null || role.trim().isEmpty() || status.trim().isEmpty()) {
+            return false;
+        }
+        
+        return switch (role.trim().toUpperCase()) {
+            case "PATIENT", "ADMIN" -> "ACTIVE".equalsIgnoreCase(status.trim());
+            case "DOCTOR" -> "ACTIVE".equalsIgnoreCase(status.trim()) || "PENDING".equalsIgnoreCase(status.trim());
+            default -> false;
+        };
     }
 
     @Override

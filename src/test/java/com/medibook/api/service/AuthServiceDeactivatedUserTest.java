@@ -39,28 +39,29 @@ class AuthServiceDeactivatedUserTest {
         disabledUser.setEmail("disabled@example.com");
         disabledUser.setPasswordHash("hashedPassword");
         disabledUser.setStatus("DISABLED");
+        disabledUser.setRole("PATIENT"); // Agregamos el rol
 
         signInRequest = new SignInRequestDTO("disabled@example.com", "password123");
     }
 
     @Test
     void signIn_DisabledUser_ShouldThrowException() {
-        when(userRepository.findByEmailAndStatus("disabled@example.com", "ACTIVE"))
-            .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("disabled@example.com"))
+            .thenReturn(Optional.of(disabledUser));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             authService.signIn(signInRequest);
         });
 
         assertEquals("Invalid email or password", exception.getMessage());
-        verify(userRepository).findByEmailAndStatus("disabled@example.com", "ACTIVE");
+        verify(userRepository).findByEmail("disabled@example.com");
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 
     @Test
     void signIn_DisabledUserWithCorrectPassword_ShouldStillFail() {
-        when(userRepository.findByEmailAndStatus("disabled@example.com", "ACTIVE"))
-            .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("disabled@example.com"))
+            .thenReturn(Optional.of(disabledUser));
 
         assertThrows(IllegalArgumentException.class, () -> {
             authService.signIn(signInRequest);

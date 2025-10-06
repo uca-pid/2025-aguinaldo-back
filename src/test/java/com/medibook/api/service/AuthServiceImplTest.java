@@ -339,7 +339,7 @@ class AuthServiceImplTest {
 
     @Test
     void signIn_ValidCredentials_Success() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(true);
         
         RefreshToken refreshToken = new RefreshToken();
@@ -362,14 +362,14 @@ class AuthServiceImplTest {
         assertEquals(sampleUser.getEmail(), result.email());
         assertEquals(sampleUser.getRole(), result.role());
         
-        verify(userRepository).findByEmailAndStatus(validSignInRequest.email(), "ACTIVE");
+        verify(userRepository).findByEmail(validSignInRequest.email());
         verify(passwordEncoder).matches(validSignInRequest.password(), sampleUser.getPasswordHash());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
     void signIn_UserNotFound_ThrowsException() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -377,13 +377,13 @@ class AuthServiceImplTest {
         );
         
         assertEquals("Invalid email or password", exception.getMessage());
-        verify(userRepository).findByEmailAndStatus(validSignInRequest.email(), "ACTIVE");
+        verify(userRepository).findByEmail(validSignInRequest.email());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 
     @Test
     void signIn_WrongPassword_ThrowsException() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(false);
 
         IllegalArgumentException exception = assertThrows(
@@ -397,8 +397,15 @@ class AuthServiceImplTest {
 
     @Test
     void signIn_InactiveUser_ThrowsException() {
-        // Usuario inactivo no será encontrado por findByEmailAndStatus("ACTIVE")
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.empty());
+        // Crear un usuario inactivo
+        User inactiveUser = new User();
+        inactiveUser.setId(UUID.randomUUID());
+        inactiveUser.setEmail(validSignInRequest.email());
+        inactiveUser.setPasswordHash("hashedPassword");
+        inactiveUser.setRole("PATIENT");
+        inactiveUser.setStatus("INACTIVE");
+        
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(inactiveUser));
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -406,19 +413,41 @@ class AuthServiceImplTest {
         );
         
         assertEquals("Invalid email or password", exception.getMessage());
+        verify(userRepository).findByEmail(validSignInRequest.email());
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 
     @Test
-    void signIn_PendingDoctor_ThrowsException() {
-        // Doctor con status PENDING no será encontrado por findByEmailAndStatus("ACTIVE")
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.empty());
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> authService.signIn(validSignInRequest)
-        );
+    void signIn_PendingDoctor_Success() {
+        // Crear un doctor en estado PENDING
+        User pendingDoctor = new User();
+        pendingDoctor.setId(UUID.randomUUID());
+        pendingDoctor.setEmail(validSignInRequest.email());
+        pendingDoctor.setPasswordHash("hashedPassword");
+        pendingDoctor.setRole("DOCTOR");
+        pendingDoctor.setStatus("PENDING");
         
-        assertEquals("Invalid email or password", exception.getMessage());
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(pendingDoctor));
+        when(passwordEncoder.matches(validSignInRequest.password(), pendingDoctor.getPasswordHash())).thenReturn(true);
+        
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setTokenHash("hashedRefreshToken");
+        refreshToken.setExpiresAt(ZonedDateTime.now().plusDays(7));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(refreshToken);
+        
+        when(authMapper.toSignInResponse(eq(pendingDoctor), any(String.class), any(String.class))).thenReturn(
+            new SignInResponseDTO(pendingDoctor.getId(), pendingDoctor.getEmail(), pendingDoctor.getName(), 
+                                pendingDoctor.getSurname(), pendingDoctor.getRole(), pendingDoctor.getStatus(),
+                                "access_token", "refresh_token")
+        );
+
+        SignInResponseDTO result = authService.signIn(validSignInRequest);
+
+        assertNotNull(result);
+        assertEquals("PENDING", result.status());
+        assertEquals("DOCTOR", result.role());
+        verify(userRepository).findByEmail(validSignInRequest.email());
+        verify(passwordEncoder).matches(validSignInRequest.password(), pendingDoctor.getPasswordHash());
     }
 
     @Test
@@ -558,7 +587,7 @@ class AuthServiceImplTest {
 
     @Test
     void signIn_BruteForceAttempt_ShouldHandleMultipleFailures() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(false);
 
         for (int i = 0; i < 10; i++) {
@@ -568,7 +597,7 @@ class AuthServiceImplTest {
             );
         }
 
-        verify(userRepository, times(10)).findByEmailAndStatus(validSignInRequest.email(), "ACTIVE");
+        verify(userRepository, times(10)).findByEmail(validSignInRequest.email());
     }
 
     @Test
@@ -593,7 +622,7 @@ class AuthServiceImplTest {
 
     @Test
     void tokenGeneration_ShouldProduceUniqueTokens() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(true);
         
         RefreshToken token1 = new RefreshToken();

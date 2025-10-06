@@ -56,7 +56,7 @@ class DoctorAvailabilityServiceTest {
             ))
         );
         
-        testRequest = new DoctorAvailabilityRequestDTO(30, weeklyAvailability);
+        testRequest = new DoctorAvailabilityRequestDTO(weeklyAvailability);
     }
 
     @Test

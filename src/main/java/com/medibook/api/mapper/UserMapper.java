@@ -23,10 +23,13 @@ public class UserMapper {
         user.setStatus("ACTIVE");
 
         if ("DOCTOR".equals(role)) {
+            if (dto.slotDurationMin() == null) {
+                throw new IllegalArgumentException("slotDurationMin is required for doctor registration");
+            }
             DoctorProfile profile = new DoctorProfile();
             profile.setMedicalLicense(dto.medicalLicense());
             profile.setSpecialty(dto.specialty());
-            profile.setSlotDurationMin(dto.slotDurationMin() != null ? dto.slotDurationMin() : 20);
+            profile.setSlotDurationMin(dto.slotDurationMin());
             user.setDoctorProfile(profile);
         }
 
