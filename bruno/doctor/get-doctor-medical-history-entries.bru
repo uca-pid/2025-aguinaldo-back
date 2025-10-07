@@ -1,0 +1,51 @@
+meta {
+  name: Get Doctor's Medical History Entries
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return array of medical histories", function() {
+    expect(res.body).to.be.an('array');
+  });
+  
+  test("should have medical history entries", function() {
+    if (res.body.length > 0) {
+      expect(res.body[0]).to.have.property('id');
+      expect(res.body[0]).to.have.property('content');
+      expect(res.body[0]).to.have.property('createdAt');
+      expect(res.body[0]).to.have.property('doctorId', vars.doctorId);
+      expect(res.body[0]).to.have.property('patientName');
+    }
+  });
+  
+  test("should be ordered by creation date (newest first)", function() {
+    if (res.body.length > 1) {
+      const first = new Date(res.body[0].createdAt);
+      const second = new Date(res.body[1].createdAt);
+      expect(first.getTime()).to.be.greaterThanOrEqual(second.getTime());
+    }
+  });
+}

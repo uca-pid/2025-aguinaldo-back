@@ -1,0 +1,29 @@
+meta {
+  name: Get Patient Medical History - Unauthorized Access
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/medical-history/patient/{{patientId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{otherPatientAccessToken}}
+}
+
+auth:bearer {
+  token: {{otherPatientAccessToken}}
+}
+
+vars:pre-request {
+  patientId: {{$processEnv.PATIENT_ID}}
+}
+
+tests {
+  test("should return 403 Forbidden", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
