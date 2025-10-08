@@ -259,13 +259,11 @@ public class EmailServiceImpl implements EmailService {
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h1 style="color: #2c5aa0;">¡Bienvenido a MediBook, %s!</h1>
-                    <p>Nos alegra que seas parte de nuestra comunidad de pacientes.</p>
                     <p>Con MediBook podrás:</p>
                     <ul>
                         <li>Agendar citas con doctores especializados</li>
                         <li>Ver tu historial de consultas</li>
                     </ul>
-                    <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
                     <p>¡Esperamos poder ayudarte con tus necesidades médicas!</p>
                     <br>
                     <p>Saludos,<br>El equipo de MediBook</p>
@@ -278,17 +276,13 @@ public class EmailServiceImpl implements EmailService {
     private String buildWelcomePatientText(String patientName) {
         return String.format("""
             ¡Bienvenido a MediBook, %s!
-            
-            Nos alegra tenerte como parte de nuestra comunidad de pacientes.
-            
+                        
             Con MediBook podrás:
             - Agendar citas con doctores especializados
             - Ver tu historial de consultas
             
             Si tienes alguna pregunta, no dudes en contactarnos.
-            
-            ¡Esperamos poder ayudarte con tus necesidades médicas!
-            
+                        
             Saludos,
             El equipo de MediBook
             """, patientName);
