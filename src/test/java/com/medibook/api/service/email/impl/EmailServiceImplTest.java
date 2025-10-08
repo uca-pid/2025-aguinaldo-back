@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 class EmailServiceImplTest {
 
-    private EmailService emailService;
-
     @BeforeEach
     void setUp() {
         // Este test requiere configuración de MailerSend

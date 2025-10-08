@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -106,10 +106,10 @@ class DoctorServiceComprehensiveTest {
                 .slotDurationMin(45)
                 .build();
         
-        // Set up default mocks for medical history service
-        when(medicalHistoryService.getPatientMedicalHistory(any(UUID.class)))
+        // Set up default mocks for medical history service (lenient because not all tests use them)
+        lenient().when(medicalHistoryService.getPatientMedicalHistory(any(UUID.class)))
                 .thenReturn(Collections.emptyList());
-        when(medicalHistoryService.getLatestMedicalHistoryContent(any(UUID.class)))
+        lenient().when(medicalHistoryService.getLatestMedicalHistoryContent(any(UUID.class)))
                 .thenReturn("");
     }
 
