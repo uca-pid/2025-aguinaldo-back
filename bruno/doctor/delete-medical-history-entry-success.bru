@@ -1,0 +1,29 @@
+meta {
+  name: Delete Medical History Entry - Success
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history/{{medicalHistoryId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+tests {
+  test("should return 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+  
+  test("should have no response body", function() {
+    expect(res.body).to.be.empty;
+  });
+}

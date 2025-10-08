@@ -1,6 +1,7 @@
 package com.medibook.api.service;
 
 import com.medibook.api.dto.PatientDTO;
+import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +34,9 @@ class DoctorServiceTest {
     
     @Mock
     private DoctorMapper doctorMapper;
+
+    @Mock
+    private MedicalHistoryService medicalHistoryService;
 
     @InjectMocks
     private DoctorService doctorService;
@@ -88,6 +93,10 @@ class DoctorServiceTest {
         
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId)).thenReturn(patients);
+        when(medicalHistoryService.getPatientMedicalHistory(patientId1)).thenReturn(Collections.emptyList());
+        when(medicalHistoryService.getPatientMedicalHistory(patientId2)).thenReturn(Collections.emptyList());
+        when(medicalHistoryService.getLatestMedicalHistoryContent(patientId1)).thenReturn(null);
+        when(medicalHistoryService.getLatestMedicalHistoryContent(patientId2)).thenReturn(null);
 
         List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId);
 
@@ -103,6 +112,8 @@ class DoctorServiceTest {
         assertEquals(LocalDate.of(1990, 1, 1), patientDTO1.getBirthdate());
         assertEquals("MALE", patientDTO1.getGender());
         assertEquals("ACTIVE", patientDTO1.getStatus());
+        assertNotNull(patientDTO1.getMedicalHistories());
+        assertTrue(patientDTO1.getMedicalHistories().isEmpty());
 
         PatientDTO patientDTO2 = result.get(1);
         assertEquals(patientId2, patientDTO2.getId());
@@ -114,9 +125,15 @@ class DoctorServiceTest {
         assertEquals(LocalDate.of(1985, 5, 15), patientDTO2.getBirthdate());
         assertEquals("FEMALE", patientDTO2.getGender());
         assertEquals("ACTIVE", patientDTO2.getStatus());
+        assertNotNull(patientDTO2.getMedicalHistories());
+        assertTrue(patientDTO2.getMedicalHistories().isEmpty());
 
         verify(userRepository).findById(doctorId);
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId);
+        verify(medicalHistoryService).getPatientMedicalHistory(patientId1);
+        verify(medicalHistoryService).getPatientMedicalHistory(patientId2);
+        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId1);
+        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId2);
     }
 
     @Test
@@ -160,12 +177,32 @@ class DoctorServiceTest {
     @Test
     void getPatientsByDoctor_EmptyPatientList() {
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId)).thenReturn(Arrays.asList());
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId)).thenReturn(Collections.emptyList());
 
         List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId);
 
         assertTrue(result.isEmpty());
         verify(userRepository).findById(doctorId);
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId);
+        verifyNoInteractions(medicalHistoryService);
+    }
+
+    @Test
+    void updatePatientMedicalHistory_Success() {
+        String medicalHistory = "Patient has diabetes";
+        MedicalHistoryDTO expectedResult = MedicalHistoryDTO.builder()
+                .id(UUID.randomUUID())
+                .content(medicalHistory)
+                .patientId(patientId1)
+                .doctorId(doctorId)
+                .build();
+
+        when(medicalHistoryService.addMedicalHistory(doctorId, patientId1, medicalHistory))
+                .thenReturn(expectedResult);
+
+        assertDoesNotThrow(() -> 
+            doctorService.updatePatientMedicalHistory(doctorId, patientId1, medicalHistory));
+
+        verify(medicalHistoryService).addMedicalHistory(doctorId, patientId1, medicalHistory);
     }
 }

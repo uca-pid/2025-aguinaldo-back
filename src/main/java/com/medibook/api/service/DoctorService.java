@@ -2,6 +2,7 @@ package com.medibook.api.service;
 
 import com.medibook.api.dto.DoctorDTO;
 import com.medibook.api.dto.PatientDTO;
+import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
@@ -22,6 +23,7 @@ public class DoctorService {
     private final UserRepository userRepository;
     private final TurnAssignedRepository turnAssignedRepository;
     private final DoctorMapper doctorMapper;
+    private final MedicalHistoryService medicalHistoryService;
 
     public List<DoctorDTO> getAllDoctors() {
         List<User> doctors = userRepository.findDoctorsByStatus("ACTIVE");
@@ -63,34 +65,17 @@ public class DoctorService {
 
     @Transactional
     public void updatePatientMedicalHistory(UUID doctorId, UUID patientId, String medicalHistory) {
-        // Verify doctor exists and is active
-        User doctor = userRepository.findById(doctorId)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
-        
-        if (!"DOCTOR".equals(doctor.getRole()) || !"ACTIVE".equals(doctor.getStatus())) {
-            throw new RuntimeException("Invalid doctor or doctor is not active");
-        }
-
-        // Verify patient exists and is a patient
-        User patient = userRepository.findById(patientId)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-        
-        if (!"PATIENT".equals(patient.getRole()) || !"ACTIVE".equals(patient.getStatus())) {
-            throw new RuntimeException("Invalid patient or patient is not active");
-        }
-
-        // Verify the doctor has had appointments with this patient
-        boolean hasAppointments = turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId);
-        if (!hasAppointments) {
-            throw new RuntimeException("Doctor can only update medical history for patients they have treated");
-        }
-
-        // Update medical history
-        patient.setMedicalHistory(medicalHistory);
-        userRepository.save(patient);
+        // Use the new medical history service to add a new entry
+        medicalHistoryService.addMedicalHistory(doctorId, patientId, medicalHistory);
     }
 
     private PatientDTO mapPatientToDTO(User patient) {
+        // Get all medical history entries for the patient
+        List<MedicalHistoryDTO> medicalHistories = medicalHistoryService.getPatientMedicalHistory(patient.getId());
+        
+        // For backward compatibility, get the latest medical history content
+        String latestMedicalHistory = medicalHistoryService.getLatestMedicalHistoryContent(patient.getId());
+        
         return PatientDTO.builder()
                 .id(patient.getId())
                 .name(patient.getName())
@@ -101,7 +86,8 @@ public class DoctorService {
                 .birthdate(patient.getBirthdate())
                 .gender(patient.getGender())
                 .status(patient.getStatus())
-                .medicalHistory(patient.getMedicalHistory())
+                .medicalHistories(medicalHistories)
+                .medicalHistory(latestMedicalHistory) // For backward compatibility
                 .build();
     }
 }

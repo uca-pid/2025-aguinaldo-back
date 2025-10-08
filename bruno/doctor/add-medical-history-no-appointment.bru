@@ -1,0 +1,42 @@
+meta {
+  name: Add Medical tests {y Entry - No Appointment History
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "{{randomPatientId}}",
+    "content": "Trying to add history for patient without appointments"
+  }
+}
+
+vars:pre-request {
+  doctorId: {{$processEnv.DOCTOR_ID}}
+  randomPatientId: {{$processEnv.RANDOM_PATIENT_ID}}
+}
+
+tests {
+  test("should return 500 (runtime exception)", function() {
+    expect(res.getStatus()).to.equal(500);
+  });
+  
+  test("should contain error message about treatment history", function() {
+    expect(res.body.message).to.include('only add medical history for patients they have treated');
+  });
+}

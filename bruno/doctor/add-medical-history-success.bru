@@ -1,0 +1,58 @@
+meta {
+  name: Add Medical History Entry - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "{{patientId}}",
+    "content": "Patient presents with acute bronchitis. Prescribed amoxicillin 500mg three times daily for 7 days. Advised rest and increased fluid intake. Follow-up in one week if symptoms persist."
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setEnvVar("medicalHistoryId", res.getBody().id);
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return medical history data", function() {
+    expect(res.body).to.have.property('id');
+    expect(res.body).to.have.property('content');
+    expect(res.body).to.have.property('createdAt');
+    expect(res.body).to.have.property('patientId');
+    expect(res.body).to.have.property('doctorId');
+  });
+  
+  test("should have correct content", function() {
+    expect(res.body.content).to.include('acute bronchitis');
+  });
+  
+  test("should have patient and doctor names", function() {
+    expect(res.body).to.have.property('patientName');
+    expect(res.body).to.have.property('patientSurname');
+    expect(res.body).to.have.property('doctorName');
+    expect(res.body).to.have.property('doctorSurname');
+  });
+}

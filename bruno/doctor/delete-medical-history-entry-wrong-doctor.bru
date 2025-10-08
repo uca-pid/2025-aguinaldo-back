@@ -1,0 +1,34 @@
+meta {
+  name: Delete Medical History Entry - Wrong Doctor
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/doctors/{{wrongDoctorId}}/medical-history/{{medicalHistoryId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{wrongDoctorAccessToken}}
+}
+
+auth:bearer {
+  token: {{wrongDoctorAccessToken}}
+}
+
+vars:pre-request {
+  wrongDoctorId: {{$processEnv.WRONG_DOCTOR_ID}}
+  medicalHistoryId: {{$processEnv.MEDICAL_HISTORY_ID}}
+}
+
+tests {
+  test("should return 500 (runtime exception)", function() {
+    expect(res.getStatus()).to.equal(500);
+  });
+  
+  test("should contain error message about ownership", function() {
+    expect(res.body.message).to.include('only delete their own medical history entries');
+  });
+}

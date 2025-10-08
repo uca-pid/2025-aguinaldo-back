@@ -213,4 +213,113 @@
                                 onDelete="RESTRICT"/>
     </changeSet>
 
+    <!-- MEDICAL HISTORY -->
+    <changeSet id="0002-11-medical_history" author="MediBook_Admin">
+        <createTable tableName="medical_history">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="patient_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="doctor_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint 
+            baseTableName="medical_history" 
+            baseColumnNames="patient_id" 
+            constraintName="fk_medical_history_patient" 
+            referencedTableName="users" 
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint 
+            baseTableName="medical_history" 
+            baseColumnNames="doctor_id" 
+            constraintName="fk_medical_history_doctor" 
+            referencedTableName="users" 
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <!-- Create indexes for better performance -->
+        <createIndex indexName="idx_medical_history_patient_id" tableName="medical_history">
+            <column name="patient_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_medical_history_doctor_id" tableName="medical_history">
+            <column name="doctor_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_medical_history_created_at" tableName="medical_history">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- MIGRATE MEDICAL HISTORY DATA AND REMOVE OLD COLUMN -->
+    <changeSet id="0002-12-migrate_medical_history" author="MediBook_Admin">
+        <comment>Migrate existing medical history data from users table to medical_history table</comment>
+        
+        <!-- Migrate existing medical history data -->
+        <!-- Note: This migration assigns the first available doctor for migration purposes -->
+        <!-- In production, you might want to create a migration script that properly assigns doctors -->
+        <sql>
+            INSERT INTO medical_history (id, patient_id, doctor_id, content, created_at, updated_at)
+            SELECT 
+                uuid_generate_v4(),
+                u.id,
+                (SELECT id FROM users WHERE role = 'DOCTOR' AND status = 'ACTIVE' LIMIT 1), -- Use first available doctor
+                u.medical_history,
+                now(),
+                now()
+            FROM users u 
+            WHERE u.role = 'PATIENT' 
+                AND u.medical_history IS NOT NULL 
+                AND u.medical_history != ''
+                AND EXISTS (SELECT 1 FROM users WHERE role = 'DOCTOR' AND status = 'ACTIVE');
+        </sql>
+
+        <!-- Drop the medical_history column from users table -->
+        <dropColumn tableName="users" columnName="medical_history"/>
+    </changeSet>
+
+    <!-- INSERT DEFAULT ADMIN USER (after schema changes) -->
+    <changeSet id="0002-13-insert-admin-post-migration" author="MediBook_Admin">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <columnExists tableName="users" columnName="medical_history"/>
+                </not>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM users WHERE email = 'admin@medibook.com'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <insert tableName="users">
+            <column name="id" value="550e8400-e29b-41d4-a716-446655440000"/>
+            <column name="email" value="admin@medibook.com"/>
+            <column name="password_hash" value="$2a$10$KcblsmHicVfDTvAyX7e4c.bsdMSfeXSCI9fY9Fgrxl4SkBNUt3SQG"/>
+            <column name="name" value="Admin"/>
+            <column name="surname" value="MediBook"/>
+            <column name="dni" value="12345678"/>
+            <column name="phone" value="+1234567890"/>
+            <column name="birthdate" value="1990-01-01"/>
+            <column name="gender" value="MALE"/>
+            <column name="email_verified" valueBoolean="true"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="role" value="ADMIN"/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>
