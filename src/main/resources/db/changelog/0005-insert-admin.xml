@@ -8,6 +8,14 @@
 
     <!-- INSERT DEFAULT ADMIN USER -->
     <changeSet id="0005-01-insert-admin" author="MediBook_Admin">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="users" columnName="medical_history"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM users WHERE email = 'admin@medibook.com'
+                </sqlCheck>
+            </and>
+        </preConditions>
         <insert tableName="users">
             <column name="id" value="550e8400-e29b-41d4-a716-446655440000"/>
             <column name="email" value="admin@medibook.com"/>

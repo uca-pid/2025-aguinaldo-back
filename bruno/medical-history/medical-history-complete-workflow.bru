@@ -1,0 +1,45 @@
+meta {
+  name: Medical History Complete Workflow
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "{{patientId}}",
+    "content": "Initial consultation: Patient complains of persistent cough and mild fever. Physical examination reveals clear lungs, normal heart rate. Diagnosed with viral upper respiratory infection. Prescribed rest, fluids, and symptomatic treatment."
+  }
+}
+
+tests {
+  test("Step 1: Should successfully add first medical history entry", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.body).to.have.property('id');
+    expect(res.body.content).to.include('Initial consultation');
+  });
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setEnvVar("medicalHistoryId", res.getBody().id);
+  }
+  // Wait a moment to ensure different timestamps
+  setTimeout(() => {
+    // Continue with next request in sequence
+  }, 1000);
+}

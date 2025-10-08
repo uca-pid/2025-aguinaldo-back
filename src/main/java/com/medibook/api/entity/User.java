@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Getter;
@@ -55,8 +57,8 @@ public class User {
     @Column(nullable = false)
     private String role = "PATIENT";
 
-    @Column(name = "medical_history", columnDefinition = "TEXT")
-    private String medicalHistory;
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<MedicalHistory> medicalHistories = new ArrayList<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference

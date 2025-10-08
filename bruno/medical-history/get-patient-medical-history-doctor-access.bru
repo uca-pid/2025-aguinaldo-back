@@ -1,0 +1,45 @@
+meta {
+  name: Get Patient Medical History - Doctor Access
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/medical-history/patient/{{patientId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+vars:pre-request {
+  patientId: {{$processEnv.PATIENT_ID}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return array of medical histories", function() {
+    expect(res.body).to.be.an('array');
+  });
+  
+  test("should contain entries for the patient", function() {
+    if (res.body.length > 0) {
+      res.body.forEach(entry => {
+        expect(entry).to.have.property('patientId', vars.patientId);
+        expect(entry).to.have.property('content');
+        expect(entry).to.have.property('createdAt');
+        expect(entry).to.have.property('doctorName');
+        expect(entry).to.have.property('doctorSurname');
+      });
+    }
+  });
+}
