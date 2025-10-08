@@ -37,6 +37,9 @@ class TurnModifyRequestServiceTest {
     @Mock
     private TurnModifyRequestMapper mapper;
     
+    @Mock
+    private com.medibook.api.service.email.EmailService emailService;
+    
     @InjectMocks
     private TurnModifyRequestService service;
     
