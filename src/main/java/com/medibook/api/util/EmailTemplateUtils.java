@@ -1,4 +1,4 @@
-package com.medibook.api.util.email;
+package com.medibook.api.util;
 
 import lombok.experimental.UtilityClass;
 

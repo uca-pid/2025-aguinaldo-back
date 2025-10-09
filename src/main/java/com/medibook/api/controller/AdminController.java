@@ -7,7 +7,7 @@ import com.medibook.api.dto.Admin.PendingDoctorDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AdminMapper;
 import com.medibook.api.repository.UserRepository;
-import com.medibook.api.service.email.EmailService;
+import com.medibook.api.service.EmailService;
 import com.medibook.api.util.AuthorizationUtil;
 import com.medibook.api.util.ErrorResponseUtil;
 import com.medibook.api.util.UserValidationUtil;

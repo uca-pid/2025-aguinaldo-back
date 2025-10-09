@@ -7,7 +7,7 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
-import com.medibook.api.service.email.EmailService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

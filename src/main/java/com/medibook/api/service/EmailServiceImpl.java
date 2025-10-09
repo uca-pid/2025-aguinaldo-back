@@ -1,9 +1,9 @@
-package com.medibook.api.service.email.impl;
+package com.medibook.api.service;
 
-import com.medibook.api.dto.email.EmailRequestDto;
-import com.medibook.api.dto.email.EmailResponseDto;
-import com.medibook.api.dto.email.mailersend.MailerSendEmailDto;
-import com.medibook.api.service.email.EmailService;
+import com.medibook.api.dto.Email.EmailRequestDto;
+import com.medibook.api.dto.Email.EmailResponseDto;
+import com.medibook.api.dto.Email.MailerSendEmailDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -10,7 +10,7 @@ import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
-import com.medibook.api.service.email.EmailService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

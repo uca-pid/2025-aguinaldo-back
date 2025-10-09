@@ -38,7 +38,10 @@ class TurnModifyRequestServiceTest {
     private TurnModifyRequestMapper mapper;
     
     @Mock
-    private com.medibook.api.service.email.EmailService emailService;
+    private com.medibook.api.service.EmailService emailService;
+
+    @Mock
+    private NotificationService notificationService;
     
     @InjectMocks
     private TurnModifyRequestService service;
@@ -54,19 +57,27 @@ class TurnModifyRequestServiceTest {
     void setUp() {
         patient = new User();
         patient.setId(UUID.randomUUID());
+        patient.setEmail("patient@test.com");
+        patient.setName("Juan Pérez");
         
         doctor = new User();
         doctor.setId(UUID.randomUUID());
+        doctor.setEmail("doctor@test.com");
+        doctor.setName("Dr. García");
+        
+        // Usar fechas fijas para evitar problemas con OffsetDateTime.now()
+        OffsetDateTime originalDate = OffsetDateTime.parse("2025-10-09T10:00:00Z");
+        OffsetDateTime newDate = OffsetDateTime.parse("2025-10-10T11:00:00Z");
         
         turnAssigned = new TurnAssigned();
         turnAssigned.setId(UUID.randomUUID());
         turnAssigned.setPatient(patient);
         turnAssigned.setDoctor(doctor);
-        turnAssigned.setScheduledAt(OffsetDateTime.now().plusDays(1));
+        turnAssigned.setScheduledAt(originalDate);
         
         requestDTO = new TurnModifyRequestDTO();
         requestDTO.setTurnId(turnAssigned.getId());
-        requestDTO.setNewScheduledAt(OffsetDateTime.now().plusDays(2));
+        requestDTO.setNewScheduledAt(newDate);
         
         modifyRequest = TurnModifyRequest.builder()
                 .id(UUID.randomUUID())
@@ -128,7 +139,7 @@ class TurnModifyRequestServiceTest {
 
     @Test
     void createModifyRequest_WithPastTurn_ShouldThrowException() {
-        turnAssigned.setScheduledAt(OffsetDateTime.now().minusDays(1));
+        turnAssigned.setScheduledAt(OffsetDateTime.parse("2025-10-08T10:00:00Z"));
         when(turnAssignedRepository.findById(requestDTO.getTurnId())).thenReturn(Optional.of(turnAssigned));
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -141,7 +152,7 @@ class TurnModifyRequestServiceTest {
 
     @Test
     void createModifyRequest_WithPastNewScheduledAt_ShouldThrowException() {
-        requestDTO.setNewScheduledAt(OffsetDateTime.now().minusDays(1));
+        requestDTO.setNewScheduledAt(OffsetDateTime.parse("2025-10-08T10:00:00Z"));
         when(turnAssignedRepository.findById(requestDTO.getTurnId())).thenReturn(Optional.of(turnAssigned));
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -196,5 +207,159 @@ class TurnModifyRequestServiceTest {
         assertEquals(responseDTO, result.get(0));
         verify(turnModifyRequestRepository).findByDoctor_IdAndStatusOrderByIdDesc(doctor.getId(), "PENDING");
         verify(mapper).toResponseDTO(modifyRequest);
+    }
+
+    @Test
+    void approveModifyRequest_WithValidRequest_ShouldApproveSuccessfully() {
+        modifyRequest.setStatus("PENDING");
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+        when(turnAssignedRepository.save(any(TurnAssigned.class))).thenReturn(turnAssigned);
+        when(turnModifyRequestRepository.save(any(TurnModifyRequest.class))).thenAnswer(invocation -> {
+            TurnModifyRequest req = invocation.getArgument(0);
+            req.setStatus("APPROVED");
+            return req;
+        });
+        when(mapper.toResponseDTO(any(TurnModifyRequest.class))).thenReturn(responseDTO);
+
+        TurnModifyRequestResponseDTO result = service.approveModifyRequest(modifyRequest.getId(), doctor);
+
+        assertNotNull(result);
+        assertEquals("APPROVED", modifyRequest.getStatus());
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verify(turnAssignedRepository).save(turnAssigned);
+        verify(turnModifyRequestRepository).save(modifyRequest);
+        verify(emailService).sendAppointmentModificationApprovedToPatient(
+                patient.getEmail(), patient.getName(), doctor.getName(),
+                "2025-10-09", "10:00", "2025-10-10", "11:00");
+        verify(emailService).sendAppointmentModificationApprovedToDoctor(
+                doctor.getEmail(), doctor.getName(), patient.getName(),
+                "2025-10-09", "10:00", "2025-10-10", "11:00");
+        verify(notificationService).createModifyRequestApprovedNotification(patient.getId(), modifyRequest.getId());
+    }
+
+    @Test
+    void approveModifyRequest_WithNonExistentRequest_ShouldThrowException() {
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.approveModifyRequest(modifyRequest.getId(), doctor));
+        assertEquals("Modify request not found", exception.getMessage());
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verifyNoMoreInteractions(turnAssignedRepository);
+    }
+
+    @Test
+    void approveModifyRequest_WithWrongDoctor_ShouldThrowException() {
+        User otherDoctor = new User();
+        otherDoctor.setId(UUID.randomUUID());
+
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.approveModifyRequest(modifyRequest.getId(), otherDoctor));
+        assertEquals("You can only approve requests for your own appointments", exception.getMessage());
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verifyNoMoreInteractions(turnAssignedRepository);
+    }
+
+    @Test
+    void approveModifyRequest_WithNonPendingRequest_ShouldThrowException() {
+        modifyRequest.setStatus("APPROVED");
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.approveModifyRequest(modifyRequest.getId(), doctor));
+        assertEquals("Request is not pending", exception.getMessage());
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verifyNoMoreInteractions(turnAssignedRepository);
+    }
+
+    @Test
+    void rejectModifyRequest_WithValidRequest_ShouldRejectSuccessfully() {
+        modifyRequest.setStatus("PENDING");
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+        when(turnModifyRequestRepository.save(any(TurnModifyRequest.class))).thenAnswer(invocation -> {
+            TurnModifyRequest req = invocation.getArgument(0);
+            req.setStatus("REJECTED");
+            return req;
+        });
+        when(mapper.toResponseDTO(any(TurnModifyRequest.class))).thenReturn(responseDTO);
+
+        TurnModifyRequestResponseDTO result = service.rejectModifyRequest(modifyRequest.getId(), doctor);
+
+        assertNotNull(result);
+        assertEquals("REJECTED", modifyRequest.getStatus());
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verify(turnModifyRequestRepository).save(modifyRequest);
+        verify(notificationService).createModifyRequestRejectedNotification(patient.getId(), modifyRequest.getId(), null);
+        verify(mapper).toResponseDTO(any(TurnModifyRequest.class));
+    }
+
+    @Test
+    void rejectModifyRequest_WithNonExistentRequest_ShouldThrowException() {
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.rejectModifyRequest(modifyRequest.getId(), doctor));
+        assertEquals("Modify request not found", exception.getMessage());
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verifyNoMoreInteractions(turnModifyRequestRepository);
+    }
+
+    @Test
+    void rejectModifyRequest_WithWrongDoctor_ShouldThrowException() {
+        User otherDoctor = new User();
+        otherDoctor.setId(UUID.randomUUID());
+
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.rejectModifyRequest(modifyRequest.getId(), otherDoctor));
+        assertEquals("You can only reject requests for your own appointments", exception.getMessage());
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verifyNoMoreInteractions(turnModifyRequestRepository);
+    }
+
+    @Test
+    void rejectModifyRequest_WithNonPendingRequest_ShouldThrowException() {
+        modifyRequest.setStatus("APPROVED");
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.rejectModifyRequest(modifyRequest.getId(), doctor));
+        assertEquals("Request is not pending", exception.getMessage());
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verifyNoMoreInteractions(turnModifyRequestRepository);
+    }
+
+    @Test
+    void approveModifyRequest_WithEmailFailure_ShouldStillApproveAndLogWarning() {
+        when(turnModifyRequestRepository.findById(modifyRequest.getId())).thenReturn(Optional.of(modifyRequest));
+        when(turnAssignedRepository.save(any(TurnAssigned.class))).thenReturn(turnAssigned);
+        when(turnModifyRequestRepository.save(any(TurnModifyRequest.class))).thenReturn(modifyRequest);
+        when(mapper.toResponseDTO(any(TurnModifyRequest.class))).thenReturn(responseDTO);
+
+        // Simular fallo en envío de email al doctor
+        doThrow(new RuntimeException("Email service error"))
+                .when(emailService).sendAppointmentModificationApprovedToDoctor(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+
+        TurnModifyRequestResponseDTO result = service.approveModifyRequest(modifyRequest.getId(), doctor);
+
+        assertNotNull(result);
+        // El status se actualiza en la entidad pero el mapper puede devolver el status actualizado
+        verify(turnModifyRequestRepository).save(modifyRequest);
+
+        verify(turnModifyRequestRepository).findById(modifyRequest.getId());
+        verify(turnAssignedRepository).save(turnAssigned);
+        verify(turnModifyRequestRepository).save(modifyRequest);
+        verify(emailService).sendAppointmentModificationApprovedToPatient(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(emailService).sendAppointmentModificationApprovedToDoctor(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(notificationService).createModifyRequestApprovedNotification(any(UUID.class), any(UUID.class));
     }
 }

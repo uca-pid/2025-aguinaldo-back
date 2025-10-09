@@ -40,7 +40,7 @@ class TurnAssignedServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private com.medibook.api.service.email.EmailService emailService;
+    private com.medibook.api.service.EmailService emailService;
 
     @InjectMocks
     private TurnAssignedService turnAssignedService;
