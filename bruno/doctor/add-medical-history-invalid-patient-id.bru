@@ -1,0 +1,33 @@
+meta {
+  name: Add Medical History - Invalid Patient ID
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "patientId": "invalid-uuid",
+    "content": "This should fail due to invalid patient ID"
+  }
+}
+
+tests {
+  test("should return 400 Bad Request", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

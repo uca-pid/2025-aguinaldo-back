@@ -39,9 +39,6 @@ public class DoctorAvailabilityService {
 
         DoctorProfile profile = doctor.getDoctorProfile();
         
-        // Actualizar slot duration
-        profile.setSlotDurationMin(request.getSlotDurationMin());
-        
         // Serializar availability schedule a JSON
         try {
             String scheduleJson = objectMapper.writeValueAsString(request.getWeeklyAvailability());
@@ -51,7 +48,6 @@ public class DoctorAvailabilityService {
         }
 
         userRepository.save(doctor);
-        log.info("Saved availability for doctor: {}", doctorId);
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +86,7 @@ public class DoctorAvailabilityService {
     @Transactional(readOnly = true)
     public List<AvailableSlotDTO> getAvailableSlots(UUID doctorId, LocalDate fromDate, LocalDate toDate) {
         DoctorAvailabilityResponseDTO availability = getAvailability(doctorId);
+        
         List<AvailableSlotDTO> slots = new ArrayList<>();
 
         if (availability.getWeeklyAvailability() == null || availability.getWeeklyAvailability().isEmpty()) {

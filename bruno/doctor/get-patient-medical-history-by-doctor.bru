@@ -1,0 +1,46 @@
+meta {
+  name: Get Patient Medical History by Doctor
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/patients/{{patientId}}/medical-history
+  body: none
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return array of medical histories", function() {
+    expect(res.body).to.be.an('array');
+  });
+  
+  test("should contain entries for specific patient and doctor", function() {
+    if (res.body.length > 0) {
+      res.body.forEach(entry => {
+        expect(entry).to.have.property('patientId', vars.patientId);
+        expect(entry).to.have.property('doctorId', vars.doctorId);
+      });
+    }
+  });
+  
+  test("should be ordered by creation date (newest first)", function() {
+    if (res.body.length > 1) {
+      const first = new Date(res.body[0].createdAt);
+      const second = new Date(res.body[1].createdAt);
+      expect(first.getTime()).to.be.greaterThanOrEqual(second.getTime());
+    }
+  });
+}

@@ -7,7 +7,9 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,12 +21,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class TurnAssignedService {
 
     private final TurnAssignedRepository turnRepo;
     private final UserRepository userRepo;
     private final TurnAssignedMapper mapper;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
         User doctor = userRepo.findById(dto.getDoctorId())
@@ -64,6 +68,31 @@ public class TurnAssignedService {
                 .build();
 
         TurnAssigned saved = turnRepo.save(turn);
+        
+        try {
+            String date = saved.getScheduledAt().toLocalDate().toString();
+            String time = saved.getScheduledAt().toLocalTime().toString();
+            
+            emailService.sendAppointmentConfirmationToPatient(
+                patient.getEmail(), 
+                patient.getName(), 
+                doctor.getName(), 
+                date, 
+                time
+            );
+            
+            emailService.sendAppointmentConfirmationToDoctor(
+                doctor.getEmail(), 
+                doctor.getName(), 
+                patient.getName(), 
+                date, 
+                time
+            );
+            
+        } catch (Exception e) {
+            log.warn("⚠️ No se pudieron enviar emails de confirmación de cita: {}", e.getMessage());
+        }
+        
         return mapper.toDTO(saved);
     }
 
@@ -142,7 +171,30 @@ public class TurnAssignedService {
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
 
-        // Create notification for the other party
+        try {
+            String date = saved.getScheduledAt().toLocalDate().toString();
+            String time = saved.getScheduledAt().toLocalTime().toString();
+            
+            emailService.sendAppointmentCancellationToPatient(
+                turn.getPatient().getEmail(),
+                turn.getPatient().getName(),
+                turn.getDoctor().getName(),
+                date,
+                time
+            );
+            
+            emailService.sendAppointmentCancellationToDoctor(
+                turn.getDoctor().getEmail(),
+                turn.getDoctor().getName(),
+                turn.getPatient().getName(),
+                date,
+                time
+            );
+            
+        } catch (Exception e) {
+            log.warn("⚠️ No se pudieron enviar emails de cancelación: {}", e.getMessage());
+        }
+
         UUID notificationUserId;
         String cancelledBy;
         if ("PATIENT".equals(userRole)) {
@@ -154,7 +206,6 @@ public class TurnAssignedService {
         }
         notificationService.createTurnCancellationNotification(notificationUserId, turnId, cancelledBy);
 
-        // Solo eliminar si existe una solicitud de modificación PENDING para este turno
         boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();
         if (hasPendingRequest) {
             turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");

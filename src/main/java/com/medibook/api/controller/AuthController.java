@@ -147,7 +147,7 @@ public class AuthController {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDTO> handleValidationExceptions(
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
         
         Map<String, String> validationErrors = new HashMap<>();
@@ -157,15 +157,14 @@ public class AuthController {
             validationErrors.put(fieldName, errorMessage);
         });
         
-        String message = "Validation failed: " + validationErrors.toString();
-        ErrorResponseDTO error = ErrorResponseDTO.of(
-            "VALIDATION_ERROR", 
-            message, 
-            HttpStatus.BAD_REQUEST.value(),
-            request.getRequestURI()
-        );
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "Validation failed");
+        response.put("message", "Please check the following fields");
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("path", request.getRequestURI());
+        response.put("fieldErrors", validationErrors);
         
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

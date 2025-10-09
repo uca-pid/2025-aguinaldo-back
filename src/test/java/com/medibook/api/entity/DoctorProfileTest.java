@@ -30,9 +30,9 @@ class DoctorProfileTest {
     }
 
     @Test
-    void whenDefaultSlotDuration_thenReturns15Minutes() {
+    void whenDefaultSlotDuration_thenReturnsNull() {
         DoctorProfile profile = new DoctorProfile();
 
-        assertEquals(15, profile.getSlotDurationMin());
+        assertNull(profile.getSlotDurationMin());
     }
 }

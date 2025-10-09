@@ -10,6 +10,7 @@ import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,8 @@ class AuthServiceImplTest {
     private UserMapper userMapper;
     @Mock
     private AuthMapper authMapper;
+    @Mock
+    private EmailService emailService;
 
     private AuthServiceImpl authService;
 
@@ -51,7 +54,7 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService);
 
         validPatientRequest = new RegisterRequestDTO(
                 "patient@test.com",
@@ -76,7 +79,7 @@ class AuthServiceImplTest {
                 "0987654321",
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
-                "ML12345",
+                "123456",
                 "CARDIOLOGY",
                 30
         );
@@ -89,7 +92,7 @@ class AuthServiceImplTest {
                 "User",
                 "1111111111",
                 LocalDate.of(1985, 1, 1),
-                "OTHER",
+                "MALE",
                 null,
                 null,
                 null
@@ -225,7 +228,7 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(invalidRequest)
         );
         
-        assertTrue(exception.getMessage().contains("Medical license and specialty are required"));
+        assertTrue(exception.getMessage().contains("Medical license is required for doctors"));
     }
 
     @Test
@@ -238,7 +241,7 @@ class AuthServiceImplTest {
                 "0987654321",
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
-                "ML12345",
+                "123456",
                 null,
                 30
         );        IllegalArgumentException exception = assertThrows(
@@ -246,7 +249,7 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(invalidRequest)
         );
         
-        assertTrue(exception.getMessage().contains("Medical license and specialty are required"));
+        assertTrue(exception.getMessage().contains("Specialty is required for doctors"));
     }
 
     @Test
@@ -339,7 +342,7 @@ class AuthServiceImplTest {
 
     @Test
     void signIn_ValidCredentials_Success() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(true);
         
         RefreshToken refreshToken = new RefreshToken();
@@ -362,14 +365,14 @@ class AuthServiceImplTest {
         assertEquals(sampleUser.getEmail(), result.email());
         assertEquals(sampleUser.getRole(), result.role());
         
-        verify(userRepository).findByEmailAndStatus(validSignInRequest.email(), "ACTIVE");
+        verify(userRepository).findByEmail(validSignInRequest.email());
         verify(passwordEncoder).matches(validSignInRequest.password(), sampleUser.getPasswordHash());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
     void signIn_UserNotFound_ThrowsException() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -377,13 +380,13 @@ class AuthServiceImplTest {
         );
         
         assertEquals("Invalid email or password", exception.getMessage());
-        verify(userRepository).findByEmailAndStatus(validSignInRequest.email(), "ACTIVE");
+        verify(userRepository).findByEmail(validSignInRequest.email());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 
     @Test
     void signIn_WrongPassword_ThrowsException() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(false);
 
         IllegalArgumentException exception = assertThrows(
@@ -397,8 +400,15 @@ class AuthServiceImplTest {
 
     @Test
     void signIn_InactiveUser_ThrowsException() {
-        // Usuario inactivo no será encontrado por findByEmailAndStatus("ACTIVE")
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.empty());
+        // Crear un usuario inactivo
+        User inactiveUser = new User();
+        inactiveUser.setId(UUID.randomUUID());
+        inactiveUser.setEmail(validSignInRequest.email());
+        inactiveUser.setPasswordHash("hashedPassword");
+        inactiveUser.setRole("PATIENT");
+        inactiveUser.setStatus("INACTIVE");
+        
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(inactiveUser));
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -406,19 +416,41 @@ class AuthServiceImplTest {
         );
         
         assertEquals("Invalid email or password", exception.getMessage());
+        verify(userRepository).findByEmail(validSignInRequest.email());
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 
     @Test
-    void signIn_PendingDoctor_ThrowsException() {
-        // Doctor con status PENDING no será encontrado por findByEmailAndStatus("ACTIVE")
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.empty());
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> authService.signIn(validSignInRequest)
-        );
+    void signIn_PendingDoctor_Success() {
+        // Crear un doctor en estado PENDING
+        User pendingDoctor = new User();
+        pendingDoctor.setId(UUID.randomUUID());
+        pendingDoctor.setEmail(validSignInRequest.email());
+        pendingDoctor.setPasswordHash("hashedPassword");
+        pendingDoctor.setRole("DOCTOR");
+        pendingDoctor.setStatus("PENDING");
         
-        assertEquals("Invalid email or password", exception.getMessage());
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(pendingDoctor));
+        when(passwordEncoder.matches(validSignInRequest.password(), pendingDoctor.getPasswordHash())).thenReturn(true);
+        
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setTokenHash("hashedRefreshToken");
+        refreshToken.setExpiresAt(ZonedDateTime.now().plusDays(7));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenReturn(refreshToken);
+        
+        when(authMapper.toSignInResponse(eq(pendingDoctor), any(String.class), any(String.class))).thenReturn(
+            new SignInResponseDTO(pendingDoctor.getId(), pendingDoctor.getEmail(), pendingDoctor.getName(), 
+                                pendingDoctor.getSurname(), pendingDoctor.getRole(), pendingDoctor.getStatus(),
+                                "access_token", "refresh_token")
+        );
+
+        SignInResponseDTO result = authService.signIn(validSignInRequest);
+
+        assertNotNull(result);
+        assertEquals("PENDING", result.status());
+        assertEquals("DOCTOR", result.role());
+        verify(userRepository).findByEmail(validSignInRequest.email());
+        verify(passwordEncoder).matches(validSignInRequest.password(), pendingDoctor.getPasswordHash());
     }
 
     @Test
@@ -531,7 +563,8 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void registerPatient_SqlInjectionAttempt_ShouldHandleSafely() {        RegisterRequestDTO maliciousRequest = new RegisterRequestDTO(
+    void registerPatient_SqlInjectionAttempt_ShouldHandleSafely() {
+        RegisterRequestDTO maliciousRequest = new RegisterRequestDTO(
                 "'; DROP TABLE users; --@test.com",
                 12345678L,
                 "password123",
@@ -545,20 +578,42 @@ class AuthServiceImplTest {
                 null
         );
 
+        User mockUser = new User();
+        mockUser.setEmail("'; DROP TABLE users; --@test.com");
+        mockUser.setName("'; DROP TABLE users; --");
+        mockUser.setSurname("Smith");
+        mockUser.setId(UUID.randomUUID());
+        mockUser.setRole("PATIENT");
+        mockUser.setStatus("ACTIVE");
+        
+        RegisterResponseDTO mockResponse = new RegisterResponseDTO(
+                mockUser.getId(),
+                mockUser.getEmail(),
+                mockUser.getName(),
+                mockUser.getSurname(),
+                mockUser.getRole(),
+                mockUser.getStatus()
+        );
+
         when(userRepository.existsByEmail(maliciousRequest.email())).thenReturn(false);
         when(userRepository.existsByDni(maliciousRequest.dni())).thenReturn(false);
+        when(passwordEncoder.encode(maliciousRequest.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(any(), eq("PATIENT"), eq("hashedPassword"))).thenReturn(mockUser);
+        when(userRepository.save(any(User.class))).thenReturn(mockUser);
+        when(userMapper.toRegisterResponse(mockUser)).thenReturn(mockResponse);
 
         assertDoesNotThrow(() -> {
             try {
                 authService.registerPatient(maliciousRequest);
             } catch (IllegalArgumentException e) {
+                // El test debería manejar SQL injection de forma segura
             }
         });
     }
 
     @Test
     void signIn_BruteForceAttempt_ShouldHandleMultipleFailures() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(false);
 
         for (int i = 0; i < 10; i++) {
@@ -568,7 +623,7 @@ class AuthServiceImplTest {
             );
         }
 
-        verify(userRepository, times(10)).findByEmailAndStatus(validSignInRequest.email(), "ACTIVE");
+        verify(userRepository, times(10)).findByEmail(validSignInRequest.email());
     }
 
     @Test
@@ -593,7 +648,7 @@ class AuthServiceImplTest {
 
     @Test
     void tokenGeneration_ShouldProduceUniqueTokens() {
-        when(userRepository.findByEmailAndStatus(validSignInRequest.email(), "ACTIVE")).thenReturn(Optional.of(sampleUser));
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(sampleUser));
         when(passwordEncoder.matches(validSignInRequest.password(), sampleUser.getPasswordHash())).thenReturn(true);
         
         RefreshToken token1 = new RefreshToken();

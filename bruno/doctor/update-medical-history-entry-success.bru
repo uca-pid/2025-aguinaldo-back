@@ -1,0 +1,47 @@
+meta {
+  name: Update Medical History Entry - Success
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/medical-history/{{medicalHistoryId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{doctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json {
+  {
+    "content": "Updated: Patient's bronchitis symptoms have improved significantly. Completing antibiotic course as prescribed. No further treatment needed at this time. Patient advised to return if symptoms worsen."
+  }
+}
+
+tests {
+  test("should return 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return updated medical history", function() {
+    expect(res.body).to.have.property('id');
+    expect(res.body).to.have.property('content');
+    expect(res.body).to.have.property('updatedAt');
+  });
+  
+  test("should have updated content", function() {
+    expect(res.body.content).to.include('Updated:');
+    expect(res.body.content).to.include('improved significantly');
+  });
+  
+  test("should have different updatedAt from createdAt", function() {
+    expect(res.body.updatedAt).to.not.equal(res.body.createdAt);
+  });
+}

@@ -7,6 +7,7 @@ import com.medibook.api.dto.Admin.PendingDoctorDTO;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AdminMapper;
 import com.medibook.api.repository.UserRepository;
+import com.medibook.api.service.EmailService;
 import com.medibook.api.util.AuthorizationUtil;
 import com.medibook.api.util.ErrorResponseUtil;
 import com.medibook.api.util.UserValidationUtil;
@@ -14,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,14 +23,17 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
+@Slf4j
 public class AdminController {
 
     private final UserRepository userRepository;
     private final AdminMapper adminMapper;
+    private final EmailService emailService;
 
-    public AdminController(UserRepository userRepository, AdminMapper adminMapper) {
+    public AdminController(UserRepository userRepository, AdminMapper adminMapper, EmailService emailService) {
         this.userRepository = userRepository;
         this.adminMapper = adminMapper;
+        this.emailService = emailService;
     }
 
     @GetMapping("/pending-doctors")
@@ -74,6 +79,12 @@ public class AdminController {
             doctor.setStatus("ACTIVE");
             userRepository.save(doctor);
 
+            try {
+                emailService.sendApprovalEmailToDoctor(doctor.getEmail(), doctor.getName());
+            } catch (Exception e) {
+                log.warn("⚠️ No se pudo enviar email de aprobación al doctor: {}", e.getMessage());
+            }
+
             DoctorApprovalResponseDTO response = new DoctorApprovalResponseDTO(
                 "Doctor approved successfully",
                 doctorId.toString(),
@@ -115,6 +126,13 @@ public class AdminController {
 
             doctor.setStatus("REJECTED");
             userRepository.save(doctor);
+
+            try {
+                emailService.sendRejectionEmailToDoctor(doctor.getEmail(), doctor.getName(), 
+                    "Tu solicitud de registro como médico no ha sido aprobada. Por favor, contacta al equipo de soporte si necesitas más información.");
+            } catch (Exception e) {
+                log.warn("⚠️ No se pudo enviar email de rechazo al doctor: {}", e.getMessage());
+            }
 
             DoctorApprovalResponseDTO response = new DoctorApprovalResponseDTO(
                 "Doctor rejected successfully",

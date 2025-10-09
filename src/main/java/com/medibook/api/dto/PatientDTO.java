@@ -3,6 +3,7 @@ package com.medibook.api.dto;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -17,5 +18,8 @@ public class PatientDTO {
     private LocalDate birthdate;
     private String gender;
     private String status;
+    private List<MedicalHistoryDTO> medicalHistories;
+    
+    // For backward compatibility - latest medical history content
     private String medicalHistory;
 }

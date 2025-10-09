@@ -4,8 +4,12 @@ import com.medibook.api.dto.Availability.*;
 import com.medibook.api.dto.DoctorDTO;
 import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.dto.UpdateMedicalHistoryRequestDTO;
+import com.medibook.api.dto.CreateMedicalHistoryRequestDTO;
+import com.medibook.api.dto.UpdateMedicalHistoryContentRequestDTO;
+import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.service.DoctorAvailabilityService;
 import com.medibook.api.service.DoctorService;
+import com.medibook.api.service.MedicalHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +30,7 @@ public class DoctorController {
 
     private final DoctorService doctorService;
     private final DoctorAvailabilityService availabilityService;
+    private final MedicalHistoryService medicalHistoryService;
 
     @GetMapping
     public ResponseEntity<List<DoctorDTO>> getAllDoctors() {
@@ -86,5 +91,57 @@ public class DoctorController {
         
         doctorService.updatePatientMedicalHistory(doctorId, request.getPatientId(), request.getMedicalHistory());
         return ResponseEntity.ok().build();
+    }
+
+    // New Medical History endpoints
+    
+    @PostMapping("/{doctorId}/medical-history")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<MedicalHistoryDTO> addMedicalHistory(
+            @PathVariable UUID doctorId,
+            @Valid @RequestBody CreateMedicalHistoryRequestDTO request) {
+        
+        MedicalHistoryDTO medicalHistory = medicalHistoryService.addMedicalHistory(
+                doctorId, request.getPatientId(), request.getContent());
+        return ResponseEntity.ok(medicalHistory);
+    }
+
+    @PutMapping("/{doctorId}/medical-history/{historyId}")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<MedicalHistoryDTO> updateMedicalHistory(
+            @PathVariable UUID doctorId,
+            @PathVariable UUID historyId,
+            @Valid @RequestBody UpdateMedicalHistoryContentRequestDTO request) {
+        
+        MedicalHistoryDTO updatedHistory = medicalHistoryService.updateMedicalHistory(
+                doctorId, historyId, request.getContent());
+        return ResponseEntity.ok(updatedHistory);
+    }
+
+    @GetMapping("/{doctorId}/medical-history")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<List<MedicalHistoryDTO>> getDoctorMedicalHistoryEntries(@PathVariable UUID doctorId) {
+        List<MedicalHistoryDTO> histories = medicalHistoryService.getDoctorMedicalHistoryEntries(doctorId);
+        return ResponseEntity.ok(histories);
+    }
+
+    @GetMapping("/{doctorId}/patients/{patientId}/medical-history")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<List<MedicalHistoryDTO>> getPatientMedicalHistoryByDoctor(
+            @PathVariable UUID doctorId,
+            @PathVariable UUID patientId) {
+        
+        List<MedicalHistoryDTO> histories = medicalHistoryService.getPatientMedicalHistoryByDoctor(patientId, doctorId);
+        return ResponseEntity.ok(histories);
+    }
+
+    @DeleteMapping("/{doctorId}/medical-history/{historyId}")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<Void> deleteMedicalHistory(
+            @PathVariable UUID doctorId,
+            @PathVariable UUID historyId) {
+        
+        medicalHistoryService.deleteMedicalHistory(doctorId, historyId);
+        return ResponseEntity.noContent().build();
     }
 }

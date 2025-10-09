@@ -1,0 +1,41 @@
+meta {
+  name: Update Medical History Entry - Wrong Doctor
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/doctors/{{wrongDoctorId}}/medical-history/{{medicalHistoryId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: Bearer {{wrongDoctorAccessToken}}
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{wrongDoctorAccessToken}}
+}
+
+body:json {
+  {
+    "content": "Unauthorized attempt to update another doctor's medical history entry"
+  }
+}
+
+vars:pre-request {
+  wrongDoctorId: {{$processEnv.WRONG_DOCTOR_ID}}
+  medicalHistoryId: {{$processEnv.MEDICAL_HISTORY_ID}}
+}
+
+tests {
+  test("should return 500 (runtime exception)", function() {
+    expect(res.getStatus()).to.equal(500);
+  });
+  
+  test("should contain error message about ownership", function() {
+    expect(res.body.message).to.include('only update their own medical history entries');
+  });
+}

@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +36,9 @@ class DoctorServiceComprehensiveTest {
 
     @Mock
     private DoctorMapper doctorMapper;
+
+    @Mock
+    private MedicalHistoryService medicalHistoryService;
 
     @InjectMocks
     private DoctorService doctorService;
@@ -102,6 +105,12 @@ class DoctorServiceComprehensiveTest {
                 .medicalLicense("MED789012")
                 .slotDurationMin(45)
                 .build();
+        
+        // Set up default mocks for medical history service (lenient because not all tests use them)
+        lenient().when(medicalHistoryService.getPatientMedicalHistory(any(UUID.class)))
+                .thenReturn(Collections.emptyList());
+        lenient().when(medicalHistoryService.getLatestMedicalHistoryContent(any(UUID.class)))
+                .thenReturn("");
     }
 
     private User createUser(UUID id, String email, Long dni, String role, String status) {
@@ -233,9 +242,14 @@ class DoctorServiceComprehensiveTest {
     }
 
     @Test
-    void getPatientsByDoctor_ValidDoctor_ReturnsPatients() {        when(userRepository.findById(doctorId1)).thenReturn(Optional.of(doctorUser1));
+    void getPatientsByDoctor_ValidDoctor_ReturnsPatients() {
+        when(userRepository.findById(doctorId1)).thenReturn(Optional.of(doctorUser1));
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId1))
-                .thenReturn(Arrays.asList(patientUser1, patientUser2));        List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId1);        assertNotNull(result);
+                .thenReturn(Arrays.asList(patientUser1, patientUser2));
+
+        List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId1);
+
+        assertNotNull(result);
         assertEquals(2, result.size());
         
         PatientDTO patient1 = result.get(0);
@@ -250,6 +264,10 @@ class DoctorServiceComprehensiveTest {
         
         verify(userRepository).findById(doctorId1);
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId1);
+        verify(medicalHistoryService).getPatientMedicalHistory(patientId1);
+        verify(medicalHistoryService).getPatientMedicalHistory(patientId2);
+        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId1);
+        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId2);
     }
 
     @Test
