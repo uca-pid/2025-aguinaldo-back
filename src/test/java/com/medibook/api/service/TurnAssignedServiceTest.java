@@ -8,7 +8,6 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
-import com.medibook.api.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +38,9 @@ class TurnAssignedServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private com.medibook.api.service.EmailService emailService;
 
     @InjectMocks
     private TurnAssignedService turnAssignedService;

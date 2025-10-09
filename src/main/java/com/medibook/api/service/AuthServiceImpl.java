@@ -10,39 +10,44 @@ import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 
 @Service
+@Slf4j
 class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
+    private final EmailService emailService;
 
     public AuthServiceImpl(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             UserMapper userMapper,
-            AuthMapper authMapper) {
+            AuthMapper authMapper,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.authMapper = authMapper;
+        this.emailService = emailService;
     }
 
     @Override
     @Transactional
     public RegisterResponseDTO registerPatient(RegisterRequestDTO request) {
-        // Validate required fields
         validateCommonFields(request);
         
         if (userRepository.existsByEmail(request.email())) {
@@ -56,14 +61,20 @@ class AuthServiceImpl implements AuthService {
         String hashedPassword = passwordEncoder.encode(request.password());
         User user = userMapper.toUser(request, "PATIENT", hashedPassword);
         user = userRepository.save(user);
+        
+        try {
+            emailService.sendWelcomeEmailToPatient(user.getEmail(), user.getName());
+            log.info("✅ Email de bienvenida enviado al paciente: {}", user.getEmail());
+        } catch (Exception e) {
+            log.warn("⚠️ No se pudo enviar email de bienvenida al paciente {}: {}", user.getEmail(), e.getMessage());            
+        }
 
         return userMapper.toRegisterResponse(user);
     }
 
     @Override
     @Transactional
-    public RegisterResponseDTO registerDoctor(RegisterRequestDTO request) {
-        // Validate required fields
+    public RegisterResponseDTO registerDoctor(RegisterRequestDTO request) {        
         validateCommonFields(request);
         validateDoctorFields(request);
         
@@ -197,8 +208,7 @@ class AuthServiceImpl implements AuthService {
         if (request.phone() == null || request.phone().trim().isEmpty()) {
             throw new IllegalArgumentException("Phone is required");
         }
-        
-        // DNI validation - ensure it matches frontend format (7-8 digits)
+                
         if (request.dni() != null) {
             String dniStr = request.dni().toString();
             if (!dniStr.matches("^[0-9]{7,8}$")) {
@@ -208,8 +218,7 @@ class AuthServiceImpl implements AuthService {
                 throw new IllegalArgumentException("DNI out of valid range");
             }
         }
-        
-        // Additional validation for age (must be at least 18 years old and at most 120 years old)
+                
         if (request.birthdate().isAfter(java.time.LocalDate.now().minusYears(18))) {
             throw new IllegalArgumentException("Must be at least 18 years old");
         }
@@ -231,18 +240,15 @@ class AuthServiceImpl implements AuthService {
         if (request.slotDurationMin() == null) {
             throw new IllegalArgumentException("Slot duration is required for doctors");
         }
-        
-        // Validate medical license format (4-10 digits)
+                
         if (!request.medicalLicense().matches("^[0-9]{4,10}$")) {
             throw new IllegalArgumentException("Medical license must be 4-10 digits");
         }
-        
-        // Validate specialty (letters and spaces only)
+                
         if (!request.specialty().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
             throw new IllegalArgumentException("Specialty can only contain letters and spaces");
         }
-        
-        // Validate specialty length (consistent with frontend)
+                
         if (request.specialty().length() < 2) {
             throw new IllegalArgumentException("Specialty minimum 2 characters");
         }
@@ -250,8 +256,7 @@ class AuthServiceImpl implements AuthService {
         if (request.specialty().length() > 50) {
             throw new IllegalArgumentException("Specialty maximum 50 characters");
         }
-        
-        // Validate slot duration is a valid number and in range
+                
         if (request.slotDurationMin() < 5 || request.slotDurationMin() > 180) {
             throw new IllegalArgumentException("Slot duration must be between 5 and 180 minutes");
         }

@@ -8,6 +8,7 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnModifyRequestMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.TurnModifyRequestRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class TurnModifyRequestService {
     private final TurnAssignedRepository turnAssignedRepository;
     private final TurnModifyRequestMapper mapper;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     
     @Transactional
     public TurnModifyRequestResponseDTO createModifyRequest(TurnModifyRequestDTO dto, User patient) {
@@ -103,13 +105,48 @@ public class TurnModifyRequestService {
         }
 
         TurnAssigned turn = request.getTurnAssigned();
+        
+        // Guardar fechas antiguas antes de actualizar
+        String oldDate = turn.getScheduledAt().toLocalDate().toString();
+        String oldTime = turn.getScheduledAt().toLocalTime().toString();
+        
+        // Actualizar la cita con la nueva fecha
         turn.setScheduledAt(request.getRequestedScheduledAt());
         turnAssignedRepository.save(turn);
+
+        String newDate = turn.getScheduledAt().toLocalDate().toString();
+        String newTime = turn.getScheduledAt().toLocalTime().toString();
 
         request.setStatus("APPROVED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
 
-        // Create notification for the patient
+        try {
+            // Enviar email específico de modificación aprobada al paciente
+            emailService.sendAppointmentModificationApprovedToPatient(
+                request.getPatient().getEmail(),
+                request.getPatient().getName(),
+                request.getDoctor().getName(),
+                oldDate,
+                oldTime,
+                newDate,
+                newTime
+            );
+            
+            // Enviar email específico de modificación aprobada al doctor
+            emailService.sendAppointmentModificationApprovedToDoctor(
+                request.getDoctor().getEmail(),
+                request.getDoctor().getName(),
+                request.getPatient().getName(),
+                oldDate,
+                oldTime,
+                newDate,
+                newTime
+            );
+            
+        } catch (Exception e) {
+            log.warn("⚠️ No se pudieron enviar emails de modificación aprobada: {}", e.getMessage());
+        }
+
         notificationService.createModifyRequestApprovedNotification(
                 request.getPatient().getId(), requestId);
 
@@ -136,7 +173,6 @@ public class TurnModifyRequestService {
         request.setStatus("REJECTED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
 
-        // Create notification for the patient
         notificationService.createModifyRequestRejectedNotification(
                 request.getPatient().getId(), requestId, null);
 

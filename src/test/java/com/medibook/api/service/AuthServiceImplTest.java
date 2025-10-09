@@ -10,6 +10,7 @@ import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,8 @@ class AuthServiceImplTest {
     private UserMapper userMapper;
     @Mock
     private AuthMapper authMapper;
+    @Mock
+    private EmailService emailService;
 
     private AuthServiceImpl authService;
 
@@ -51,7 +54,7 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService);
 
         validPatientRequest = new RegisterRequestDTO(
                 "patient@test.com",
@@ -560,7 +563,8 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void registerPatient_SqlInjectionAttempt_ShouldHandleSafely() {        RegisterRequestDTO maliciousRequest = new RegisterRequestDTO(
+    void registerPatient_SqlInjectionAttempt_ShouldHandleSafely() {
+        RegisterRequestDTO maliciousRequest = new RegisterRequestDTO(
                 "'; DROP TABLE users; --@test.com",
                 12345678L,
                 "password123",
@@ -574,13 +578,35 @@ class AuthServiceImplTest {
                 null
         );
 
+        User mockUser = new User();
+        mockUser.setEmail("'; DROP TABLE users; --@test.com");
+        mockUser.setName("'; DROP TABLE users; --");
+        mockUser.setSurname("Smith");
+        mockUser.setId(UUID.randomUUID());
+        mockUser.setRole("PATIENT");
+        mockUser.setStatus("ACTIVE");
+        
+        RegisterResponseDTO mockResponse = new RegisterResponseDTO(
+                mockUser.getId(),
+                mockUser.getEmail(),
+                mockUser.getName(),
+                mockUser.getSurname(),
+                mockUser.getRole(),
+                mockUser.getStatus()
+        );
+
         when(userRepository.existsByEmail(maliciousRequest.email())).thenReturn(false);
         when(userRepository.existsByDni(maliciousRequest.dni())).thenReturn(false);
+        when(passwordEncoder.encode(maliciousRequest.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(any(), eq("PATIENT"), eq("hashedPassword"))).thenReturn(mockUser);
+        when(userRepository.save(any(User.class))).thenReturn(mockUser);
+        when(userMapper.toRegisterResponse(mockUser)).thenReturn(mockResponse);
 
         assertDoesNotThrow(() -> {
             try {
                 authService.registerPatient(maliciousRequest);
             } catch (IllegalArgumentException e) {
+                // El test debería manejar SQL injection de forma segura
             }
         });
     }
