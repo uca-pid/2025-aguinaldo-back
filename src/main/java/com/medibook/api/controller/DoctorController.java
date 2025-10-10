@@ -92,8 +92,6 @@ public class DoctorController {
         doctorService.updatePatientMedicalHistory(doctorId, request.getPatientId(), request.getMedicalHistory());
         return ResponseEntity.ok().build();
     }
-
-    // New Medical History endpoints
     
     @PostMapping("/{doctorId}/medical-history")
     @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")

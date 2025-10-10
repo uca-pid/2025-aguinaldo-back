@@ -27,7 +27,7 @@ public class Notification {
     private NotificationType type;
 
     @Column(name = "related_entity_id", nullable = false)
-    private UUID relatedEntityId; // Turn ID or Modify Request ID
+    private UUID relatedEntityId;
 
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;

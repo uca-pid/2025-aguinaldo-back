@@ -22,7 +22,6 @@ public record ProfileUpdateRequestDTO(
     @Size(max = 10, message = "Gender must be less than 10 characters")
     String gender,
 
-    // Doctor-specific fields (only used if user is a doctor)
     @Size(max = 50, message = "Medical license must be less than 50 characters")
     String medicalLicense,
     

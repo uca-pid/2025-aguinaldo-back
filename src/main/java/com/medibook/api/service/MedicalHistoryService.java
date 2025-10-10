@@ -31,7 +31,6 @@ public class MedicalHistoryService {
      */
     @Transactional
     public MedicalHistoryDTO addMedicalHistory(UUID doctorId, UUID patientId, String content) {
-        // Verify doctor exists and is active
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         
@@ -39,7 +38,6 @@ public class MedicalHistoryService {
             throw new RuntimeException("Invalid doctor or doctor is not active");
         }
 
-        // Verify patient exists and is a patient
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
         
@@ -47,13 +45,11 @@ public class MedicalHistoryService {
             throw new RuntimeException("Invalid patient or patient is not active");
         }
 
-        // Verify the doctor has had appointments with this patient
         boolean hasAppointments = turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId);
         if (!hasAppointments) {
             throw new RuntimeException("Doctor can only add medical history for patients they have treated");
         }
 
-        // Create new medical history entry
         MedicalHistory medicalHistory = MedicalHistory.builder()
                 .patient(patient)
                 .doctor(doctor)
@@ -76,7 +72,6 @@ public class MedicalHistoryService {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new RuntimeException("Medical history entry not found"));
 
-        // Verify the doctor is the one who created this entry
         if (!medicalHistory.getDoctor().getId().equals(doctorId)) {
             throw new RuntimeException("Doctor can only update their own medical history entries");
         }
@@ -136,7 +131,6 @@ public class MedicalHistoryService {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new RuntimeException("Medical history entry not found"));
 
-        // Verify the doctor is the one who created this entry
         if (!medicalHistory.getDoctor().getId().equals(doctorId)) {
             throw new RuntimeException("Doctor can only delete their own medical history entries");
         }

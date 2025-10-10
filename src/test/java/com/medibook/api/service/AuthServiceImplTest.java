@@ -4,6 +4,7 @@ import com.medibook.api.dto.Auth.RegisterRequestDTO;
 import com.medibook.api.dto.Auth.RegisterResponseDTO;
 import com.medibook.api.dto.Auth.SignInRequestDTO;
 import com.medibook.api.dto.Auth.SignInResponseDTO;
+import com.medibook.api.dto.Email.EmailResponseDto;
 import com.medibook.api.entity.RefreshToken;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AuthMapper;
@@ -23,12 +24,17 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class AuthServiceImplTest {
 
     @Mock
@@ -55,6 +61,20 @@ class AuthServiceImplTest {
     @BeforeEach
     void setUp() {
         authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService);
+
+        // Mock EmailService async methods
+        EmailResponseDto successResponse = EmailResponseDto.builder()
+                .success(true)
+                .messageId("test-message-id")
+                .message("Email sent successfully")
+                .build();
+                
+        when(emailService.sendWelcomeEmailToPatientAsync(anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+        when(emailService.sendApprovalEmailToDoctorAsync(anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+        when(emailService.sendRejectionEmailToDoctorAsync(anyString(), anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
 
         validPatientRequest = new RegisterRequestDTO(
                 "patient@test.com",

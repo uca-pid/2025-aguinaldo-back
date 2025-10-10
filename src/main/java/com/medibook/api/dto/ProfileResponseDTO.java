@@ -17,7 +17,6 @@ public class ProfileResponseDTO {
     private String role;
     private String status;
 
-    // Doctor-specific fields (will be null for non-doctors)
     private String medicalLicense;
     private String specialty;
     private Integer slotDurationMin;

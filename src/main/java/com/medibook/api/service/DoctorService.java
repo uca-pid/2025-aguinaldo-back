@@ -65,15 +65,12 @@ public class DoctorService {
 
     @Transactional
     public void updatePatientMedicalHistory(UUID doctorId, UUID patientId, String medicalHistory) {
-        // Use the new medical history service to add a new entry
         medicalHistoryService.addMedicalHistory(doctorId, patientId, medicalHistory);
     }
 
     private PatientDTO mapPatientToDTO(User patient) {
-        // Get all medical history entries for the patient
         List<MedicalHistoryDTO> medicalHistories = medicalHistoryService.getPatientMedicalHistory(patient.getId());
         
-        // For backward compatibility, get the latest medical history content
         String latestMedicalHistory = medicalHistoryService.getLatestMedicalHistoryContent(patient.getId());
         
         return PatientDTO.builder()
@@ -87,7 +84,7 @@ public class DoctorService {
                 .gender(patient.getGender())
                 .status(patient.getStatus())
                 .medicalHistories(medicalHistories)
-                .medicalHistory(latestMedicalHistory) // For backward compatibility
+                .medicalHistory(latestMedicalHistory) 
                 .build();
     }
 }
