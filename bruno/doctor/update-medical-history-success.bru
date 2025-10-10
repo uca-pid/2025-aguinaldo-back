@@ -22,6 +22,7 @@ auth:bearer {
 body:json {
   {
     "patientId": "{{patientId}}",
+    "turnId": "{{turnId}}",
     "medicalHistory": "Patient has a history of hypertension and diabetes. Last check-up showed stable blood pressure and controlled glucose levels. Prescribed medication: Metformin 500mg twice daily, Lisinopril 10mg once daily. Next follow-up recommended in 3 months."
   }
 }
@@ -29,6 +30,7 @@ body:json {
 vars:pre-request {
   doctorId: {{$processEnv.DOCTOR_ID}}
   patientId: {{$processEnv.PATIENT_ID}}
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 tests {

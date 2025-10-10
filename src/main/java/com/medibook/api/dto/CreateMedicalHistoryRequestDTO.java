@@ -6,6 +6,9 @@ import lombok.Data;
 
 import java.util.UUID;
 
+/**
+ * DTO for creating medical history entries associated with turns
+ */
 @Data
 public class CreateMedicalHistoryRequestDTO {
     @NotNull(message = "Turn ID is required")

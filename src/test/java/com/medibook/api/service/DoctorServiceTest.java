@@ -1,7 +1,8 @@
 package com.medibook.api.service;
 
-import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.dto.MedicalHistoryDTO;
+import com.medibook.api.dto.PatientDTO;
+import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
@@ -44,6 +45,8 @@ class DoctorServiceTest {
     private UUID doctorId;
     private UUID patientId1;
     private UUID patientId2;
+    private UUID turnId;
+    private TurnAssigned turn;
     private User doctor;
     private User patient1;
     private User patient2;
@@ -53,6 +56,7 @@ class DoctorServiceTest {
         doctorId = UUID.randomUUID();
         patientId1 = UUID.randomUUID();
         patientId2 = UUID.randomUUID();
+    turnId = UUID.randomUUID();
 
         doctor = new User();
         doctor.setId(doctorId);
@@ -85,6 +89,13 @@ class DoctorServiceTest {
         patient2.setGender("FEMALE");
         patient2.setRole("PATIENT");
         patient2.setStatus("ACTIVE");
+
+    turn = TurnAssigned.builder()
+        .id(turnId)
+        .doctor(doctor)
+        .patient(patient1)
+        .status("COMPLETED")
+        .build();
     }
 
     @Test
@@ -197,12 +208,69 @@ class DoctorServiceTest {
                 .doctorId(doctorId)
                 .build();
 
-        when(medicalHistoryService.addMedicalHistory(doctorId, patientId1, medicalHistory))
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(turn));
+        when(medicalHistoryService.addMedicalHistory(doctorId, turnId, medicalHistory))
                 .thenReturn(expectedResult);
 
         assertDoesNotThrow(() -> 
-            doctorService.updatePatientMedicalHistory(doctorId, patientId1, medicalHistory));
+            doctorService.updatePatientMedicalHistory(doctorId, patientId1, turnId, medicalHistory));
 
-        verify(medicalHistoryService).addMedicalHistory(doctorId, patientId1, medicalHistory);
+        verify(turnAssignedRepository).findById(turnId);
+        verify(medicalHistoryService).addMedicalHistory(doctorId, turnId, medicalHistory);
+    }
+
+    @Test
+    void updatePatientMedicalHistory_TurnNotFound() {
+    when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.empty());
+
+    RuntimeException exception = assertThrows(RuntimeException.class,
+        () -> doctorService.updatePatientMedicalHistory(doctorId, patientId1, turnId, "notes"));
+
+    assertEquals("Turn not found", exception.getMessage());
+    verify(turnAssignedRepository).findById(turnId);
+    verifyNoInteractions(medicalHistoryService);
+    }
+
+    @Test
+    void updatePatientMedicalHistory_TurnBelongsToDifferentDoctor() {
+    User otherDoctor = new User();
+    otherDoctor.setId(UUID.randomUUID());
+    otherDoctor.setRole("DOCTOR");
+    otherDoctor.setStatus("ACTIVE");
+
+    TurnAssigned foreignTurn = TurnAssigned.builder()
+        .id(turnId)
+        .doctor(otherDoctor)
+        .patient(patient1)
+        .status("COMPLETED")
+        .build();
+
+    when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(foreignTurn));
+
+    RuntimeException exception = assertThrows(RuntimeException.class,
+        () -> doctorService.updatePatientMedicalHistory(doctorId, patientId1, turnId, "notes"));
+
+    assertEquals("Doctor can only update medical history for their own turns", exception.getMessage());
+    verify(turnAssignedRepository).findById(turnId);
+    verifyNoInteractions(medicalHistoryService);
+    }
+
+    @Test
+    void updatePatientMedicalHistory_TurnBelongsToDifferentPatient() {
+    TurnAssigned foreignPatientTurn = TurnAssigned.builder()
+        .id(turnId)
+        .doctor(doctor)
+        .patient(patient2)
+        .status("COMPLETED")
+        .build();
+
+    when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(foreignPatientTurn));
+
+    RuntimeException exception = assertThrows(RuntimeException.class,
+        () -> doctorService.updatePatientMedicalHistory(doctorId, patientId1, turnId, "notes"));
+
+    assertEquals("Turn does not belong to the specified patient", exception.getMessage());
+    verify(turnAssignedRepository).findById(turnId);
+    verifyNoInteractions(medicalHistoryService);
     }
 }

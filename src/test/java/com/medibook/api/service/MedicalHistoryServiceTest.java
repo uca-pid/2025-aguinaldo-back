@@ -2,10 +2,10 @@ package com.medibook.api.service;
 
 import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.entity.MedicalHistory;
+import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.repository.MedicalHistoryRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
-import com.medibook.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -30,9 +31,6 @@ class MedicalHistoryServiceTest {
     private MedicalHistoryRepository medicalHistoryRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
     private TurnAssignedRepository turnAssignedRepository;
 
     @InjectMocks
@@ -41,15 +39,20 @@ class MedicalHistoryServiceTest {
     private User doctor;
     private User patient;
     private MedicalHistory medicalHistory;
+    private TurnAssigned turn;
     private UUID doctorId;
     private UUID patientId;
     private UUID historyId;
+    private UUID turnId;
+    private OffsetDateTime scheduledAt;
 
     @BeforeEach
     void setUp() {
         doctorId = UUID.randomUUID();
         patientId = UUID.randomUUID();
         historyId = UUID.randomUUID();
+        turnId = UUID.randomUUID();
+        scheduledAt = OffsetDateTime.now();
 
         doctor = new User();
         doctor.setId(doctorId);
@@ -65,6 +68,14 @@ class MedicalHistoryServiceTest {
         patient.setRole("PATIENT");
         patient.setStatus("ACTIVE");
 
+        turn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("COMPLETED")
+                .build();
+
         medicalHistory = new MedicalHistory();
         medicalHistory.setId(historyId);
         medicalHistory.setDoctor(doctor);
@@ -72,18 +83,18 @@ class MedicalHistoryServiceTest {
         medicalHistory.setContent("Test medical history content");
         medicalHistory.setCreatedAt(LocalDateTime.now());
         medicalHistory.setUpdatedAt(LocalDateTime.now());
+        medicalHistory.setTurn(turn);
     }
 
     @Test
     void addMedicalHistory_Success() {
         String content = "New medical history entry";
 
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-        when(turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId)).thenReturn(true);
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(turn));
+        when(medicalHistoryRepository.existsByTurn_Id(turnId)).thenReturn(false);
         when(medicalHistoryRepository.save(any(MedicalHistory.class))).thenReturn(medicalHistory);
 
-        MedicalHistoryDTO result = medicalHistoryService.addMedicalHistory(doctorId, patientId, content);
+        MedicalHistoryDTO result = medicalHistoryService.addMedicalHistory(doctorId, turnId, content);
 
         assertNotNull(result);
         assertEquals(historyId, result.getId());
@@ -93,53 +104,111 @@ class MedicalHistoryServiceTest {
         assertEquals("Smith", result.getDoctorSurname());
         assertEquals("Patient", result.getPatientName());
         assertEquals("One", result.getPatientSurname());
+        assertEquals(turnId, result.getTurnId());
 
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verify(turnAssignedRepository).existsByDoctor_IdAndPatient_Id(doctorId, patientId);
+        verify(turnAssignedRepository).findById(turnId);
+        verify(medicalHistoryRepository).existsByTurn_Id(turnId);
         verify(medicalHistoryRepository).save(any(MedicalHistory.class));
     }
 
     @Test
-    void addMedicalHistory_DoctorNotFound() {
-        when(userRepository.findById(doctorId)).thenReturn(Optional.empty());
+    void addMedicalHistory_TurnNotFound() {
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "content"));
+                () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "content"));
 
-        assertEquals("Doctor not found", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verifyNoInteractions(turnAssignedRepository, medicalHistoryRepository);
-    }
-
-    @Test
-    void addMedicalHistory_PatientNotFound() {
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "content"));
-
-        assertEquals("Patient not found", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verifyNoInteractions(turnAssignedRepository, medicalHistoryRepository);
-    }
-
-    @Test
-    void addMedicalHistory_NoAppointmentHistory() {
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-        when(turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId)).thenReturn(false);
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "content"));
-
-        assertEquals("Doctor can only add medical history for patients they have treated", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verify(turnAssignedRepository).existsByDoctor_IdAndPatient_Id(doctorId, patientId);
+        assertEquals("Turn not found", exception.getMessage());
+        verify(turnAssignedRepository).findById(turnId);
         verifyNoInteractions(medicalHistoryRepository);
+    }
+
+    @Test
+    void addMedicalHistory_DoctorMismatch() {
+    User otherDoctor = new User();
+    otherDoctor.setId(UUID.randomUUID());
+    otherDoctor.setRole("DOCTOR");
+    otherDoctor.setStatus("ACTIVE");
+    otherDoctor.setName("Other");
+    otherDoctor.setSurname("Doctor");
+
+    TurnAssigned foreignTurn = createTurn(otherDoctor, patient);
+
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(foreignTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "content"));
+
+        assertEquals("Doctor can only add medical history for their own turns", exception.getMessage());
+        verify(turnAssignedRepository).findById(turnId);
+        verifyNoInteractions(medicalHistoryRepository);
+    }
+
+    @Test
+    void addMedicalHistory_TurnWithoutPatient() {
+    TurnAssigned patientlessTurn = createTurn(doctor, null);
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(patientlessTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "content"));
+
+        assertEquals("Turn must have an assigned patient before recording medical history", exception.getMessage());
+        verify(turnAssignedRepository).findById(turnId);
+        verifyNoInteractions(medicalHistoryRepository);
+    }
+
+    @Test
+    void addMedicalHistory_DoctorInactive() {
+    User inactiveDoctor = new User();
+    inactiveDoctor.setId(doctorId);
+    inactiveDoctor.setRole("DOCTOR");
+    inactiveDoctor.setStatus("INACTIVE");
+    inactiveDoctor.setName("Dr. John");
+    inactiveDoctor.setSurname("Smith");
+
+    TurnAssigned inactiveDoctorTurn = createTurn(inactiveDoctor, patient);
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(inactiveDoctorTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "content"));
+
+        assertEquals("Invalid doctor or doctor is not active", exception.getMessage());
+        verify(turnAssignedRepository).findById(turnId);
+        verifyNoInteractions(medicalHistoryRepository);
+    }
+
+    @Test
+    void addMedicalHistory_PatientInactive() {
+    User inactivePatient = new User();
+    inactivePatient.setId(patientId);
+    inactivePatient.setRole("PATIENT");
+    inactivePatient.setStatus("INACTIVE");
+    inactivePatient.setName("Patient");
+    inactivePatient.setSurname("One");
+
+    TurnAssigned inactivePatientTurn = createTurn(doctor, inactivePatient);
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(inactivePatientTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "content"));
+
+        assertEquals("Invalid patient or patient is not active", exception.getMessage());
+        verify(turnAssignedRepository).findById(turnId);
+        verifyNoInteractions(medicalHistoryRepository);
+    }
+
+    @Test
+    void addMedicalHistory_AlreadyExistsForTurn() {
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(turn));
+        when(medicalHistoryRepository.existsByTurn_Id(turnId)).thenReturn(true);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "content"));
+
+        assertEquals("Medical history already exists for this turn", exception.getMessage());
+        verify(turnAssignedRepository).findById(turnId);
+        verify(medicalHistoryRepository).existsByTurn_Id(turnId);
+        verify(medicalHistoryRepository, never()).save(any());
     }
 
     @Test
@@ -232,22 +301,22 @@ class MedicalHistoryServiceTest {
 
     @Test
     void getLatestMedicalHistoryContent_Success() {
-        when(medicalHistoryRepository.findLatestByPatientId(patientId)).thenReturn(medicalHistory);
+        when(medicalHistoryRepository.findFirstByPatient_IdOrderByCreatedAtDesc(patientId)).thenReturn(medicalHistory);
 
         String result = medicalHistoryService.getLatestMedicalHistoryContent(patientId);
 
         assertEquals("Test medical history content", result);
-        verify(medicalHistoryRepository).findLatestByPatientId(patientId);
+        verify(medicalHistoryRepository).findFirstByPatient_IdOrderByCreatedAtDesc(patientId);
     }
 
     @Test
     void getLatestMedicalHistoryContent_NoHistory() {
-        when(medicalHistoryRepository.findLatestByPatientId(patientId)).thenReturn(null);
+        when(medicalHistoryRepository.findFirstByPatient_IdOrderByCreatedAtDesc(patientId)).thenReturn(null);
 
         String result = medicalHistoryService.getLatestMedicalHistoryContent(patientId);
 
         assertNull(result);
-        verify(medicalHistoryRepository).findLatestByPatientId(patientId);
+        verify(medicalHistoryRepository).findFirstByPatient_IdOrderByCreatedAtDesc(patientId);
     }
 
     @Test
@@ -287,99 +356,30 @@ class MedicalHistoryServiceTest {
 
     @Test
     void addMedicalHistory_DoctorNotFound_ShouldThrowException() {
-        when(userRepository.findById(doctorId)).thenReturn(Optional.empty());
+    User adminDoctor = new User();
+    adminDoctor.setId(doctorId);
+    adminDoctor.setRole("ADMIN");
+    adminDoctor.setStatus("ACTIVE");
+    adminDoctor.setName("Admin");
+    adminDoctor.setSurname("Doctor");
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
+    TurnAssigned invalidRoleTurn = createTurn(adminDoctor, patient);
+    when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(invalidRoleTurn));
 
-        assertEquals("Doctor not found", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository, never()).findById(patientId);
+    RuntimeException exception = assertThrows(RuntimeException.class,
+        () -> medicalHistoryService.addMedicalHistory(doctorId, turnId, "Test content"));
+
+    assertEquals("Invalid doctor or doctor is not active", exception.getMessage());
+    verify(turnAssignedRepository).findById(turnId);
     }
 
-    @Test
-    void addMedicalHistory_DoctorNotActive_ShouldThrowException() {
-        doctor.setStatus("INACTIVE");
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
-
-        assertEquals("Invalid doctor or doctor is not active", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository, never()).findById(patientId);
-    }
-
-    @Test
-    void addMedicalHistory_DoctorNotDoctorRole_ShouldThrowException() {
-        doctor.setRole("ADMIN");
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
-
-        assertEquals("Invalid doctor or doctor is not active", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository, never()).findById(patientId);
-    }
-
-    @Test
-    void addMedicalHistory_PatientNotFound_ShouldThrowException() {
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
-
-        assertEquals("Patient not found", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verify(turnAssignedRepository, never()).existsByDoctor_IdAndPatient_Id(any(), any());
-    }
-
-    @Test
-    void addMedicalHistory_PatientNotActive_ShouldThrowException() {
-        patient.setStatus("INACTIVE");
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
-
-        assertEquals("Invalid patient or patient is not active", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verify(turnAssignedRepository, never()).existsByDoctor_IdAndPatient_Id(any(), any());
-    }
-
-    @Test
-    void addMedicalHistory_PatientNotPatientRole_ShouldThrowException() {
-        patient.setRole("DOCTOR");
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
-
-        assertEquals("Invalid patient or patient is not active", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verify(turnAssignedRepository, never()).existsByDoctor_IdAndPatient_Id(any(), any());
-    }
-
-    @Test
-    void addMedicalHistory_NoAppointmentsBetweenDoctorAndPatient_ShouldThrowException() {
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-        when(turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId)).thenReturn(false);
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> medicalHistoryService.addMedicalHistory(doctorId, patientId, "Test content"));
-
-        assertEquals("Doctor can only add medical history for patients they have treated", exception.getMessage());
-        verify(userRepository).findById(doctorId);
-        verify(userRepository).findById(patientId);
-        verify(turnAssignedRepository).existsByDoctor_IdAndPatient_Id(doctorId, patientId);
-        verify(medicalHistoryRepository, never()).save(any());
+    private TurnAssigned createTurn(User doctorEntity, User patientEntity) {
+    return TurnAssigned.builder()
+        .id(turnId)
+        .doctor(doctorEntity)
+        .patient(patientEntity)
+        .scheduledAt(scheduledAt)
+        .status("COMPLETED")
+        .build();
     }
 }

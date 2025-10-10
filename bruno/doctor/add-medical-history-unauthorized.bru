@@ -21,9 +21,13 @@ auth:bearer {
 
 body:json {
   {
-    "patientId": "{{patientId}}",
+    "turnId": "{{turnId}}",
     "content": "Unauthorized attempt to add medical history"
   }
+}
+
+vars:pre-request {
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 tests {
