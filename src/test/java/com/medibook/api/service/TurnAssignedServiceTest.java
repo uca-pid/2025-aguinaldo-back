@@ -3,6 +3,7 @@ package com.medibook.api.service;
 
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
+import com.medibook.api.dto.Email.EmailResponseDto;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
@@ -20,12 +21,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TurnAssignedServiceTest {
     @Mock
     private TurnAssignedRepository turnRepo;
@@ -63,6 +69,22 @@ class TurnAssignedServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Mock EmailService async methods
+        EmailResponseDto successResponse = EmailResponseDto.builder()
+                .success(true)
+                .messageId("test-message-id")
+                .message("Email sent successfully")
+                .build();
+                
+        when(emailService.sendAppointmentConfirmationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+        when(emailService.sendAppointmentConfirmationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+        when(emailService.sendAppointmentCancellationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+        when(emailService.sendAppointmentCancellationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+
         doctorId = UUID.randomUUID();
         patientId = UUID.randomUUID();
         turnId = UUID.randomUUID();

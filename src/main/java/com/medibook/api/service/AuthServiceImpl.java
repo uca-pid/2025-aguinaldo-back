@@ -63,10 +63,25 @@ class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
         
         try {
-            emailService.sendWelcomeEmailToPatient(user.getEmail(), user.getName());
-            log.info("✅ Email de bienvenida enviado al paciente: {}", user.getEmail());
+            final String userEmail = user.getEmail();
+            final String userName = user.getName();
+            
+            emailService.sendWelcomeEmailToPatientAsync(userEmail, userName)
+                .thenAccept(response -> {
+                    if (response.isSuccess()) {
+                        log.info("Email de bienvenida enviado al paciente: {}", userEmail);
+                    } else {
+                        log.warn("Falló email de bienvenida para {}: {}", userEmail, response.getMessage());
+                    }
+                })
+                .exceptionally(throwable -> {
+                    log.error("Error crítico enviando email a {}: {}", userEmail, throwable.getMessage());
+                    return null;
+                });
+            
+            log.info("Email de bienvenida encolado para: {}", userEmail);
         } catch (Exception e) {
-            log.warn("⚠️ No se pudo enviar email de bienvenida al paciente {}: {}", user.getEmail(), e.getMessage());            
+            log.warn("Error encolando email de bienvenida para {}: {}", user.getEmail(), e.getMessage());            
         }
 
         return userMapper.toRegisterResponse(user);
