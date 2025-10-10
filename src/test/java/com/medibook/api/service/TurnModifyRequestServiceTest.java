@@ -1,5 +1,6 @@
 package com.medibook.api.service;
 
+import com.medibook.api.dto.Email.EmailResponseDto;
 import com.medibook.api.dto.Turn.TurnModifyRequestDTO;
 import com.medibook.api.dto.Turn.TurnModifyRequestResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
@@ -14,18 +15,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TurnModifyRequestServiceTest {
 
     @Mock
@@ -92,6 +97,18 @@ class TurnModifyRequestServiceTest {
         responseDTO = new TurnModifyRequestResponseDTO();
         responseDTO.setId(modifyRequest.getId());
         responseDTO.setStatus("PENDING");
+        
+        // Configurar mocks del EmailService para devolver CompletableFuture exitosos
+        EmailResponseDto successEmailResponse = EmailResponseDto.builder()
+                .success(true)
+                .messageId("test-message-id")
+                .message("Email sent successfully")
+                .build();
+        
+        when(emailService.sendAppointmentModificationApprovedToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(successEmailResponse));
+        when(emailService.sendAppointmentModificationApprovedToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(successEmailResponse));
     }
 
     @Test
@@ -228,10 +245,10 @@ class TurnModifyRequestServiceTest {
         verify(turnModifyRequestRepository).findById(modifyRequest.getId());
         verify(turnAssignedRepository).save(turnAssigned);
         verify(turnModifyRequestRepository).save(modifyRequest);
-        verify(emailService).sendAppointmentModificationApprovedToPatient(
+        verify(emailService).sendAppointmentModificationApprovedToPatientAsync(
                 patient.getEmail(), patient.getName(), doctor.getName(),
                 "2028-10-09", "10:00", "2028-10-10", "11:00");
-        verify(emailService).sendAppointmentModificationApprovedToDoctor(
+        verify(emailService).sendAppointmentModificationApprovedToDoctorAsync(
                 doctor.getEmail(), doctor.getName(), patient.getName(),
                 "2028-10-09", "10:00", "2028-10-10", "11:00");
         verify(notificationService).createModifyRequestApprovedNotification(
@@ -363,8 +380,10 @@ class TurnModifyRequestServiceTest {
         when(mapper.toResponseDTO(any(TurnModifyRequest.class))).thenReturn(responseDTO);
 
         // Simular fallo en envío de email al doctor
-        doThrow(new RuntimeException("Email service error"))
-                .when(emailService).sendAppointmentModificationApprovedToDoctor(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        CompletableFuture<EmailResponseDto> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("Email service error"));
+        when(emailService.sendAppointmentModificationApprovedToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(failedFuture);
 
         TurnModifyRequestResponseDTO result = service.approveModifyRequest(modifyRequest.getId(), doctor);
 
@@ -375,8 +394,8 @@ class TurnModifyRequestServiceTest {
         verify(turnModifyRequestRepository).findById(modifyRequest.getId());
         verify(turnAssignedRepository).save(turnAssigned);
         verify(turnModifyRequestRepository).save(modifyRequest);
-        verify(emailService).sendAppointmentModificationApprovedToPatient(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
-        verify(emailService).sendAppointmentModificationApprovedToDoctor(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(emailService).sendAppointmentModificationApprovedToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(emailService).sendAppointmentModificationApprovedToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
         verify(notificationService).createModifyRequestApprovedNotification(
                 any(UUID.class), 
                 any(UUID.class),

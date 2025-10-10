@@ -80,9 +80,21 @@ public class AdminController {
             userRepository.save(doctor);
 
             try {
-                emailService.sendApprovalEmailToDoctor(doctor.getEmail(), doctor.getName());
+                final String doctorEmail = doctor.getEmail();
+                final String doctorName = doctor.getName();
+                
+                emailService.sendApprovalEmailToDoctorAsync(doctorEmail, doctorName)
+                    .thenAccept(response -> {
+                        if (response.isSuccess()) {
+                            log.info("Email de aprobación enviado al doctor: {}", doctorEmail);
+                        } else {
+                            log.warn("Falló email de aprobación al doctor {}: {}", doctorEmail, response.getMessage());
+                        }
+                    });
+                
+                log.info("Email de aprobación encolado para doctor: {}", doctorEmail);
             } catch (Exception e) {
-                log.warn("⚠️ No se pudo enviar email de aprobación al doctor: {}", e.getMessage());
+                log.warn("Error encolando email de aprobación al doctor: {}", e.getMessage());
             }
 
             DoctorApprovalResponseDTO response = new DoctorApprovalResponseDTO(
@@ -128,10 +140,22 @@ public class AdminController {
             userRepository.save(doctor);
 
             try {
-                emailService.sendRejectionEmailToDoctor(doctor.getEmail(), doctor.getName(), 
-                    "Tu solicitud de registro como médico no ha sido aprobada. Por favor, contacta al equipo de soporte si necesitas más información.");
+                final String doctorEmail = doctor.getEmail();
+                final String doctorName = doctor.getName();
+                final String rejectionReason = "Tu solicitud de registro como médico no ha sido aprobada. Por favor, contacta al equipo de soporte si necesitas más información.";
+                
+                emailService.sendRejectionEmailToDoctorAsync(doctorEmail, doctorName, rejectionReason)
+                    .thenAccept(response -> {
+                        if (response.isSuccess()) {
+                            log.info(" Email de rechazo enviado al doctor: {}", doctorEmail);
+                        } else {
+                            log.warn("Falló email de rechazo al doctor {}: {}", doctorEmail, response.getMessage());
+                        }
+                    });
+                
+                log.info("Email de rechazo encolado para doctor: {}", doctorEmail);
             } catch (Exception e) {
-                log.warn("⚠️ No se pudo enviar email de rechazo al doctor: {}", e.getMessage());
+                log.warn("Error encolando email de rechazo al doctor: {}", e.getMessage());
             }
 
             DoctorApprovalResponseDTO response = new DoctorApprovalResponseDTO(

@@ -76,7 +76,6 @@ public class MedicalHistoryService {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new RuntimeException("Medical history entry not found"));
 
-        // Verify the doctor is the one who created this entry
         if (!medicalHistory.getDoctor().getId().equals(doctorId)) {
             throw new RuntimeException("Doctor can only update their own medical history entries");
         }
@@ -136,7 +135,6 @@ public class MedicalHistoryService {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new RuntimeException("Medical history entry not found"));
 
-        // Verify the doctor is the one who created this entry
         if (!medicalHistory.getDoctor().getId().equals(doctorId)) {
             throw new RuntimeException("Doctor can only delete their own medical history entries");
         }

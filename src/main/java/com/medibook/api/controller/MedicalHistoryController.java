@@ -29,8 +29,6 @@ public class MedicalHistoryController {
     @GetMapping("/{historyId}")
     @PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")
     public ResponseEntity<MedicalHistoryDTO> getMedicalHistoryById(@PathVariable UUID historyId) {
-        // This would require adding a method to the service
-        // For now, we'll return a method not implemented response
         return ResponseEntity.notFound().build();
     }
 }

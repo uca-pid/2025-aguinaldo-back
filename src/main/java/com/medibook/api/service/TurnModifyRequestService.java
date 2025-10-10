@@ -106,11 +106,11 @@ public class TurnModifyRequestService {
 
         TurnAssigned turn = request.getTurnAssigned();
         
-        // Guardar fechas antiguas antes de actualizar
+        
         String oldDate = turn.getScheduledAt().toLocalDate().toString();
         String oldTime = turn.getScheduledAt().toLocalTime().toString();
         
-        // Actualizar la cita con la nueva fecha
+        
         turn.setScheduledAt(request.getRequestedScheduledAt());
         turnAssignedRepository.save(turn);
 
@@ -121,30 +121,50 @@ public class TurnModifyRequestService {
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
 
         try {
-            // Enviar email específico de modificación aprobada al paciente
-            emailService.sendAppointmentModificationApprovedToPatient(
-                request.getPatient().getEmail(),
-                request.getPatient().getName(),
-                request.getDoctor().getName(),
-                oldDate,
-                oldTime,
-                newDate,
-                newTime
-            );
             
-            // Enviar email específico de modificación aprobada al doctor
-            emailService.sendAppointmentModificationApprovedToDoctor(
-                request.getDoctor().getEmail(),
-                request.getDoctor().getName(),
-                request.getPatient().getName(),
+            final String patientEmail = request.getPatient().getEmail();
+            final String patientName = request.getPatient().getName();
+            final String doctorEmail = request.getDoctor().getEmail();
+            final String doctorName = request.getDoctor().getName();
+            
+            
+            emailService.sendAppointmentModificationApprovedToPatientAsync(
+                patientEmail,
+                patientName,
+                doctorName,
                 oldDate,
                 oldTime,
                 newDate,
                 newTime
-            );
+            ).thenAccept(response -> {
+                if (response.isSuccess()) {
+                    log.info("Email de modificación aprobada enviado al paciente: {}", patientEmail);
+                } else {
+                    log.warn("Falló email de modificación al paciente {}: {}", patientEmail, response.getMessage());
+                }
+            });
+            
+            emailService.sendAppointmentModificationApprovedToDoctorAsync(
+                doctorEmail,
+                doctorName,
+                patientName,
+                oldDate,
+                oldTime,
+                newDate,
+                newTime
+            ).thenAccept(response -> {
+                if (response.isSuccess()) {
+                    log.info("Email de modificación aprobada enviado al doctor: {}", doctorEmail);
+                } else {
+                    log.warn("Falló email de modificación al doctor {}: {}", doctorEmail, response.getMessage());
+                }
+            });
+            
+            log.info("Emails de modificación aprobada encolados para paciente {} y doctor {}", 
+                    patientEmail, doctorEmail);
             
         } catch (Exception e) {
-            log.warn("⚠️ No se pudieron enviar emails de modificación aprobada: {}", e.getMessage());
+            log.warn("Error encolando emails de modificación aprobada: {}", e.getMessage());
         }
 
         notificationService.createModifyRequestApprovedNotification(
@@ -188,7 +208,7 @@ public class TurnModifyRequestService {
         notificationService.createModifyRequestRejectedNotification(
                 request.getPatient().getId(), 
                 requestId, 
-                null, // reason - could be enhanced later to accept a rejection reason
+                null, 
                 request.getDoctor().getName() + " " + request.getDoctor().getSurname(),
                 currentDate,
                 currentTime,

@@ -39,7 +39,7 @@ public class DoctorAvailabilityService {
 
         DoctorProfile profile = doctor.getDoctorProfile();
         
-        // Serializar availability schedule a JSON
+        
         try {
             String scheduleJson = objectMapper.writeValueAsString(request.getWeeklyAvailability());
             profile.setAvailabilitySchedule(scheduleJson);
@@ -64,7 +64,7 @@ public class DoctorAvailabilityService {
         DoctorAvailabilityResponseDTO response = new DoctorAvailabilityResponseDTO();
         response.setSlotDurationMin(profile.getSlotDurationMin());
 
-        // Deserializar availability schedule desde JSON
+        
         if (profile.getAvailabilitySchedule() != null) {
             try {
                 List<DayAvailabilityDTO> weeklyAvailability = objectMapper.readValue(
@@ -90,16 +90,16 @@ public class DoctorAvailabilityService {
         List<AvailableSlotDTO> slots = new ArrayList<>();
 
         if (availability.getWeeklyAvailability() == null || availability.getWeeklyAvailability().isEmpty()) {
-            return slots; // Sin horarios configurados
+            return slots; 
         }
 
-        // Generar slots para el rango de fechas
+        
         for (LocalDate currentDate = fromDate; !currentDate.isAfter(toDate); currentDate = currentDate.plusDays(1)) {
             final LocalDate finalCurrentDate = currentDate;
             DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
             String dayName = dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
 
-            // Buscar configuración para este día
+            
             availability.getWeeklyAvailability().stream()
                     .filter(day -> day.getDay().equals(dayName) && day.getEnabled())
                     .forEach(day -> {
