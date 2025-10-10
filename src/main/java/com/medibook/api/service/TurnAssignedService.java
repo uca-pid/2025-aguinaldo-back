@@ -216,7 +216,19 @@ public class TurnAssignedService {
             notificationUserId = turn.getPatient().getId();
             cancelledBy = "doctor";
         }
-        notificationService.createTurnCancellationNotification(notificationUserId, turnId, cancelledBy);
+        
+        String date = saved.getScheduledAt().toLocalDate().toString();
+        String time = saved.getScheduledAt().toLocalTime().toString();
+        
+        notificationService.createTurnCancellationNotification(
+            notificationUserId, 
+            turnId, 
+            cancelledBy,
+            turn.getDoctor().getName() + " " + turn.getDoctor().getSurname(),
+            turn.getPatient().getName() + " " + turn.getPatient().getSurname(),
+            date,
+            time
+        );
 
         boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();
         if (hasPendingRequest) {
