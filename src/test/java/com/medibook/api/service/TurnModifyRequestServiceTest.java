@@ -234,7 +234,15 @@ class TurnModifyRequestServiceTest {
         verify(emailService).sendAppointmentModificationApprovedToDoctor(
                 doctor.getEmail(), doctor.getName(), patient.getName(),
                 "2028-10-09", "10:00", "2028-10-10", "11:00");
-        verify(notificationService).createModifyRequestApprovedNotification(patient.getId(), modifyRequest.getId());
+        verify(notificationService).createModifyRequestApprovedNotification(
+                eq(patient.getId()), 
+                eq(modifyRequest.getId()),
+                any(String.class),
+                any(String.class),
+                any(String.class),
+                any(String.class),
+                any(String.class)
+        );
     }
 
     @Test
@@ -294,7 +302,16 @@ class TurnModifyRequestServiceTest {
         assertEquals("REJECTED", modifyRequest.getStatus());
         verify(turnModifyRequestRepository).findById(modifyRequest.getId());
         verify(turnModifyRequestRepository).save(modifyRequest);
-        verify(notificationService).createModifyRequestRejectedNotification(patient.getId(), modifyRequest.getId(), null);
+        verify(notificationService).createModifyRequestRejectedNotification(
+                eq(patient.getId()), 
+                eq(modifyRequest.getId()), 
+                isNull(),
+                any(String.class),
+                any(String.class),
+                any(String.class),
+                any(String.class),
+                any(String.class)
+        );
         verify(mapper).toResponseDTO(any(TurnModifyRequest.class));
     }
 
@@ -360,6 +377,14 @@ class TurnModifyRequestServiceTest {
         verify(turnModifyRequestRepository).save(modifyRequest);
         verify(emailService).sendAppointmentModificationApprovedToPatient(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
         verify(emailService).sendAppointmentModificationApprovedToDoctor(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString());
-        verify(notificationService).createModifyRequestApprovedNotification(any(UUID.class), any(UUID.class));
+        verify(notificationService).createModifyRequestApprovedNotification(
+                any(UUID.class), 
+                any(UUID.class),
+                any(String.class),
+                any(String.class),
+                any(String.class),
+                any(String.class),
+                any(String.class)
+        );
     }
 }

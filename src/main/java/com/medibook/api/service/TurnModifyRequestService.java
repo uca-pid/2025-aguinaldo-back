@@ -148,7 +148,14 @@ public class TurnModifyRequestService {
         }
 
         notificationService.createModifyRequestApprovedNotification(
-                request.getPatient().getId(), requestId);
+                request.getPatient().getId(), 
+                requestId,
+                request.getDoctor().getName() + " " + request.getDoctor().getSurname(),
+                oldDate,
+                oldTime,
+                newDate,
+                newTime
+        );
 
         return mapper.toResponseDTO(savedRequest);
     }
@@ -173,8 +180,21 @@ public class TurnModifyRequestService {
         request.setStatus("REJECTED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
 
+        String currentDate = request.getCurrentScheduledAt().toLocalDate().toString();
+        String currentTime = request.getCurrentScheduledAt().toLocalTime().toString();
+        String requestedDate = request.getRequestedScheduledAt().toLocalDate().toString();
+        String requestedTime = request.getRequestedScheduledAt().toLocalTime().toString();
+
         notificationService.createModifyRequestRejectedNotification(
-                request.getPatient().getId(), requestId, null);
+                request.getPatient().getId(), 
+                requestId, 
+                null, // reason - could be enhanced later to accept a rejection reason
+                request.getDoctor().getName() + " " + request.getDoctor().getSurname(),
+                currentDate,
+                currentTime,
+                requestedDate,
+                requestedTime
+        );
 
         return mapper.toResponseDTO(savedRequest);
     }

@@ -59,20 +59,42 @@ public class NotificationService {
     }
 
     // Helper methods for creating specific types of notifications
-    public void createTurnCancellationNotification(UUID userId, UUID turnId, String cancelledBy) {
-        String message = "Un turno ha sido cancelado";
+    public void createTurnCancellationNotification(UUID userId, UUID turnId, String cancelledBy,
+                                                   String doctorName, String patientName, 
+                                                   String appointmentDate, String appointmentTime) {
+        String whoSuffix = "patient".equals(cancelledBy) ? "el paciente" : "el médico";
+        String message = String.format(
+            "Su turno con %s %s para el %s a las %s ha sido cancelado por %s",
+            "doctor".equals(cancelledBy) ? "el Dr." : "",
+            "doctor".equals(cancelledBy) ? doctorName : patientName,
+            appointmentDate,
+            appointmentTime,
+            whoSuffix
+        );
         createNotification(userId, NotificationType.TURN_CANCELLED, turnId, message);
     }
 
-    public void createModifyRequestApprovedNotification(UUID userId, UUID requestId) {
-        String message = "La solicitud de modificación de un turno ha sido aprobada";
+    public void createModifyRequestApprovedNotification(UUID userId, UUID requestId,
+                                                       String doctorName, String oldDate, String oldTime,
+                                                       String newDate, String newTime) {
+        String message = String.format(
+            "Su solicitud de modificación de turno con el Dr. %s ha sido aprobada. " +
+            "Turno reprogramado del %s a las %s al %s a las %s",
+            doctorName, oldDate, oldTime, newDate, newTime
+        );
         createNotification(userId, NotificationType.MODIFY_REQUEST_APPROVED, requestId, message);
     }
 
-    public void createModifyRequestRejectedNotification(UUID userId, UUID requestId, String reason) {
-        String message = "La solicitud de modificación de un turno ha sido rechazada";
+    public void createModifyRequestRejectedNotification(UUID userId, UUID requestId, String reason,
+                                                       String doctorName, String currentDate, String currentTime,
+                                                       String requestedDate, String requestedTime) {
+        String message = String.format(
+            "Su solicitud de modificación de turno con el Dr. %s ha sido rechazada. " +
+            "Solicitó cambiar del %s a las %s al %s a las %s",
+            doctorName, currentDate, currentTime, requestedDate, requestedTime
+        );
         if (reason != null && !reason.trim().isEmpty()) {
-            message += ": " + reason;
+            message += ". Motivo: " + reason;
         }
         createNotification(userId, NotificationType.MODIFY_REQUEST_REJECTED, requestId, message);
     }
