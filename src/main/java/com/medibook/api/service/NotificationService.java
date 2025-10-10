@@ -58,7 +58,6 @@ public class NotificationService {
         return deletedRows > 0;
     }
 
-    // Helper methods for creating specific types of notifications
     public void createTurnCancellationNotification(UUID userId, UUID turnId, String cancelledBy,
                                                    String doctorName, String patientName, 
                                                    String appointmentDate, String appointmentTime) {

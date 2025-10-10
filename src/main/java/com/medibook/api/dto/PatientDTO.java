@@ -19,7 +19,5 @@ public class PatientDTO {
     private String gender;
     private String status;
     private List<MedicalHistoryDTO> medicalHistories;
-    
-    // For backward compatibility - latest medical history content
     private String medicalHistory;
 }

@@ -42,7 +42,6 @@ public record RegisterRequestDTO(
     @Pattern(regexp = "^(MALE|FEMALE)$", message = "Gender must be MALE or FEMALE")
     String gender,
 
-    // Doctor-specific fields (validated in service layer based on role)
     @Size(max = 50, message = "Medical license must be less than 50 characters")
     String medicalLicense,
     
