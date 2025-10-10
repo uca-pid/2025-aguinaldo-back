@@ -65,9 +65,9 @@ class TurnModifyRequestServiceTest {
         doctor.setEmail("doctor@test.com");
         doctor.setName("Dr. García");
         
-        // Usar fechas fijas para evitar problemas con OffsetDateTime.now()
-        OffsetDateTime originalDate = OffsetDateTime.parse("2025-10-09T10:00:00Z");
-        OffsetDateTime newDate = OffsetDateTime.parse("2025-10-10T11:00:00Z");
+        // Usar fechas fijas futuras para evitar problemas con OffsetDateTime.now()
+        OffsetDateTime originalDate = OffsetDateTime.parse("2028-10-09T10:00:00Z");
+        OffsetDateTime newDate = OffsetDateTime.parse("2028-10-10T11:00:00Z");
         
         turnAssigned = new TurnAssigned();
         turnAssigned.setId(UUID.randomUUID());
@@ -139,7 +139,7 @@ class TurnModifyRequestServiceTest {
 
     @Test
     void createModifyRequest_WithPastTurn_ShouldThrowException() {
-        turnAssigned.setScheduledAt(OffsetDateTime.parse("2025-10-08T10:00:00Z"));
+        turnAssigned.setScheduledAt(OffsetDateTime.parse("2024-10-08T10:00:00Z"));
         when(turnAssignedRepository.findById(requestDTO.getTurnId())).thenReturn(Optional.of(turnAssigned));
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -152,7 +152,7 @@ class TurnModifyRequestServiceTest {
 
     @Test
     void createModifyRequest_WithPastNewScheduledAt_ShouldThrowException() {
-        requestDTO.setNewScheduledAt(OffsetDateTime.parse("2025-10-08T10:00:00Z"));
+        requestDTO.setNewScheduledAt(OffsetDateTime.parse("2024-10-08T10:00:00Z"));
         when(turnAssignedRepository.findById(requestDTO.getTurnId())).thenReturn(Optional.of(turnAssigned));
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -230,10 +230,10 @@ class TurnModifyRequestServiceTest {
         verify(turnModifyRequestRepository).save(modifyRequest);
         verify(emailService).sendAppointmentModificationApprovedToPatient(
                 patient.getEmail(), patient.getName(), doctor.getName(),
-                "2025-10-09", "10:00", "2025-10-10", "11:00");
+                "2028-10-09", "10:00", "2028-10-10", "11:00");
         verify(emailService).sendAppointmentModificationApprovedToDoctor(
                 doctor.getEmail(), doctor.getName(), patient.getName(),
-                "2025-10-09", "10:00", "2025-10-10", "11:00");
+                "2028-10-09", "10:00", "2028-10-10", "11:00");
         verify(notificationService).createModifyRequestApprovedNotification(patient.getId(), modifyRequest.getId());
     }
 

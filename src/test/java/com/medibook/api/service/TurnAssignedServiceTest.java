@@ -42,6 +42,9 @@ class TurnAssignedServiceTest {
     @Mock
     private com.medibook.api.service.EmailService emailService;
 
+    @Mock
+    private TurnFileService turnFileService;
+
     @InjectMocks
     private TurnAssignedService turnAssignedService;
 
@@ -355,6 +358,7 @@ class TurnAssignedServiceTest {
         when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
         when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
         when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+        when(turnFileService.fileExistsForTurn(turnId)).thenReturn(false);
 
         TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
 
@@ -362,6 +366,42 @@ class TurnAssignedServiceTest {
         verify(turnRepo).findById(turnId);
         verify(turnRepo).save(scheduledTurn);
         verify(mapper).toDTO(canceledTurn);
+        verify(turnFileService).fileExistsForTurn(turnId);
+        assertEquals("CANCELED", scheduledTurn.getStatus());
+    }
+
+    @Test
+    void cancelTurn_WithFile_DeletesFileSuccessfully() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+        when(turnFileService.fileExistsForTurn(turnId)).thenReturn(true);
+        when(turnFileService.deleteTurnFile(turnId)).thenReturn(reactor.core.publisher.Mono.empty());
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(canceledTurn);
+        verify(turnFileService).fileExistsForTurn(turnId);
+        verify(turnFileService).deleteTurnFile(turnId);
         assertEquals("CANCELED", scheduledTurn.getStatus());
     }
 
