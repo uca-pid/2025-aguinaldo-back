@@ -29,6 +29,7 @@ public class TurnAssignedService {
     private final TurnAssignedMapper mapper;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final TurnFileService turnFileService;
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
         User doctor = userRepo.findById(dto.getDoctorId())
@@ -170,6 +171,17 @@ public class TurnAssignedService {
         
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
+
+        // Delete associated files if they exist
+        try {
+            if (turnFileService.fileExistsForTurn(turnId)) {
+                log.info("Deleting file associated with canceled turn: {}", turnId);
+                turnFileService.deleteTurnFile(turnId).block(); // Block since we're in a synchronous context
+                log.info("File successfully deleted for canceled turn: {}", turnId);
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to delete file for canceled turn {}: {}", turnId, e.getMessage());
+        }
 
         try {
             String date = saved.getScheduledAt().toLocalDate().toString();
