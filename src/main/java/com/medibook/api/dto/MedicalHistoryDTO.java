@@ -23,4 +23,5 @@ public class MedicalHistoryDTO {
     private UUID doctorId;
     private String doctorName;
     private String doctorSurname;
+    private UUID turnId;
 }

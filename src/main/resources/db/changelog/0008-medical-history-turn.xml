@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="0008-01-medical-history-turn" author="MediBook_Agent">
+        <comment>Associate medical history entries with turns</comment>
+
+        <addColumn tableName="medical_history">
+            <column name="turn_id" type="UUID"/>
+        </addColumn>
+
+        <sql>
+            UPDATE medical_history mh
+            SET turn_id = sub.turn_id
+            FROM (
+                SELECT mh_inner.id AS mh_id,
+                       (
+                           SELECT ta.id
+                           FROM turns_assigned ta
+                           WHERE ta.doctor_id = mh_inner.doctor_id
+                             AND ta.patient_id = mh_inner.patient_id
+                           ORDER BY ta.scheduled_at DESC
+                           LIMIT 1
+                       ) AS turn_id
+                FROM medical_history mh_inner
+            ) sub
+            WHERE mh.id = sub.mh_id
+              AND sub.turn_id IS NOT NULL;
+        </sql>
+
+        <addForeignKeyConstraint baseTableName="medical_history"
+                                 baseColumnNames="turn_id"
+                                 constraintName="fk_medical_history_turn"
+                                 referencedTableName="turns_assigned"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="medical_history"
+                             columnNames="turn_id"
+                             constraintName="uk_medical_history_turn"/>
+    </changeSet>
+
+    <changeSet id="0008-02-medical-history-turn-not-null" author="MediBook_Agent">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM medical_history WHERE turn_id IS NULL
+            </sqlCheck>
+        </preConditions>
+
+        <addNotNullConstraint tableName="medical_history"
+                              columnName="turn_id"
+                              columnDataType="UUID"/>
+    </changeSet>
+
+</databaseChangeLog>

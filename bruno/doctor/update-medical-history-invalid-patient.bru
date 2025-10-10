@@ -22,16 +22,22 @@ auth:bearer {
 body:json {
   {
     "patientId": "550e8400-e29b-41d4-a716-446655440000",
+    "turnId": "{{turnId}}",
     "medicalHistory": "Trying to update medical history for non-existent patient"
   }
 }
 
 vars:pre-request {
   doctorId: {{$processEnv.DOCTOR_ID}}
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 tests {
-  test("should return 400 or 404", function() {
-    expect(res.getStatus()).to.be.oneOf([400, 404, 500]);
+  test("should return runtime error", function() {
+    expect(res.getStatus()).to.equal(500);
+  });
+
+  test("should mention turn-patient mismatch", function() {
+    expect(res.body.message).to.include('does not belong to the specified patient');
   });
 }

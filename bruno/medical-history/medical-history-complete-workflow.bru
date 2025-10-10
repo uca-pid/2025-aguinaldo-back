@@ -21,16 +21,22 @@ auth:bearer {
 
 body:json {
   {
-    "patientId": "{{patientId}}",
+    "turnId": "{{turnId}}",
     "content": "Initial consultation: Patient complains of persistent cough and mild fever. Physical examination reveals clear lungs, normal heart rate. Diagnosed with viral upper respiratory infection. Prescribed rest, fluids, and symptomatic treatment."
   }
+}
+
+vars:pre-request {
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 tests {
   test("Step 1: Should successfully add first medical history entry", function() {
     expect(res.getStatus()).to.equal(200);
     expect(res.body).to.have.property('id');
+    const expectedTurnId = bru.getEnvVar('turnId');
     expect(res.body.content).to.include('Initial consultation');
+    expect(res.body.turnId).to.equal(expectedTurnId);
   });
 }
 

@@ -89,7 +89,7 @@ public class DoctorController {
             @PathVariable UUID doctorId,
             @Valid @RequestBody UpdateMedicalHistoryRequestDTO request) {
         
-        doctorService.updatePatientMedicalHistory(doctorId, request.getPatientId(), request.getMedicalHistory());
+        doctorService.updatePatientMedicalHistory(doctorId, request.getPatientId(), request.getTurnId(), request.getMedicalHistory());
         return ResponseEntity.ok().build();
     }
     
@@ -99,8 +99,8 @@ public class DoctorController {
             @PathVariable UUID doctorId,
             @Valid @RequestBody CreateMedicalHistoryRequestDTO request) {
         
-        MedicalHistoryDTO medicalHistory = medicalHistoryService.addMedicalHistory(
-                doctorId, request.getPatientId(), request.getContent());
+    MedicalHistoryDTO medicalHistory = medicalHistoryService.addMedicalHistory(
+        doctorId, request.getTurnId(), request.getContent());
         return ResponseEntity.ok(medicalHistory);
     }
 

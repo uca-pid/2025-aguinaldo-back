@@ -1,5 +1,5 @@
 meta {
-  name: Add Medical History - Invalid Patient ID
+  name: Add Medical History - Invalid Turn ID
   type: http
   seq: 10
 }
@@ -21,8 +21,8 @@ auth:bearer {
 
 body:json {
   {
-    "patientId": "invalid-uuid",
-    "content": "This should fail due to invalid patient ID"
+    "turnId": "invalid-uuid",
+    "content": "This should fail due to invalid turn ID"
   }
 }
 

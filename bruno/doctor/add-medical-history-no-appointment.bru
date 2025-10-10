@@ -1,5 +1,5 @@
 meta {
-  name: Add Medical tests {y Entry - No Appointment History
+  name: Add Medical History Entry - Turn Without Patient
   type: http
   seq: 3
 }
@@ -21,14 +21,14 @@ auth:bearer {
 
 body:json {
   {
-    "patientId": "{{randomPatientId}}",
-    "content": "Trying to add history for patient without appointments"
+    "turnId": "{{turnWithoutPatientId}}",
+    "content": "Trying to add history for a turn that has no assigned patient"
   }
 }
 
 vars:pre-request {
   doctorId: {{$processEnv.DOCTOR_ID}}
-  randomPatientId: {{$processEnv.RANDOM_PATIENT_ID}}
+  turnWithoutPatientId: {{$processEnv.TURN_WITHOUT_PATIENT_ID}}
 }
 
 tests {
@@ -36,7 +36,7 @@ tests {
     expect(res.getStatus()).to.equal(500);
   });
   
-  test("should contain error message about treatment history", function() {
-    expect(res.body.message).to.include('only add medical history for patients they have treated');
+  test("should contain error message about missing patient", function() {
+    expect(res.body.message).to.include('must have an assigned patient');
   });
 }
