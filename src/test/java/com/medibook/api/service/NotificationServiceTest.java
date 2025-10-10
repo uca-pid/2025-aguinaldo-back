@@ -167,7 +167,15 @@ class NotificationServiceTest {
         when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
-        notificationService.createTurnCancellationNotification(testUser.getId(), testNotification.getRelatedEntityId(), "Doctor");
+        notificationService.createTurnCancellationNotification(
+            testUser.getId(), 
+            testNotification.getRelatedEntityId(), 
+            "doctor",
+            "Dr. John Smith",
+            "Jane Doe",
+            "2024-01-15",
+            "10:30"
+        );
 
         verify(userRepository).findById(testUser.getId());
         verify(notificationRepository).save(any(Notification.class));
@@ -178,7 +186,15 @@ class NotificationServiceTest {
         when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
-        notificationService.createModifyRequestApprovedNotification(testUser.getId(), testNotification.getRelatedEntityId());
+        notificationService.createModifyRequestApprovedNotification(
+            testUser.getId(), 
+            testNotification.getRelatedEntityId(),
+            "Dr. John Smith",
+            "2024-01-15",
+            "10:30",
+            "2024-01-16",
+            "14:00"
+        );
 
         verify(userRepository).findById(testUser.getId());
         verify(notificationRepository).save(any(Notification.class));
@@ -189,7 +205,16 @@ class NotificationServiceTest {
         when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
-        notificationService.createModifyRequestRejectedNotification(testUser.getId(), testNotification.getRelatedEntityId(), "Schedule conflict");
+        notificationService.createModifyRequestRejectedNotification(
+            testUser.getId(), 
+            testNotification.getRelatedEntityId(), 
+            "Schedule conflict",
+            "Dr. John Smith",
+            "2024-01-15",
+            "10:30",
+            "2024-01-16",
+            "14:00"
+        );
 
         verify(userRepository).findById(testUser.getId());
         verify(notificationRepository).save(any(Notification.class));
@@ -200,7 +225,16 @@ class NotificationServiceTest {
         when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
         when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
 
-        notificationService.createModifyRequestRejectedNotification(testUser.getId(), testNotification.getRelatedEntityId(), null);
+        notificationService.createModifyRequestRejectedNotification(
+            testUser.getId(), 
+            testNotification.getRelatedEntityId(), 
+            null,
+            "Dr. John Smith",
+            "2024-01-15",
+            "10:30",
+            "2024-01-16",
+            "14:00"
+        );
 
         verify(userRepository).findById(testUser.getId());
         verify(notificationRepository).save(any(Notification.class));
