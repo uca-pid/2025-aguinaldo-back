@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- TURN FILES FEATURE -->
+    <changeSet id="0007-01-turn_files" author="MediBook_Admin">
+        <comment>Add turn_files table for patient file uploads feature</comment>
+        <createTable tableName="turn_files">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="turn_id" type="uuid">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="file_url" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uploaded_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="turn_files" baseColumnNames="turn_id"
+                                constraintName="fk_turn_files_turn"
+                                referencedTableName="turns_assigned" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>
