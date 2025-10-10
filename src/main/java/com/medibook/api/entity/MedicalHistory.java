@@ -3,11 +3,11 @@ package com.medibook.api.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -45,6 +45,11 @@ public class MedicalHistory {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @NotNull
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "turn_id", nullable = false, unique = true)
+    private TurnAssigned turn;
 
     @PrePersist
     protected void onCreate() {

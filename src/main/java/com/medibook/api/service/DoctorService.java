@@ -1,8 +1,9 @@
 package com.medibook.api.service;
 
 import com.medibook.api.dto.DoctorDTO;
-import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.dto.MedicalHistoryDTO;
+import com.medibook.api.dto.PatientDTO;
+import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
@@ -64,9 +65,19 @@ public class DoctorService {
     }
 
     @Transactional
-    public void updatePatientMedicalHistory(UUID doctorId, UUID patientId, String medicalHistory) {
-        // Use the new medical history service to add a new entry
-        medicalHistoryService.addMedicalHistory(doctorId, patientId, medicalHistory);
+    public void updatePatientMedicalHistory(UUID doctorId, UUID patientId, UUID turnId, String medicalHistory) {
+        TurnAssigned turn = turnAssignedRepository.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (!turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("Doctor can only update medical history for their own turns");
+        }
+
+        if (turn.getPatient() == null || !turn.getPatient().getId().equals(patientId)) {
+            throw new RuntimeException("Turn does not belong to the specified patient");
+        }
+
+        medicalHistoryService.addMedicalHistory(doctorId, turnId, medicalHistory);
     }
 
     private PatientDTO mapPatientToDTO(User patient) {
