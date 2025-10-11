@@ -3,7 +3,7 @@ package com.medibook.api.service;
 
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
-import com.medibook.api.dto.Email.EmailResponseDto;
+import com.medibook.api.dto.email.EmailResponseDto;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;

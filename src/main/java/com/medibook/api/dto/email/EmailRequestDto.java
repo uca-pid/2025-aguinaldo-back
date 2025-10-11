@@ -1,4 +1,4 @@
-package com.medibook.api.dto.Email;
+package com.medibook.api.dto.email;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
