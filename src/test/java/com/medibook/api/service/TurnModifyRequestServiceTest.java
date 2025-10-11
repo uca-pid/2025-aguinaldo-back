@@ -1,6 +1,6 @@
 package com.medibook.api.service;
 
-import com.medibook.api.dto.Email.EmailResponseDto;
+import com.medibook.api.dto.email.EmailResponseDto;
 import com.medibook.api.dto.Turn.TurnModifyRequestDTO;
 import com.medibook.api.dto.Turn.TurnModifyRequestResponseDTO;
 import com.medibook.api.entity.TurnAssigned;

@@ -1,7 +1,7 @@
 package com.medibook.api.service.email.impl;
 
-import com.medibook.api.dto.Email.EmailRequestDto;
-import com.medibook.api.dto.Email.EmailResponseDto;
+import com.medibook.api.dto.email.EmailRequestDto;
+import com.medibook.api.dto.email.EmailResponseDto;
 import com.medibook.api.service.EmailService;
 
 import org.junit.jupiter.api.Test;
