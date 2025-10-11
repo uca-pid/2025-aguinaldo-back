@@ -28,7 +28,6 @@ public class ProfileController {
         try {
             User authenticatedUser = (User) request.getAttribute("authenticatedUser");
             
-            // Check if user can access this profile (own profile or admin)
             if (!AuthorizationUtil.hasOwnership(authenticatedUser, userId) && 
                 !AuthorizationUtil.isAdmin(authenticatedUser)) {
                 return AuthorizationUtil.createOwnershipAccessDeniedResponse(
@@ -56,7 +55,6 @@ public class ProfileController {
         try {
             User authenticatedUser = (User) request.getAttribute("authenticatedUser");
             
-            // Check if user can update this profile (own profile or admin)
             if (!AuthorizationUtil.hasOwnership(authenticatedUser, userId) && 
                 !AuthorizationUtil.isAdmin(authenticatedUser)) {
                 return AuthorizationUtil.createOwnershipAccessDeniedResponse(

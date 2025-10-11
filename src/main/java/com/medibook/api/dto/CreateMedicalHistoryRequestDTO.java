@@ -6,11 +6,14 @@ import lombok.Data;
 
 import java.util.UUID;
 
+/**
+ * DTO for creating medical history entries associated with turns
+ */
 @Data
 public class CreateMedicalHistoryRequestDTO {
-    @NotNull(message = "Patient ID is required")
-    private UUID patientId;
-    
+    @NotNull(message = "Turn ID is required")
+    private UUID turnId;
+
     @Size(max = 5000, message = "Medical history content must be less than 5000 characters")
     private String content;
 }

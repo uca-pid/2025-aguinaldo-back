@@ -38,6 +38,7 @@ tests {
       expect(res.body[0]).to.have.property('createdAt');
       expect(res.body[0]).to.have.property('doctorId', vars.doctorId);
       expect(res.body[0]).to.have.property('patientName');
+      expect(res.body[0]).to.have.property('turnId');
     }
   });
   

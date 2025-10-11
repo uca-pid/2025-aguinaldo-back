@@ -32,6 +32,7 @@ tests {
       res.body.forEach(entry => {
         expect(entry).to.have.property('patientId', vars.patientId);
         expect(entry).to.have.property('doctorId', vars.doctorId);
+        expect(entry).to.have.property('turnId');
       });
     }
   });

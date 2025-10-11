@@ -21,9 +21,13 @@ auth:bearer {
 
 body:json {
   {
-    "patientId": "{{patientId}}",
+    "turnId": "{{turnId}}",
     "content": "Patient presents with acute bronchitis. Prescribed amoxicillin 500mg three times daily for 7 days. Advised rest and increased fluid intake. Follow-up in one week if symptoms persist."
   }
+}
+
+vars:pre-request {
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 script:post-response {
@@ -43,6 +47,7 @@ tests {
     expect(res.body).to.have.property('createdAt');
     expect(res.body).to.have.property('patientId');
     expect(res.body).to.have.property('doctorId');
+    expect(res.body).to.have.property('turnId');
   });
   
   test("should have correct content", function() {
@@ -54,5 +59,10 @@ tests {
     expect(res.body).to.have.property('patientSurname');
     expect(res.body).to.have.property('doctorName');
     expect(res.body).to.have.property('doctorSurname');
+  });
+
+  test("should be linked to the expected turn", function() {
+    const expectedTurnId = bru.getEnvVar('turnId');
+    expect(res.body.turnId).to.equal(expectedTurnId);
   });
 }

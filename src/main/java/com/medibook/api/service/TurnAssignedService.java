@@ -74,24 +74,46 @@ public class TurnAssignedService {
             String date = saved.getScheduledAt().toLocalDate().toString();
             String time = saved.getScheduledAt().toLocalTime().toString();
             
-            emailService.sendAppointmentConfirmationToPatient(
-                patient.getEmail(), 
-                patient.getName(), 
-                doctor.getName(), 
-                date, 
-                time
-            );
             
-            emailService.sendAppointmentConfirmationToDoctor(
-                doctor.getEmail(), 
-                doctor.getName(), 
-                patient.getName(), 
+            final String patientEmail = patient.getEmail();
+            final String patientName = patient.getName();
+            final String doctorEmail = doctor.getEmail();
+            final String doctorName = doctor.getName();
+            
+            
+            emailService.sendAppointmentConfirmationToPatientAsync(
+                patientEmail, 
+                patientName, 
+                doctorName, 
                 date, 
                 time
-            );
+            ).thenAccept(response -> {
+                if (response.isSuccess()) {
+                    log.info("Confirmación enviada al paciente: {}", patientEmail);
+                } else {
+                    log.warn("Falló confirmación al paciente {}: {}", patientEmail, response.getMessage());
+                }
+            });
+            
+            emailService.sendAppointmentConfirmationToDoctorAsync(
+                doctorEmail, 
+                doctorName, 
+                patientName, 
+                date, 
+                time
+            ).thenAccept(response -> {
+                if (response.isSuccess()) {
+                    log.info("Confirmación enviada al doctor: {}", doctorEmail);
+                } else {
+                    log.warn("Falló confirmación al doctor {}: {}", doctorEmail, response.getMessage());
+                }
+            });
+            
+            log.info("Emails de confirmación de cita encolados para paciente {} y doctor {}", 
+                    patientEmail, doctorEmail);
             
         } catch (Exception e) {
-            log.warn("⚠️ No se pudieron enviar emails de confirmación de cita: {}", e.getMessage());
+            log.warn("Error encolando emails de confirmación de cita: {}", e.getMessage());
         }
         
         return mapper.toDTO(saved);
@@ -172,39 +194,61 @@ public class TurnAssignedService {
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
 
-        // Delete associated files if they exist
+        
         try {
             if (turnFileService.fileExistsForTurn(turnId)) {
                 log.info("Deleting file associated with canceled turn: {}", turnId);
-                turnFileService.deleteTurnFile(turnId).block(); // Block since we're in a synchronous context
+                turnFileService.deleteTurnFile(turnId).block(); 
                 log.info("File successfully deleted for canceled turn: {}", turnId);
             }
         } catch (Exception e) {
-            log.warn("⚠️ Failed to delete file for canceled turn {}: {}", turnId, e.getMessage());
+            log.warn("Failed to delete file for canceled turn {}: {}", turnId, e.getMessage());
         }
 
         try {
             String date = saved.getScheduledAt().toLocalDate().toString();
             String time = saved.getScheduledAt().toLocalTime().toString();
             
-            emailService.sendAppointmentCancellationToPatient(
-                turn.getPatient().getEmail(),
-                turn.getPatient().getName(),
-                turn.getDoctor().getName(),
-                date,
-                time
-            );
             
-            emailService.sendAppointmentCancellationToDoctor(
-                turn.getDoctor().getEmail(),
-                turn.getDoctor().getName(),
-                turn.getPatient().getName(),
+            final String patientEmail = turn.getPatient().getEmail();
+            final String patientName = turn.getPatient().getName();
+            final String doctorEmail = turn.getDoctor().getEmail();
+            final String doctorName = turn.getDoctor().getName();
+            
+            
+            emailService.sendAppointmentCancellationToPatientAsync(
+                patientEmail,
+                patientName,
+                doctorName,
                 date,
                 time
-            );
+            ).thenAccept(response -> {
+                if (response.isSuccess()) {
+                    log.info("Email de cancelación enviado al paciente: {}", patientEmail);
+                } else {
+                    log.warn("Falló email de cancelación al paciente {}: {}", patientEmail, response.getMessage());
+                }
+            });
+            
+            emailService.sendAppointmentCancellationToDoctorAsync(
+                doctorEmail,
+                doctorName,
+                patientName,
+                date,
+                time
+            ).thenAccept(response -> {
+                if (response.isSuccess()) {
+                    log.info("Email de cancelación enviado al doctor: {}", doctorEmail);
+                } else {
+                    log.warn("Falló email de cancelación al doctor {}: {}", doctorEmail, response.getMessage());
+                }
+            });
+            
+            log.info("Emails de cancelación encolados para paciente {} y doctor {}", 
+                    patientEmail, doctorEmail);
             
         } catch (Exception e) {
-            log.warn("⚠️ No se pudieron enviar emails de cancelación: {}", e.getMessage());
+            log.warn("Error encolando emails de cancelación: {}", e.getMessage());
         }
 
         UUID notificationUserId;

@@ -2,10 +2,10 @@ package com.medibook.api.service;
 
 import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.entity.MedicalHistory;
+import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.repository.MedicalHistoryRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
-import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,48 +23,48 @@ import java.util.stream.Collectors;
 public class MedicalHistoryService {
     
     private final MedicalHistoryRepository medicalHistoryRepository;
-    private final UserRepository userRepository;
     private final TurnAssignedRepository turnAssignedRepository;
 
     /**
      * Add a new medical history entry
      */
     @Transactional
-    public MedicalHistoryDTO addMedicalHistory(UUID doctorId, UUID patientId, String content) {
-        // Verify doctor exists and is active
-        User doctor = userRepository.findById(doctorId)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
-        
+    public MedicalHistoryDTO addMedicalHistory(UUID doctorId, UUID turnId, String content) {
+        TurnAssigned turn = turnAssignedRepository.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (!turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("Doctor can only add medical history for their own turns");
+        }
+
+        if (turn.getPatient() == null) {
+            throw new RuntimeException("Turn must have an assigned patient before recording medical history");
+        }
+
+        User doctor = turn.getDoctor();
         if (!"DOCTOR".equals(doctor.getRole()) || !"ACTIVE".equals(doctor.getStatus())) {
             throw new RuntimeException("Invalid doctor or doctor is not active");
         }
 
-        // Verify patient exists and is a patient
-        User patient = userRepository.findById(patientId)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-        
+        User patient = turn.getPatient();
         if (!"PATIENT".equals(patient.getRole()) || !"ACTIVE".equals(patient.getStatus())) {
             throw new RuntimeException("Invalid patient or patient is not active");
         }
 
-        // Verify the doctor has had appointments with this patient
-        boolean hasAppointments = turnAssignedRepository.existsByDoctor_IdAndPatient_Id(doctorId, patientId);
-        if (!hasAppointments) {
-            throw new RuntimeException("Doctor can only add medical history for patients they have treated");
+        if (medicalHistoryRepository.existsByTurn_Id(turnId)) {
+            throw new RuntimeException("Medical history already exists for this turn");
         }
 
-        // Create new medical history entry
         MedicalHistory medicalHistory = MedicalHistory.builder()
                 .patient(patient)
                 .doctor(doctor)
+                .turn(turn)
                 .content(content)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
         MedicalHistory savedHistory = medicalHistoryRepository.save(medicalHistory);
-        log.info("Added medical history entry for patient {} by doctor {}", patientId, doctorId);
-        
+        log.info("Added medical history entry for turn {} (patient {} by doctor {})", turnId, patient.getId(), doctorId);
+
         return mapToDTO(savedHistory);
     }
 
@@ -76,7 +76,6 @@ public class MedicalHistoryService {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new RuntimeException("Medical history entry not found"));
 
-        // Verify the doctor is the one who created this entry
         if (!medicalHistory.getDoctor().getId().equals(doctorId)) {
             throw new RuntimeException("Doctor can only update their own medical history entries");
         }
@@ -124,7 +123,7 @@ public class MedicalHistoryService {
      * Get the latest medical history entry for a patient (for backward compatibility)
      */
     public String getLatestMedicalHistoryContent(UUID patientId) {
-        MedicalHistory latestHistory = medicalHistoryRepository.findLatestByPatientId(patientId);
+        MedicalHistory latestHistory = medicalHistoryRepository.findFirstByPatient_IdOrderByCreatedAtDesc(patientId);
         return latestHistory != null ? latestHistory.getContent() : null;
     }
 
@@ -136,7 +135,6 @@ public class MedicalHistoryService {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new RuntimeException("Medical history entry not found"));
 
-        // Verify the doctor is the one who created this entry
         if (!medicalHistory.getDoctor().getId().equals(doctorId)) {
             throw new RuntimeException("Doctor can only delete their own medical history entries");
         }
@@ -157,6 +155,7 @@ public class MedicalHistoryService {
                 .doctorId(medicalHistory.getDoctor().getId())
                 .doctorName(medicalHistory.getDoctor().getName())
                 .doctorSurname(medicalHistory.getDoctor().getSurname())
+        .turnId(medicalHistory.getTurn() != null ? medicalHistory.getTurn().getId() : null)
                 .build();
     }
 }

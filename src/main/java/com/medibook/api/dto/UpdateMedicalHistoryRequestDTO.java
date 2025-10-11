@@ -10,7 +10,10 @@ import java.util.UUID;
 public class UpdateMedicalHistoryRequestDTO {
     @NotNull
     private UUID patientId;
-    
+
+    @NotNull
+    private UUID turnId;
+
     @Size(max = 5000, message = "Medical history must be less than 5000 characters")
-    private String medicalHistory; // Can be null or empty to clear the history
+    private String medicalHistory; 
 }

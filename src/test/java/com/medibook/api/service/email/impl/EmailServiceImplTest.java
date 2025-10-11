@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -19,8 +22,9 @@ class EmailServiceImplTest {
     private EmailService emailService;
 
     @Test
-    void testSendWelcomeEmailToPatient() {
-        EmailResponseDto response = emailService.sendWelcomeEmailToPatient("patient@example.com", "Juan Pérez");
+    void testSendWelcomeEmailToPatientAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendWelcomeEmailToPatientAsync("patient@example.com", "Juan Pérez");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -29,8 +33,9 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendApprovalEmailToDoctor() {
-        EmailResponseDto response = emailService.sendApprovalEmailToDoctor("doctor@example.com", "Dr. García");
+    void testSendApprovalEmailToDoctorAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendApprovalEmailToDoctorAsync("doctor@example.com", "Dr. García");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -39,8 +44,9 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendRejectionEmailToDoctor() {
-        EmailResponseDto response = emailService.sendRejectionEmailToDoctor("doctor@example.com", "Dr. García", "Documentación incompleta");
+    void testSendRejectionEmailToDoctorAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendRejectionEmailToDoctorAsync("doctor@example.com", "Dr. García", "Documentación incompleta");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -49,9 +55,10 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendAppointmentConfirmationToPatient() {
-        EmailResponseDto response = emailService.sendAppointmentConfirmationToPatient(
+    void testSendAppointmentConfirmationToPatientAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentConfirmationToPatientAsync(
                 "patient@example.com", "Juan Pérez", "Dr. García", "2024-01-15", "10:00");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -60,9 +67,10 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendAppointmentConfirmationToDoctor() {
-        EmailResponseDto response = emailService.sendAppointmentConfirmationToDoctor(
+    void testSendAppointmentConfirmationToDoctorAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentConfirmationToDoctorAsync(
                 "doctor@example.com", "Dr. García", "Juan Pérez", "2024-01-15", "10:00");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -71,9 +79,10 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendAppointmentCancellationToPatient() {
-        EmailResponseDto response = emailService.sendAppointmentCancellationToPatient(
+    void testSendAppointmentCancellationToPatientAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentCancellationToPatientAsync(
                 "patient@example.com", "Juan Pérez", "Dr. García", "2024-01-15", "10:00");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -82,9 +91,10 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendAppointmentCancellationToDoctor() {
-        EmailResponseDto response = emailService.sendAppointmentCancellationToDoctor(
+    void testSendAppointmentCancellationToDoctorAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentCancellationToDoctorAsync(
                 "doctor@example.com", "Dr. García", "Juan Pérez", "2024-01-15", "10:00");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -93,10 +103,11 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendAppointmentModificationApprovedToPatient() {
-        EmailResponseDto response = emailService.sendAppointmentModificationApprovedToPatient(
+    void testSendAppointmentModificationApprovedToPatientAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentModificationApprovedToPatientAsync(
                 "patient@example.com", "Juan Pérez", "Dr. García",
                 "2024-01-15", "10:00", "2024-01-16", "11:00");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -105,10 +116,11 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendAppointmentModificationApprovedToDoctor() {
-        EmailResponseDto response = emailService.sendAppointmentModificationApprovedToDoctor(
+    void testSendAppointmentModificationApprovedToDoctorAsync() throws ExecutionException, InterruptedException {
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentModificationApprovedToDoctorAsync(
                 "doctor@example.com", "Dr. García", "Juan Pérez",
                 "2024-01-15", "10:00", "2024-01-16", "11:00");
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());
@@ -117,7 +129,7 @@ class EmailServiceImplTest {
     }
 
     @Test
-    void testSendEmail() {
+    void testSendEmailAsync() throws ExecutionException, InterruptedException {
         EmailRequestDto request = EmailRequestDto.builder()
                 .to("test@example.com")
                 .toName("Test User")
@@ -126,7 +138,8 @@ class EmailServiceImplTest {
                 .textContent("Test text content")
                 .build();
 
-        EmailResponseDto response = emailService.sendEmail(request);
+        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendEmailAsync(request);
+        EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);
         assertTrue(response.isSuccess());

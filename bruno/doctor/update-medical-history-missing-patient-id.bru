@@ -21,12 +21,14 @@ auth:bearer {
 
 body:json {
   {
+    "turnId": "{{turnId}}",
     "medicalHistory": "Medical history without patient ID"
   }
 }
 
 vars:pre-request {
   doctorId: {{$processEnv.DOCTOR_ID}}
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 tests {

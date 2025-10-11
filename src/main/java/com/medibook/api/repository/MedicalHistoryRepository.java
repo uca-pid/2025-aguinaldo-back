@@ -2,11 +2,10 @@ package com.medibook.api.repository;
 
 import com.medibook.api.entity.MedicalHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -33,8 +32,17 @@ public interface MedicalHistoryRepository extends JpaRepository<MedicalHistory, 
     boolean existsByPatient_IdAndDoctor_Id(UUID patientId, UUID doctorId);
     
     /**
+     * Check if a medical history already exists for the given turn
+     */
+    boolean existsByTurn_Id(UUID turnId);
+
+    /**
+     * Retrieve the medical history associated with a specific turn
+     */
+    Optional<MedicalHistory> findByTurn_Id(UUID turnId);
+
+    /**
      * Get the latest medical history entry for a patient
      */
-    @Query("SELECT mh FROM MedicalHistory mh WHERE mh.patient.id = :patientId ORDER BY mh.createdAt DESC LIMIT 1")
-    MedicalHistory findLatestByPatientId(@Param("patientId") UUID patientId);
+    MedicalHistory findFirstByPatient_IdOrderByCreatedAtDesc(UUID patientId);
 }

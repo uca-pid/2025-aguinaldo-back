@@ -22,6 +22,7 @@ auth:bearer {
 body:json {
   {
     "patientId": "{{patientId}}",
+    "turnId": "{{turnId}}",
     "medicalHistory": "COMPREHENSIVE MEDICAL HISTORY:\n\n1. CURRENT CONDITIONS:\n   - Hypertension (diagnosed 2020)\n   - Type 2 Diabetes Mellitus (diagnosed 2019)\n   - Mild asthma (childhood onset)\n\n2. CURRENT MEDICATIONS:\n   - Metformin 500mg twice daily\n   - Lisinopril 10mg once daily\n   - Albuterol inhaler as needed\n\n3. ALLERGIES:\n   - Penicillin (rash)\n   - Shellfish (mild reaction)\n\n4. SURGICAL HISTORY:\n   - Appendectomy (2015)\n   - Gallbladder removal (2018)\n\n5. FAMILY HISTORY:\n   - Father: Diabetes, Hypertension\n   - Mother: Breast cancer (survivor)\n\n6. SOCIAL HISTORY:\n   - Non-smoker\n   - Occasional alcohol consumption\n   - Regular exercise 3x/week\n\n7. RECENT VISITS:\n   - 2024-01-15: Routine check-up, BP stable\n   - 2024-02-20: Diabetes follow-up, HbA1c 6.8%\n   - 2024-03-10: Minor respiratory infection, resolved\n\n8. NOTES:\n   Patient is compliant with medications and lifestyle modifications. Blood pressure well controlled. Diabetes management satisfactory. Next comprehensive exam due in 6 months."
   }
 }
@@ -29,6 +30,7 @@ body:json {
 vars:pre-request {
   doctorId: {{$processEnv.DOCTOR_ID}}
   patientId: {{$processEnv.PATIENT_ID}}
+  turnId: {{$processEnv.TURN_ID}}
 }
 
 tests {
