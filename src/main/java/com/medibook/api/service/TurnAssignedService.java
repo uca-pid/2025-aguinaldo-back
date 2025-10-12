@@ -115,6 +115,27 @@ public class TurnAssignedService {
         } catch (Exception e) {
             log.warn("Error encolando emails de confirmación de cita: {}", e.getMessage());
         }
+
+        // Create notification for the doctor
+        try {
+            String dateFormatted = saved.getScheduledAt().toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            String timeFormatted = saved.getScheduledAt().toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            String patientFullName = patient.getName() + " " + patient.getSurname();
+
+            notificationService.createTurnReservedNotification(
+                    saved.getDoctor().getId(),
+                    saved.getId(),
+                    patientFullName,
+                    dateFormatted,
+                    timeFormatted
+            );
+
+            log.info("Notification created for doctor {} about turn creation by patient {}", 
+                    saved.getDoctor().getId(), patient.getId());
+        } catch (Exception e) {
+            log.error("Error creating notification for turn creation: {}", e.getMessage());
+            // Don't fail the creation if notification fails
+        }
         
         return mapper.toDTO(saved);
     }
