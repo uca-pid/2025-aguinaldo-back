@@ -6,16 +6,12 @@ import com.medibook.api.dto.email.EmailResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -23,20 +19,10 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender javaMailSender;
-    private final EmailValidationService emailValidationService;
+    private final GoogleAppsScriptEmailService googleAppsScriptEmailService;
     
     @Value("${email.enabled:false}")
     private boolean emailEnabled;
-    
-    @Value("${email.from.email}")
-    private String fromEmail;
-    
-    @Value("${email.from.name}")
-    private String fromName;
-    
-    @Value("${email.validation.mx.enabled:false}")
-    private boolean mxValidationEnabled;
 
     @Async("emailTaskExecutor")
     @Override
@@ -51,7 +37,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Retryable(
-        value = {MessagingException.class, RuntimeException.class},
+        value = {RuntimeException.class},
         maxAttempts = 3,
         backoff = @Backoff(delay = 2000, multiplier = 2, maxDelay = 10000)
     )
@@ -67,24 +53,6 @@ public class EmailServiceImpl implements EmailService {
                     .build();
         }
         
-        if (!emailValidationService.isValidFormat(emailRequest.getTo())) {
-            log.error("Invalid email format: {}", emailRequest.getTo());
-            return EmailResponseDto.builder()
-                    .success(false)
-                    .message("Invalid email format")
-                    .errorDetails("Email: " + emailRequest.getTo())
-                    .build();
-        }
-        
-        if (mxValidationEnabled && !emailValidationService.hasValidMXRecord(emailRequest.getTo())) {
-            log.warn("Email without valid MX records: {}", emailRequest.getTo());
-            return EmailResponseDto.builder()
-                    .success(false)
-                    .message("Email domain cannot receive emails")
-                    .errorDetails("No MX records for: " + emailRequest.getTo())
-                    .build();
-        }
-        
         if (emailRequest.getSubject() == null || emailRequest.getSubject().trim().isEmpty()) {
             log.error("Empty email subject for: {}", emailRequest.getTo());
             return EmailResponseDto.builder()
@@ -93,46 +61,16 @@ public class EmailServiceImpl implements EmailService {
                     .build();
         }
         
-        try {
-            long startTime = System.currentTimeMillis();
-            
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(fromEmail, fromName);
-            helper.setTo(emailRequest.getTo());
-            helper.setSubject(emailRequest.getSubject());
-            
-            if (emailRequest.getHtmlContent() != null && !emailRequest.getHtmlContent().trim().isEmpty()) {
-                helper.setText(
-                    emailRequest.getTextContent() != null ? emailRequest.getTextContent() : "", 
-                    emailRequest.getHtmlContent()
-                );
-            } else {
-                helper.setText(emailRequest.getTextContent() != null ? emailRequest.getTextContent() : "", false);
-            }
-            
-            javaMailSender.send(message);
-            
-            long duration = System.currentTimeMillis() - startTime;
-            
-            log.info("Email sent successfully to: {} | Subject: {} | Time: {}ms", 
-                    emailRequest.getTo(), emailRequest.getSubject(), duration);
-            
-            return EmailResponseDto.builder()
-                    .success(true)
-                    .messageId("gmail-" + System.currentTimeMillis())
-                    .message("Email sent successfully")
-                    .build();
-                    
-        } catch (MessagingException e) {
-            log.error("Messaging error sending email to {}: {}", emailRequest.getTo(), e.getMessage());
-            throw new RuntimeException("Messaging error: " + e.getMessage(), e);
-            
-        } catch (Exception e) {
-            log.error("General error sending email to {}: {}", emailRequest.getTo(), e.getMessage());
-            throw new RuntimeException("General error: " + e.getMessage(), e);
+        // Enviar usando Google Apps Script
+        log.debug("Using Google Apps Script for email delivery");
+        EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
+        
+        // Si Google Apps Script falla, lanzar excepción para activar el retry
+        if (!result.isSuccess()) {
+            throw new RuntimeException("Google Apps Script error: " + result.getMessage());
         }
+        
+        return result;
     }
 
     @Recover
@@ -151,7 +89,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendWelcomeEmailToPatientAsync(String patientEmail, String patientName) {
         log.debug("Processing welcome email async to: {}", patientEmail);
-        String subject = "Bienvenido a MediBook";
+        String subject = "Registro confirmado en MediBook";
         String htmlContent = buildWelcomePatientHtml(patientName);
         String textContent = buildWelcomePatientText(patientName);
         
@@ -170,7 +108,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendApprovalEmailToDoctorAsync(String doctorEmail, String doctorName) {
         log.debug("Processing approval email async to doctor: {}", doctorEmail);
-        String subject = "Tu registro como doctor ha sido aprobado";
+        String subject = "Registro médico aprobado";
         String htmlContent = buildDoctorApprovalHtml(doctorName);
         String textContent = buildDoctorApprovalText(doctorName);
         
@@ -189,7 +127,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendRejectionEmailToDoctorAsync(String doctorEmail, String doctorName, String reason) {
         log.debug("Processing rejection email async to doctor: {}", doctorEmail);
-        String subject = "Actualizacion sobre tu registro como doctor";
+        String subject = "Actualización sobre tu registro médico";
         String htmlContent = buildDoctorRejectionHtml(doctorName, reason);
         String textContent = buildDoctorRejectionText(doctorName, reason);
         
@@ -209,7 +147,7 @@ public class EmailServiceImpl implements EmailService {
     public CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToPatientAsync(
             String patientEmail, String patientName, String doctorName, String appointmentDate, String appointmentTime) {
         log.debug("Processing appointment confirmation async to patient: {}", patientEmail);
-        String subject = "Tu cita medica esta confirmada";
+        String subject = "Confirmación de cita médica";
         String htmlContent = buildAppointmentConfirmationPatientHtml(patientName, doctorName, appointmentDate, appointmentTime);
         String textContent = buildAppointmentConfirmationPatientText(patientName, doctorName, appointmentDate, appointmentTime);
         
@@ -229,7 +167,7 @@ public class EmailServiceImpl implements EmailService {
     public CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToDoctorAsync(
             String doctorEmail, String doctorName, String patientName, String appointmentDate, String appointmentTime) {
         log.debug("Processing appointment confirmation async to doctor: {}", doctorEmail);
-        String subject = "Nueva cita programada en tu agenda";
+        String subject = "Nueva cita programada";
         String htmlContent = buildAppointmentConfirmationDoctorHtml(doctorName, patientName, appointmentDate, appointmentTime);
         String textContent = buildAppointmentConfirmationDoctorText(doctorName, patientName, appointmentDate, appointmentTime);
         
@@ -249,7 +187,7 @@ public class EmailServiceImpl implements EmailService {
     public CompletableFuture<EmailResponseDto> sendAppointmentCancellationToPatientAsync(
             String patientEmail, String patientName, String doctorName, String appointmentDate, String appointmentTime) {
         log.debug("Processing appointment cancellation async to patient: {}", patientEmail);
-        String subject = "Tu cita medica ha sido cancelada";
+        String subject = "Cancelación de cita médica";
         String htmlContent = buildAppointmentCancellationPatientHtml(patientName, doctorName, appointmentDate, appointmentTime);
         String textContent = buildAppointmentCancellationPatientText(patientName, doctorName, appointmentDate, appointmentTime);
         
@@ -269,7 +207,7 @@ public class EmailServiceImpl implements EmailService {
     public CompletableFuture<EmailResponseDto> sendAppointmentCancellationToDoctorAsync(
             String doctorEmail, String doctorName, String patientName, String appointmentDate, String appointmentTime) {
         log.debug("Processing appointment cancellation async to doctor: {}", doctorEmail);
-        String subject = "Cita cancelada en tu agenda";
+        String subject = "Cancelación de cita";
         String htmlContent = buildAppointmentCancellationDoctorHtml(doctorName, patientName, appointmentDate, appointmentTime);
         String textContent = buildAppointmentCancellationDoctorText(doctorName, patientName, appointmentDate, appointmentTime);
         
@@ -289,7 +227,7 @@ public class EmailServiceImpl implements EmailService {
     public CompletableFuture<EmailResponseDto> sendAppointmentModificationApprovedToPatientAsync(
             String patientEmail, String patientName, String doctorName, String oldDate, String oldTime, String newDate, String newTime) {
         log.debug("Processing appointment modification approved async to patient: {}", patientEmail);
-        String subject = "Tu solicitud de cambio de cita fue aprobada";
+        String subject = "Modificación de cita médica aprobada";
         String htmlContent = buildAppointmentModificationApprovedPatientHtml(patientName, doctorName, oldDate, oldTime, newDate, newTime);
         String textContent = buildAppointmentModificationApprovedPatientText(patientName, doctorName, oldDate, oldTime, newDate, newTime);
         
@@ -309,7 +247,7 @@ public class EmailServiceImpl implements EmailService {
     public CompletableFuture<EmailResponseDto> sendAppointmentModificationApprovedToDoctorAsync(
             String doctorEmail, String doctorName, String patientName, String oldDate, String oldTime, String newDate, String newTime) {
         log.debug("Processing appointment modification approved async to doctor: {}", doctorEmail);
-        String subject = "Cambio de horario aprobado en tu agenda";
+        String subject = "Modificación de horario aprobada";
         String htmlContent = buildAppointmentModificationApprovedDoctorHtml(doctorName, patientName, oldDate, oldTime, newDate, newTime);
         String textContent = buildAppointmentModificationApprovedDoctorText(doctorName, patientName, oldDate, oldTime, newDate, newTime);
         
@@ -330,35 +268,35 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Bienvenido a MediBook</title>
+                    <title>Registro confirmado en MediBook</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Bienvenido a MediBook</h1>
+                            <h1>Registro confirmado en MediBook</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Hola %s,</h2>
+                            <h2>Estimado/a %s,</h2>
                             
-                            <p>Nos complace darte la bienvenida a MediBook, tu nueva plataforma de gestion medica.</p>
+                            <p>Su registro en MediBook ha sido confirmado exitosamente.</p>
                             
-                            <p>Con MediBook podras:</p>
+                            <p>A través de nuestra plataforma podrá:</p>
                             <ul>
-                                <li>Reservar citas medicas facilmente</li>
-                                <li>Ver tu historial medico</li>
-                                <li>Comunicarte con tus doctores</li>
-                                <li>Gestionar tus turnos</li>
+                                <li>Programar citas médicas</li>
+                                <li>Consultar su historial médico</li>
+                                <li>Acceder a información de sus consultas</li>
+                                <li>Gestionar sus turnos médicos</li>
                             </ul>
                             
-                            <p>Gracias por confiar en nosotros para el cuidado de tu salud.</p>
+                            <p>Agradecemos su confianza en nuestros servicios.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                         
                         <div style="background-color: #f3f4f6; padding: 15px; text-align: center; border-radius: 8px; margin-top: 20px;">
                             <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                                Este es un mensaje automatico, por favor no responder a este email.
+                                Este es un mensaje automático. Por favor, no responder a este email.
                             </p>
                         </div>
                     </div>
@@ -369,24 +307,24 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildWelcomePatientText(String patientName) {
         return """
-                Bienvenido a MediBook
+                Registro confirmado en MediBook
                 
-                Hola %s,
+                Estimado/a %s,
                 
-                Nos complace darte la bienvenida a MediBook, tu nueva plataforma de gestion medica.
+                Su registro en MediBook ha sido confirmado exitosamente.
                 
-                Con MediBook podras:
-                - Reservar citas medicas facilmente
-                - Ver tu historial medico  
-                - Comunicarte con tus doctores
-                - Gestionar tus turnos
+                A través de nuestra plataforma podrá:
+                - Programar citas médicas
+                - Consultar su historial médico
+                - Acceder a información de sus consultas
+                - Gestionar sus turnos médicos
                 
-                Gracias por confiar en nosotros para el cuidado de tu salud.
+                Agradecemos su confianza en nuestros servicios.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 
-                Este es un mensaje automatico, por favor no responder a este email.
+                Este es un mensaje automático. Por favor, no responder a este email.
                 """.formatted(patientName);
     }
 
@@ -396,30 +334,30 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Registro Aprobado</title>
+                    <title>Registro Médico Aprobado</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Registro Aprobado</h1>
+                            <h1>Registro Médico Aprobado</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Felicitaciones Dr. %s,</h2>
+                            <h2>Estimado/a Dr. %s,</h2>
                             
-                            <p>Tu registro como medico en MediBook ha sido aprobado exitosamente.</p>
+                            <p>Su registro como profesional médico en MediBook ha sido aprobado.</p>
                             
-                            <p>Ya puedes acceder a tu cuenta y comenzar a:</p>
+                            <p>A partir de ahora podrá acceder a las siguientes funcionalidades:</p>
                             <ul>
-                                <li>Gestionar tu agenda medica</li>
-                                <li>Atender pacientes</li>
-                                <li>Acceder al historial de tus pacientes</li>
-                                <li>Comunicarte con tu equipo</li>
+                                <li>Administrar su agenda médica</li>
+                                <li>Gestionar consultas con pacientes</li>
+                                <li>Acceder al historial clínico de sus pacientes</li>
+                                <li>Utilizar las herramientas de comunicación</li>
                             </ul>
                             
-                            <p>Bienvenido al equipo de profesionales de MediBook.</p>
+                            <p>Le damos la bienvenida al equipo de profesionales de MediBook.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -429,22 +367,22 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildDoctorApprovalText(String doctorName) {
         return """
-                Registro Aprobado
+                Registro Médico Aprobado
                 
-                Felicitaciones Dr. %s,
+                Estimado/a Dr. %s,
                 
-                Tu registro como medico en MediBook ha sido aprobado exitosamente.
+                Su registro como profesional médico en MediBook ha sido aprobado.
                 
-                Ya puedes acceder a tu cuenta y comenzar a:
-                - Gestionar tu agenda medica
-                - Atender pacientes
-                - Acceder al historial de tus pacientes
-                - Comunicarte con tu equipo
+                A partir de ahora podrá acceder a las siguientes funcionalidades:
+                - Administrar su agenda médica
+                - Gestionar consultas con pacientes
+                - Acceder al historial clínico de sus pacientes
+                - Utilizar las herramientas de comunicación
                 
-                Bienvenido al equipo de profesionales de MediBook.
+                Le damos la bienvenida al equipo de profesionales de MediBook.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(doctorName);
     }
 
@@ -454,24 +392,24 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Actualizacion de Registro</title>
+                    <title>Actualización de Registro Médico</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Actualizacion de Registro</h1>
+                            <h1>Actualización de Registro Médico</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Estimado Dr. %s,</h2>
+                            <h2>Estimado/a Dr. %s,</h2>
                             
-                            <p>Lamentamos informarte que tu solicitud de registro como medico en MediBook no ha sido aprobada en esta ocasion.</p>
+                            <p>Le informamos que su solicitud de registro como profesional médico en MediBook no ha sido aprobada en esta oportunidad.</p>
                             
                             <p><strong>Motivo:</strong> %s</p>
                             
-                            <p>Si tienes preguntas o necesitas mas informacion, no dudes en contactarnos.</p>
+                            <p>Si requiere información adicional o desea presentar una nueva solicitud, puede contactarnos.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -481,18 +419,18 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildDoctorRejectionText(String doctorName, String reason) {
         return """
-                Actualizacion de Registro
+                Actualización de Registro Médico
                 
-                Estimado Dr. %s,
+                Estimado/a Dr. %s,
                 
-                Lamentamos informarte que tu solicitud de registro como medico en MediBook no ha sido aprobada en esta ocasion.
+                Le informamos que su solicitud de registro como profesional médico en MediBook no ha sido aprobada en esta oportunidad.
                 
                 Motivo: %s
                 
-                Si tienes preguntas o necesitas mas informacion, no dudes en contactarnos.
+                Si requiere información adicional o desea presentar una nueva solicitud, puede contactarnos.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(doctorName, reason);
     }
 
@@ -502,29 +440,29 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Cita Confirmada</title>
+                    <title>Confirmación de Cita Médica</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Cita Confirmada</h1>
+                            <h1>Confirmación de Cita Médica</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Hola %s,</h2>
+                            <h2>Estimado/a %s,</h2>
                             
-                            <p>Tu cita medica ha sido confirmada exitosamente.</p>
+                            <p>Su cita médica ha sido confirmada.</p>
                             
                             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                 <h3>Detalles de la cita:</h3>
-                                <p><strong>Doctor:</strong> Dr. %s</p>
+                                <p><strong>Médico:</strong> Dr. %s</p>
                                 <p><strong>Fecha:</strong> %s</p>
                                 <p><strong>Hora:</strong> %s</p>
                             </div>
                             
-                            <p>Por favor, llega 15 minutos antes de tu cita.</p>
+                            <p>Le recomendamos presentarse 15 minutos antes del horario programado.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -534,21 +472,21 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildAppointmentConfirmationPatientText(String patientName, String doctorName, String appointmentDate, String appointmentTime) {
         return """
-                Cita Confirmada
+                Confirmación de Cita Médica
                 
-                Hola %s,
+                Estimado/a %s,
                 
-                Tu cita medica ha sido confirmada exitosamente.
+                Su cita médica ha sido confirmada.
                 
                 Detalles de la cita:
-                - Doctor: Dr. %s
+                - Médico: Dr. %s
                 - Fecha: %s
                 - Hora: %s
                 
-                Por favor, llega 15 minutos antes de tu cita.
+                Le recomendamos presentarse 15 minutos antes del horario programado.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(patientName, doctorName, appointmentDate, appointmentTime);
     }
 
@@ -567,9 +505,9 @@ public class EmailServiceImpl implements EmailService {
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Dr. %s,</h2>
+                            <h2>Estimado/a Dr. %s,</h2>
                             
-                            <p>Se ha programado una nueva cita en tu agenda.</p>
+                            <p>Se ha programado una nueva cita en su agenda.</p>
                             
                             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                 <h3>Detalles de la cita:</h3>
@@ -578,9 +516,9 @@ public class EmailServiceImpl implements EmailService {
                                 <p><strong>Hora:</strong> %s</p>
                             </div>
                             
-                            <p>Puedes revisar mas detalles en tu panel de control.</p>
+                            <p>Puede revisar información adicional en su panel de control.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -592,19 +530,19 @@ public class EmailServiceImpl implements EmailService {
         return """
                 Nueva Cita Programada
                 
-                Dr. %s,
+                Estimado/a Dr. %s,
                 
-                Se ha programado una nueva cita en tu agenda.
+                Se ha programado una nueva cita en su agenda.
                 
                 Detalles de la cita:
                 - Paciente: %s
                 - Fecha: %s
                 - Hora: %s
                 
-                Puedes revisar mas detalles en tu panel de control.
+                Puede revisar información adicional en su panel de control.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(doctorName, patientName, appointmentDate, appointmentTime);
     }
 
@@ -614,29 +552,29 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Cita Cancelada</title>
+                    <title>Cancelación de Cita Médica</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Cita Cancelada</h1>
+                            <h1>Cancelación de Cita Médica</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Hola %s,</h2>
+                            <h2>Estimado/a %s,</h2>
                             
-                            <p>Tu cita medica ha sido cancelada.</p>
+                            <p>Le informamos que su cita médica ha sido cancelada.</p>
                             
                             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                 <h3>Detalles de la cita cancelada:</h3>
-                                <p><strong>Doctor:</strong> Dr. %s</p>
+                                <p><strong>Médico:</strong> Dr. %s</p>
                                 <p><strong>Fecha:</strong> %s</p>
                                 <p><strong>Hora:</strong> %s</p>
                             </div>
                             
-                            <p>Puedes programar una nueva cita cuando lo desees.</p>
+                            <p>Podrá programar una nueva cita cuando lo considere conveniente.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -646,21 +584,21 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildAppointmentCancellationPatientText(String patientName, String doctorName, String appointmentDate, String appointmentTime) {
         return """
-                Cita Cancelada
+                Cancelación de Cita Médica
                 
-                Hola %s,
+                Estimado/a %s,
                 
-                Tu cita medica ha sido cancelada.
+                Le informamos que su cita médica ha sido cancelada.
                 
                 Detalles de la cita cancelada:
-                - Doctor: Dr. %s
+                - Médico: Dr. %s
                 - Fecha: %s
                 - Hora: %s
                 
-                Puedes programar una nueva cita cuando lo desees.
+                Podrá programar una nueva cita cuando lo considere conveniente.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(patientName, doctorName, appointmentDate, appointmentTime);
     }
 
@@ -670,18 +608,18 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Cita Cancelada</title>
+                    <title>Cancelación de Cita</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Cita Cancelada</h1>
+                            <h1>Cancelación de Cita</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Dr. %s,</h2>
+                            <h2>Estimado/a Dr. %s,</h2>
                             
-                            <p>Una cita en tu agenda ha sido cancelada.</p>
+                            <p>Una cita en su agenda ha sido cancelada.</p>
                             
                             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                 <h3>Detalles de la cita cancelada:</h3>
@@ -690,9 +628,9 @@ public class EmailServiceImpl implements EmailService {
                                 <p><strong>Hora:</strong> %s</p>
                             </div>
                             
-                            <p>Tu agenda ha sido actualizada automaticamente.</p>
+                            <p>Su agenda ha sido actualizada automáticamente.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -702,21 +640,21 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildAppointmentCancellationDoctorText(String doctorName, String patientName, String appointmentDate, String appointmentTime) {
         return """
-                Cita Cancelada
+                Cancelación de Cita
                 
-                Dr. %s,
+                Estimado/a Dr. %s,
                 
-                Una cita en tu agenda ha sido cancelada.
+                Una cita en su agenda ha sido cancelada.
                 
                 Detalles de la cita cancelada:
                 - Paciente: %s
                 - Fecha: %s
                 - Hora: %s
                 
-                Tu agenda ha sido actualizada automaticamente.
+                Su agenda ha sido actualizada automáticamente.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(doctorName, patientName, appointmentDate, appointmentTime);
     }
 
@@ -726,29 +664,29 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Cambio de Cita Aprobado</title>
+                    <title>Modificación de Cita Aprobada</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Cambio de Cita Aprobado</h1>
+                            <h1>Modificación de Cita Aprobada</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Hola %s,</h2>
+                            <h2>Estimado/a %s,</h2>
                             
-                            <p>Tu solicitud de cambio de cita ha sido aprobada.</p>
+                            <p>Su solicitud de modificación de cita ha sido aprobada.</p>
                             
                             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h3>Cambio realizado:</h3>
-                                <p><strong>Doctor:</strong> Dr. %s</p>
+                                <h3>Modificación realizada:</h3>
+                                <p><strong>Médico:</strong> Dr. %s</p>
                                 <p><strong>Fecha anterior:</strong> %s a las %s</p>
                                 <p><strong>Nueva fecha:</strong> %s a las %s</p>
                             </div>
                             
-                            <p>Por favor, llega 15 minutos antes de tu nueva cita.</p>
+                            <p>Le recomendamos presentarse 15 minutos antes del nuevo horario programado.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -758,21 +696,21 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildAppointmentModificationApprovedPatientText(String patientName, String doctorName, String oldDate, String oldTime, String newDate, String newTime) {
         return """
-                Cambio de Cita Aprobado
+                Modificación de Cita Aprobada
                 
-                Hola %s,
+                Estimado/a %s,
                 
-                Tu solicitud de cambio de cita ha sido aprobada.
+                Su solicitud de modificación de cita ha sido aprobada.
                 
-                Cambio realizado:
-                - Doctor: Dr. %s
+                Modificación realizada:
+                - Médico: Dr. %s
                 - Fecha anterior: %s a las %s
                 - Nueva fecha: %s a las %s
                 
-                Por favor, llega 15 minutos antes de tu nueva cita.
+                Le recomendamos presentarse 15 minutos antes del nuevo horario programado.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(patientName, doctorName, oldDate, oldTime, newDate, newTime);
     }
 
@@ -782,29 +720,29 @@ public class EmailServiceImpl implements EmailService {
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Cambio de Horario Aprobado</title>
+                    <title>Modificación de Horario Aprobada</title>
                 </head>
                 <body>
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                         <div style="background-color: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px;">
-                            <h1>Cambio de Horario Aprobado</h1>
+                            <h1>Modificación de Horario Aprobada</h1>
                         </div>
                         
                         <div style="padding: 30px 20px;">
-                            <h2>Dr. %s,</h2>
+                            <h2>Estimado/a Dr. %s,</h2>
                             
-                            <p>Se ha aprobado un cambio de horario en tu agenda.</p>
+                            <p>Se ha aprobado una modificación de horario en su agenda.</p>
                             
                             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h3>Cambio realizado:</h3>
+                                <h3>Modificación realizada:</h3>
                                 <p><strong>Paciente:</strong> %s</p>
                                 <p><strong>Horario anterior:</strong> %s a las %s</p>
                                 <p><strong>Nuevo horario:</strong> %s a las %s</p>
                             </div>
                             
-                            <p>Tu agenda ha sido actualizada automaticamente.</p>
+                            <p>Su agenda ha sido actualizada automáticamente.</p>
                             
-                            <p>Saludos,<br>El equipo de MediBook</p>
+                            <p>Atentamente,<br>Equipo de MediBook</p>
                         </div>
                     </div>
                 </body>
@@ -814,21 +752,21 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildAppointmentModificationApprovedDoctorText(String doctorName, String patientName, String oldDate, String oldTime, String newDate, String newTime) {
         return """
-                Cambio de Horario Aprobado
+                Modificación de Horario Aprobada
                 
-                Dr. %s,
+                Estimado/a Dr. %s,
                 
-                Se ha aprobado un cambio de horario en tu agenda.
+                Se ha aprobado una modificación de horario en su agenda.
                 
-                Cambio realizado:
+                Modificación realizada:
                 - Paciente: %s
                 - Horario anterior: %s a las %s
                 - Nuevo horario: %s a las %s
                 
-                Tu agenda ha sido actualizada automaticamente.
+                Su agenda ha sido actualizada automáticamente.
                 
-                Saludos,
-                El equipo de MediBook
+                Atentamente,
+                Equipo de MediBook
                 """.formatted(doctorName, patientName, oldDate, oldTime, newDate, newTime);
     }
 }
