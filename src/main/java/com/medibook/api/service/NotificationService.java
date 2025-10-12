@@ -106,4 +106,13 @@ public class NotificationService {
         );
         createNotification(doctorId, NotificationType.PATIENT_FILE_UPLOADED, turnId, message);
     }
+
+    public void createTurnReservedNotification(UUID doctorId, UUID turnId, String patientName,
+                                              String appointmentDate, String appointmentTime) {
+        String message = String.format(
+            "El paciente %s ha agendado un turno para el %s a las %s",
+            patientName, appointmentDate, appointmentTime
+        );
+        createNotification(doctorId, NotificationType.TURN_RESERVED, turnId, message);
+    }
 }

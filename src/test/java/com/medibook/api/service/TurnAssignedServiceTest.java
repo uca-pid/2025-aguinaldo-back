@@ -150,6 +150,13 @@ class TurnAssignedServiceTest {
         verify(turnRepo).existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, scheduledAt);
         verify(turnRepo).save(any(TurnAssigned.class));
         verify(mapper).toDTO(turnEntity);
+        verify(notificationService).createTurnReservedNotification(
+                eq(doctor.getId()), 
+                eq(turnEntity.getId()), 
+                eq(patient.getName() + " " + patient.getSurname()),
+                anyString(), 
+                anyString()
+        );
     }
 
     @Test
