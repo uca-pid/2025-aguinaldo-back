@@ -97,4 +97,13 @@ public class NotificationService {
         }
         createNotification(userId, NotificationType.MODIFY_REQUEST_REJECTED, requestId, message);
     }
+
+    public void createPatientFileUploadedNotification(UUID doctorId, UUID turnId, String patientName,
+                                                     String appointmentDate, String appointmentTime, String fileName) {
+        String message = String.format(
+            "El paciente %s ha subido un archivo para su turno del %s a las %s",
+            patientName, appointmentDate, appointmentTime
+        );
+        createNotification(doctorId, NotificationType.PATIENT_FILE_UPLOADED, turnId, message);
+    }
 }
