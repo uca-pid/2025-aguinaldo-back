@@ -5,6 +5,8 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
+
 @Entity
 @Table(name = "notifications")
 @Getter
@@ -41,6 +43,6 @@ public class Notification {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = OffsetDateTime.now();
+        createdAt = OffsetDateTime.now(ARGENTINA_ZONE);
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Service
@@ -21,6 +22,7 @@ public class ProfileService {
     private final UserRepository userRepository;
     private final ProfileMapper profileMapper;
     private final RefreshTokenRepository refreshTokenRepository;
+    private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public ProfileResponseDTO getProfile(UUID userId) {
         User user = userRepository.findById(userId)
@@ -53,6 +55,6 @@ public class ProfileService {
         user.setStatus("DISABLED");
         userRepository.save(user);
         
-        refreshTokenRepository.revokeAllTokensByUserId(userId, ZonedDateTime.now());
+        refreshTokenRepository.revokeAllTokensByUserId(userId, ZonedDateTime.now(ARGENTINA_ZONE));
     }
 }

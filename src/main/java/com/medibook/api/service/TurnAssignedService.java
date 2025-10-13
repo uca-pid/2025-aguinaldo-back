@@ -7,6 +7,7 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
+import com.medibook.api.util.DateTimeUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,6 +32,7 @@ public class TurnAssignedService {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final TurnFileService turnFileService;
+    private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
         User doctor = userRepo.findById(dto.getDoctorId())
@@ -71,8 +74,8 @@ public class TurnAssignedService {
         TurnAssigned saved = turnRepo.save(turn);
         
         try {
-            String date = saved.getScheduledAt().toLocalDate().toString();
-            String time = saved.getScheduledAt().toLocalTime().toString();
+            String date = DateTimeUtils.formatDate(saved.getScheduledAt());
+            String time = DateTimeUtils.formatTime(saved.getScheduledAt());
             
             
             final String patientEmail = patient.getEmail();
@@ -118,8 +121,8 @@ public class TurnAssignedService {
 
         // Create notification for the doctor
         try {
-            String dateFormatted = saved.getScheduledAt().toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            String timeFormatted = saved.getScheduledAt().toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            String dateFormatted = DateTimeUtils.formatDate(saved.getScheduledAt());
+            String timeFormatted = DateTimeUtils.formatTime(saved.getScheduledAt());
             String patientFullName = patient.getName() + " " + patient.getSurname();
 
             notificationService.createTurnReservedNotification(
@@ -207,7 +210,7 @@ public class TurnAssignedService {
             throw new RuntimeException("Turn cannot be canceled. Current status: " + turn.getStatus());
         }
         
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ARGENTINA_ZONE);
         if (turn.getScheduledAt().isBefore(now)) {
             throw new RuntimeException("Cannot cancel past turns");
         }
@@ -227,8 +230,8 @@ public class TurnAssignedService {
         }
 
         try {
-            String date = saved.getScheduledAt().toLocalDate().toString();
-            String time = saved.getScheduledAt().toLocalTime().toString();
+            String date = DateTimeUtils.formatDate(saved.getScheduledAt());
+            String time = DateTimeUtils.formatTime(saved.getScheduledAt());
             
             
             final String patientEmail = turn.getPatient().getEmail();
@@ -282,8 +285,8 @@ public class TurnAssignedService {
             cancelledBy = "doctor";
         }
         
-        String date = saved.getScheduledAt().toLocalDate().toString();
-        String time = saved.getScheduledAt().toLocalTime().toString();
+        String dateForNotification = DateTimeUtils.formatDate(saved.getScheduledAt());
+        String timeForNotification = DateTimeUtils.formatTime(saved.getScheduledAt());
         
         notificationService.createTurnCancellationNotification(
             notificationUserId, 
@@ -291,8 +294,8 @@ public class TurnAssignedService {
             cancelledBy,
             turn.getDoctor().getName() + " " + turn.getDoctor().getSurname(),
             turn.getPatient().getName() + " " + turn.getPatient().getSurname(),
-            date,
-            time
+            dateForNotification,
+            timeForNotification
         );
 
         boolean hasPendingRequest = turnModifyRequestRepository.findByTurnAssigned_IdAndStatus(turnId, "PENDING").isPresent();

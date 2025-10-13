@@ -3,6 +3,7 @@ package com.medibook.api.controller;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,8 @@ import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
+
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
 import com.medibook.api.entity.User;
 import com.medibook.api.dto.Availability.AvailableSlotDTO;
 import com.medibook.api.service.DoctorAvailabilityService;
@@ -55,7 +58,7 @@ public class TurnAssignedController {
             return validationError;
         }
         
-        if (dto.getScheduledAt() != null && dto.getScheduledAt().isBefore(OffsetDateTime.now())) {
+        if (dto.getScheduledAt() != null && dto.getScheduledAt().isBefore(OffsetDateTime.now(ARGENTINA_ZONE))) {
             return new ResponseEntity<>(
                 Map.of("error", "Bad Request", "message", "Cannot schedule turns in the past"), 
                 HttpStatus.BAD_REQUEST);
