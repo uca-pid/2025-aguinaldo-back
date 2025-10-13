@@ -8,6 +8,7 @@ import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnModifyRequestMapper;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.TurnModifyRequestRepository;
+import com.medibook.api.util.DateTimeUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class TurnModifyRequestService {
     
     private final TurnModifyRequestRepository turnModifyRequestRepository;
+    private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
     private final TurnAssignedRepository turnAssignedRepository;
     private final TurnModifyRequestMapper mapper;
     private final NotificationService notificationService;
@@ -44,11 +47,11 @@ public class TurnModifyRequestService {
             throw new IllegalArgumentException("Turn does not belong to this patient");
         }
         
-        if (turn.getScheduledAt().isBefore(OffsetDateTime.now())) {
+        if (turn.getScheduledAt().isBefore(OffsetDateTime.now(ARGENTINA_ZONE))) {
             throw new IllegalArgumentException("Cannot modify past appointments");
         }
         
-        if (dto.getNewScheduledAt().isBefore(OffsetDateTime.now())) {
+        if (dto.getNewScheduledAt().isBefore(OffsetDateTime.now(ARGENTINA_ZONE))) {
             throw new IllegalArgumentException("Cannot schedule appointments in the past");
         }
         
@@ -107,15 +110,15 @@ public class TurnModifyRequestService {
         TurnAssigned turn = request.getTurnAssigned();
         
         
-        String oldDate = turn.getScheduledAt().toLocalDate().toString();
-        String oldTime = turn.getScheduledAt().toLocalTime().toString();
+        String oldDate = DateTimeUtils.formatDate(turn.getScheduledAt());
+        String oldTime = DateTimeUtils.formatTime(turn.getScheduledAt());
         
         
         turn.setScheduledAt(request.getRequestedScheduledAt());
         turnAssignedRepository.save(turn);
 
-        String newDate = turn.getScheduledAt().toLocalDate().toString();
-        String newTime = turn.getScheduledAt().toLocalTime().toString();
+        String newDate = DateTimeUtils.formatDate(turn.getScheduledAt());
+        String newTime = DateTimeUtils.formatTime(turn.getScheduledAt());
 
         request.setStatus("APPROVED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
@@ -200,10 +203,10 @@ public class TurnModifyRequestService {
         request.setStatus("REJECTED");
         TurnModifyRequest savedRequest = turnModifyRequestRepository.save(request);
 
-        String currentDate = request.getCurrentScheduledAt().toLocalDate().toString();
-        String currentTime = request.getCurrentScheduledAt().toLocalTime().toString();
-        String requestedDate = request.getRequestedScheduledAt().toLocalDate().toString();
-        String requestedTime = request.getRequestedScheduledAt().toLocalTime().toString();
+        String currentDate = DateTimeUtils.formatDate(request.getCurrentScheduledAt());
+        String currentTime = DateTimeUtils.formatTime(request.getCurrentScheduledAt());
+        String requestedDate = DateTimeUtils.formatDate(request.getRequestedScheduledAt());
+        String requestedTime = DateTimeUtils.formatTime(request.getRequestedScheduledAt());
 
         notificationService.createModifyRequestRejectedNotification(
                 request.getPatient().getId(), 

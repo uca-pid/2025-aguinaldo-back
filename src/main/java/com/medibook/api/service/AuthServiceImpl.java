@@ -11,13 +11,17 @@ import com.medibook.api.mapper.UserMapper;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 
 @Service
@@ -167,7 +171,7 @@ class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void signOut(String refreshTokenHash) {
-        refreshTokenRepository.revokeTokenByHash(refreshTokenHash, ZonedDateTime.now());
+        refreshTokenRepository.revokeTokenByHash(refreshTokenHash, ZonedDateTime.now(ARGENTINA_ZONE));
     }
 
     @Override
@@ -186,7 +190,7 @@ class AuthServiceImpl implements AuthService {
 
         RefreshToken newRefreshToken = createRefreshToken(user);
         refreshTokenRepository.save(newRefreshToken);
-        refreshTokenRepository.revokeTokenByHash(refreshTokenHash, ZonedDateTime.now());
+        refreshTokenRepository.revokeTokenByHash(refreshTokenHash, ZonedDateTime.now(ARGENTINA_ZONE));
 
         return authMapper.toSignInResponse(user, newAccessToken, newRefreshToken.getTokenHash());
     }
@@ -195,8 +199,8 @@ class AuthServiceImpl implements AuthService {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setTokenHash(generateSecureToken());
-        refreshToken.setExpiresAt(ZonedDateTime.now().plusDays(30));
-        refreshToken.setCreatedAt(ZonedDateTime.now());
+        refreshToken.setExpiresAt(ZonedDateTime.now(ARGENTINA_ZONE).plusDays(30));
+        refreshToken.setCreatedAt(ZonedDateTime.now(ARGENTINA_ZONE));
         return refreshToken;
     }
 
@@ -234,11 +238,11 @@ class AuthServiceImpl implements AuthService {
             }
         }
                 
-        if (request.birthdate().isAfter(java.time.LocalDate.now().minusYears(18))) {
+        if (request.birthdate().isAfter(LocalDate.now(ARGENTINA_ZONE).minusYears(18))) {
             throw new IllegalArgumentException("Must be at least 18 years old");
         }
         
-        if (request.birthdate().isBefore(java.time.LocalDate.now().minusYears(120))) {
+        if (request.birthdate().isBefore(LocalDate.now(ARGENTINA_ZONE).minusYears(120))) {
             throw new IllegalArgumentException("Invalid birth date");
         }
     }

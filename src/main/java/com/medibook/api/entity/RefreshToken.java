@@ -7,6 +7,8 @@ import lombok.Setter;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
+
 @Entity
 @Getter
 @Setter
@@ -34,13 +36,13 @@ public class RefreshToken {
     private ZonedDateTime expiresAt;
 
     @Column(name = "created_at", nullable = false)
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private ZonedDateTime createdAt = ZonedDateTime.now(ARGENTINA_ZONE);
 
     @Column(name = "revoked_at")
     private ZonedDateTime revokedAt;
 
     public boolean isExpired() {
-        return ZonedDateTime.now().isAfter(expiresAt);
+        return ZonedDateTime.now(ARGENTINA_ZONE).isAfter(expiresAt);
     }
 
     public boolean isRevoked() {

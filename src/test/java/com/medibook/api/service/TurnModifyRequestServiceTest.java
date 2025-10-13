@@ -247,10 +247,10 @@ class TurnModifyRequestServiceTest {
         verify(turnModifyRequestRepository).save(modifyRequest);
         verify(emailService).sendAppointmentModificationApprovedToPatientAsync(
                 patient.getEmail(), patient.getName(), doctor.getName(),
-                "2028-10-09", "10:00", "2028-10-10", "11:00");
+                "09/10/2028", "07:00", "10/10/2028", "08:00");
         verify(emailService).sendAppointmentModificationApprovedToDoctorAsync(
                 doctor.getEmail(), doctor.getName(), patient.getName(),
-                "2028-10-09", "10:00", "2028-10-10", "11:00");
+                "09/10/2028", "07:00", "10/10/2028", "08:00");
         verify(notificationService).createModifyRequestApprovedNotification(
                 eq(patient.getId()), 
                 eq(modifyRequest.getId()),
