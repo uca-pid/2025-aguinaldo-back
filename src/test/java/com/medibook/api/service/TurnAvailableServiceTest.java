@@ -32,6 +32,7 @@ class TurnAvailableServiceTest {
     private LocalTime workStart;
     private LocalTime workEnd;
     private User doctor;
+    private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     @BeforeEach
     void setUp() {
@@ -49,10 +50,12 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_NoOccupiedSlots_ReturnsAllSlots() {
+        ZoneOffset argentinaOffset = ARGENTINA_ZONE.getRules().getOffset(testDate.atStartOfDay());
+        
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(
                 eq(doctorId),
-                eq(testDate.atTime(workStart).atOffset(ZoneOffset.UTC)),
-                eq(testDate.atTime(workEnd).atOffset(ZoneOffset.UTC))
+                eq(testDate.atTime(workStart).atOffset(argentinaOffset)),
+                eq(testDate.atTime(workEnd).atOffset(argentinaOffset))
         )).thenReturn(Arrays.asList());
 
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
@@ -62,10 +65,10 @@ class TurnAvailableServiceTest {
         assertNotNull(availableSlots);
         assertEquals(40, availableSlots.size());
         
-        OffsetDateTime firstSlot = testDate.atTime(workStart).atOffset(ZoneOffset.UTC);
+        OffsetDateTime firstSlot = testDate.atTime(workStart).atOffset(argentinaOffset);
         assertEquals(firstSlot, availableSlots.get(0));
         
-        OffsetDateTime lastSlot = testDate.atTime(workEnd).atOffset(ZoneOffset.UTC).minusMinutes(15);
+        OffsetDateTime lastSlot = testDate.atTime(workEnd).atOffset(argentinaOffset).minusMinutes(15);
         assertEquals(lastSlot, availableSlots.get(availableSlots.size() - 1));
 
         verify(turnRepo).findByDoctor_IdAndScheduledAtBetween(any(), any(), any());
@@ -73,8 +76,10 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_WithOccupiedSlots_ExcludesOccupiedSlots() {
-        OffsetDateTime occupiedSlot1 = testDate.atTime(10, 0).atOffset(ZoneOffset.UTC);
-        OffsetDateTime occupiedSlot2 = testDate.atTime(14, 30).atOffset(ZoneOffset.UTC);
+        ZoneOffset argentinaOffset = ARGENTINA_ZONE.getRules().getOffset(testDate.atStartOfDay());
+        
+        OffsetDateTime occupiedSlot1 = testDate.atTime(10, 0).atOffset(argentinaOffset);
+        OffsetDateTime occupiedSlot2 = testDate.atTime(14, 30).atOffset(argentinaOffset);
 
         TurnAssigned turn1 = TurnAssigned.builder()
                 .id(UUID.randomUUID())
@@ -92,8 +97,8 @@ class TurnAvailableServiceTest {
 
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(
                 eq(doctorId),
-                eq(testDate.atTime(workStart).atOffset(ZoneOffset.UTC)),
-                eq(testDate.atTime(workEnd).atOffset(ZoneOffset.UTC))
+                eq(testDate.atTime(workStart).atOffset(argentinaOffset)),
+                eq(testDate.atTime(workEnd).atOffset(argentinaOffset))
         )).thenReturn(Arrays.asList(turn1, turn2));
 
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
@@ -111,12 +116,13 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_AllSlotsOccupied_ReturnsEmptyList() {
-        List<TurnAssigned> allSlots = generateAllPossibleTurns();
+        ZoneOffset argentinaOffset = ARGENTINA_ZONE.getRules().getOffset(testDate.atStartOfDay());
+        List<TurnAssigned> allSlots = generateAllPossibleTurns(argentinaOffset);
         
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(
                 eq(doctorId),
-                eq(testDate.atTime(workStart).atOffset(ZoneOffset.UTC)),
-                eq(testDate.atTime(workEnd).atOffset(ZoneOffset.UTC))
+                eq(testDate.atTime(workStart).atOffset(argentinaOffset)),
+                eq(testDate.atTime(workEnd).atOffset(argentinaOffset))
         )).thenReturn(allSlots);
 
         List<OffsetDateTime> availableSlots = turnAvailableService.getAvailableTurns(
@@ -169,6 +175,8 @@ class TurnAvailableServiceTest {
 
     @Test
     void getAvailableTurns_VerifyTimeRange() {
+        ZoneOffset argentinaOffset = ARGENTINA_ZONE.getRules().getOffset(testDate.atStartOfDay());
+        
         when(turnRepo.findByDoctor_IdAndScheduledAtBetween(any(), any(), any()))
                 .thenReturn(Arrays.asList());
 
@@ -178,8 +186,8 @@ class TurnAvailableServiceTest {
 
         assertNotNull(availableSlots);
         
-        OffsetDateTime workStartDateTime = testDate.atTime(workStart).atOffset(ZoneOffset.UTC);
-        OffsetDateTime workEndDateTime = testDate.atTime(workEnd).atOffset(ZoneOffset.UTC);
+        OffsetDateTime workStartDateTime = testDate.atTime(workStart).atOffset(argentinaOffset);
+        OffsetDateTime workEndDateTime = testDate.atTime(workEnd).atOffset(argentinaOffset);
         
         for (OffsetDateTime slot : availableSlots) {
             assertTrue(slot.isAfter(workStartDateTime) || slot.isEqual(workStartDateTime));
@@ -187,10 +195,10 @@ class TurnAvailableServiceTest {
         }
     }
 
-    private List<TurnAssigned> generateAllPossibleTurns() {
+    private List<TurnAssigned> generateAllPossibleTurns(ZoneOffset offset) {
         List<TurnAssigned> turns = new java.util.ArrayList<>();
-        OffsetDateTime current = testDate.atTime(workStart).atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = testDate.atTime(workEnd).atOffset(ZoneOffset.UTC);
+        OffsetDateTime current = testDate.atTime(workStart).atOffset(offset);
+        OffsetDateTime end = testDate.atTime(workEnd).atOffset(offset);
         
         while (current.isBefore(end)) {
             TurnAssigned turn = TurnAssigned.builder()

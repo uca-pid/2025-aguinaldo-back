@@ -4,13 +4,13 @@ import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.TurnFile;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.TurnFileRepository;
+import com.medibook.api.util.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
-import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,11 +54,8 @@ public class TurnFileServiceImpl implements TurnFileService {
                         if (turnOpt.isPresent()) {
                             TurnAssigned turn = turnOpt.get();
                             if (turn.getDoctor() != null && turn.getPatient() != null) {
-                                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-                                
-                                String appointmentDate = turn.getScheduledAt().format(dateFormatter);
-                                String appointmentTime = turn.getScheduledAt().format(timeFormatter);
+                                String appointmentDate = DateTimeUtils.formatDate(turn.getScheduledAt());
+                                String appointmentTime = DateTimeUtils.formatTime(turn.getScheduledAt());
                                 String patientName = turn.getPatient().getName() + " " + turn.getPatient().getSurname();
                                 
                                 notificationService.createPatientFileUploadedNotification(

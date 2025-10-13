@@ -12,6 +12,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
+
 @Entity
 @Getter
 @Setter
@@ -53,12 +55,12 @@ public class MedicalHistory {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ARGENTINA_ZONE);
+        updatedAt = LocalDateTime.now(ARGENTINA_ZONE);
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(ARGENTINA_ZONE);
     }
 }

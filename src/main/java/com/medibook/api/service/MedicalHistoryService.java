@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ public class MedicalHistoryService {
     
     private final MedicalHistoryRepository medicalHistoryRepository;
     private final TurnAssignedRepository turnAssignedRepository;
+    private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     /**
      * Add a new medical history entry
@@ -81,7 +83,7 @@ public class MedicalHistoryService {
         }
 
         medicalHistory.setContent(content);
-        medicalHistory.setUpdatedAt(LocalDateTime.now());
+        medicalHistory.setUpdatedAt(LocalDateTime.now(ARGENTINA_ZONE));
 
         MedicalHistory updatedHistory = medicalHistoryRepository.save(medicalHistory);
         log.info("Updated medical history entry {} by doctor {}", historyId, doctorId);
