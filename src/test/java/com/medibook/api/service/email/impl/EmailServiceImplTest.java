@@ -68,8 +68,8 @@ class EmailServiceImplTest {
 
     @Test
     void testSendAppointmentConfirmationToDoctorAsync() throws ExecutionException, InterruptedException {
-        CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentConfirmationToDoctorAsync(
-                "doctor@example.com", "Dr. García", "Juan Pérez", "2024-01-15", "10:00");
+    CompletableFuture<EmailResponseDto> futureResponse = emailService.sendAppointmentConfirmationToDoctorAsync(
+        "doctor@example.com", "Dr. García", "Juan Pérez", "2024-01-15", "10:00", "turn-123");
         EmailResponseDto response = futureResponse.get();
 
         assertNotNull(response);

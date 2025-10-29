@@ -20,7 +20,8 @@ public interface EmailService {
                                                                                 String turnId);
     
     CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToDoctorAsync(String doctorEmail, String doctorName, 
-                                                                               String patientName, String appointmentDate, String appointmentTime);
+                                                                               String patientName, String appointmentDate, String appointmentTime,
+                                                                               String turnId);
     
     CompletableFuture<EmailResponseDto> sendAppointmentCancellationToPatientAsync(String patientEmail, String patientName, 
                                                                                 String doctorName, String appointmentDate, String appointmentTime);

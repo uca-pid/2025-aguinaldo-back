@@ -82,13 +82,12 @@ public class TurnAssignedService {
             final String patientName = patient.getName();
             final String doctorEmail = doctor.getEmail();
             final String doctorName = doctor.getName();
-            
-            
+
             emailService.sendAppointmentConfirmationToPatientAsync(
-                patientEmail, 
-                patientName, 
-                doctorName, 
-                date, 
+                patientEmail,
+                patientName,
+                doctorName,
+                date,
                 time,
                 saved.getId().toString()
             ).thenAccept(response -> {
@@ -100,11 +99,12 @@ public class TurnAssignedService {
             });
             
             emailService.sendAppointmentConfirmationToDoctorAsync(
-                doctorEmail, 
-                doctorName, 
-                patientName, 
-                date, 
-                time
+                doctorEmail,
+                doctorName,
+                patientName,
+                date,
+                time,
+                saved.getId().toString()
             ).thenAccept(response -> {
                 if (response.isSuccess()) {
                     log.info("Confirmación enviada al doctor: {}", doctorEmail);
