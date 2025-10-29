@@ -23,6 +23,9 @@ public class EmailServiceImpl implements EmailService {
     
     @Value("${email.enabled:false}")
     private boolean emailEnabled;
+    
+    @Value("${FRONTEND_URL:http://localhost:5173}")
+    private String frontendUrl;
 
     @Async("emailTaskExecutor")
     @Override
@@ -145,11 +148,12 @@ public class EmailServiceImpl implements EmailService {
     @Async("emailTaskExecutor")
     @Override
     public CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToPatientAsync(
-            String patientEmail, String patientName, String doctorName, String appointmentDate, String appointmentTime) {
+            String patientEmail, String patientName, String doctorName, String appointmentDate, String appointmentTime,
+            String turnId) {
         log.debug("Processing appointment confirmation async to patient: {}", patientEmail);
         String subject = "Confirmación de cita médica";
-        String htmlContent = buildAppointmentConfirmationPatientHtml(patientName, doctorName, appointmentDate, appointmentTime);
-        String textContent = buildAppointmentConfirmationPatientText(patientName, doctorName, appointmentDate, appointmentTime);
+        String htmlContent = buildAppointmentConfirmationPatientHtml(patientName, doctorName, appointmentDate, appointmentTime, turnId);
+        String textContent = buildAppointmentConfirmationPatientText(patientName, doctorName, appointmentDate, appointmentTime, turnId);
         
         EmailRequestDto emailRequest = EmailRequestDto.builder()
                 .to(patientEmail)
@@ -434,7 +438,7 @@ public class EmailServiceImpl implements EmailService {
                 """.formatted(doctorName, reason);
     }
 
-    private String buildAppointmentConfirmationPatientHtml(String patientName, String doctorName, String appointmentDate, String appointmentTime) {
+    private String buildAppointmentConfirmationPatientHtml(String patientName, String doctorName, String appointmentDate, String appointmentTime, String turnId) {
         return """
                 <!DOCTYPE html>
                 <html>
@@ -460,6 +464,10 @@ public class EmailServiceImpl implements EmailService {
                                 <p><strong>Hora:</strong> %s</p>
                             </div>
                             
+                            <div style="text-align: center; margin-top: 10px;">
+                                <a href="%s/patient/view-turns?turnId=%s" style="display:inline-block;padding:12px 20px;background-color:#ef4444;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Cancelar cita</a>
+                            </div>
+                            
                             <p>Le recomendamos presentarse 15 minutos antes del horario programado.</p>
                             
                             <p>Atentamente,<br>Equipo de MediBook</p>
@@ -470,7 +478,7 @@ public class EmailServiceImpl implements EmailService {
                 """.formatted(patientName, doctorName, appointmentDate, appointmentTime);
     }
 
-    private String buildAppointmentConfirmationPatientText(String patientName, String doctorName, String appointmentDate, String appointmentTime) {
+    private String buildAppointmentConfirmationPatientText(String patientName, String doctorName, String appointmentDate, String appointmentTime, String turnId) {
         return """
                 Confirmación de Cita Médica
                 
@@ -483,11 +491,13 @@ public class EmailServiceImpl implements EmailService {
                 - Fecha: %s
                 - Hora: %s
                 
+                Para cancelar la cita, visite: %s/patient/view-turns?turnId=%s
+
                 Le recomendamos presentarse 15 minutos antes del horario programado.
                 
                 Atentamente,
                 Equipo de MediBook
-                """.formatted(patientName, doctorName, appointmentDate, appointmentTime);
+                """.formatted(patientName, doctorName, appointmentDate, appointmentTime, frontendUrl, turnId);
     }
 
     private String buildAppointmentConfirmationDoctorHtml(String doctorName, String patientName, String appointmentDate, String appointmentTime) {

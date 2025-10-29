@@ -89,7 +89,8 @@ public class TurnAssignedService {
                 patientName, 
                 doctorName, 
                 date, 
-                time
+                time,
+                saved.getId().toString()
             ).thenAccept(response -> {
                 if (response.isSuccess()) {
                     log.info("Confirmación enviada al paciente: {}", patientEmail);

@@ -16,7 +16,8 @@ public interface EmailService {
     CompletableFuture<EmailResponseDto> sendRejectionEmailToDoctorAsync(String doctorEmail, String doctorName, String reason);
     
     CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToPatientAsync(String patientEmail, String patientName, 
-                                                                                String doctorName, String appointmentDate, String appointmentTime);
+                                                                                String doctorName, String appointmentDate, String appointmentTime,
+                                                                                String turnId);
     
     CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToDoctorAsync(String doctorEmail, String doctorName, 
                                                                                String patientName, String appointmentDate, String appointmentTime);
