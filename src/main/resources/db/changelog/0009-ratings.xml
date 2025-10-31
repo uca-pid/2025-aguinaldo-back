@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="0009-01-ratings" author="MediBook_Admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ratings"/>
+            </not>
+        </preConditions>
+        <createTable tableName="ratings">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="turn_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rater_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rated_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="score" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subcategory" type="text"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="ratings" baseColumnNames="turn_id"
+                                constraintName="fk_ratings_turn"
+                                referencedTableName="turns_assigned" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="ratings" baseColumnNames="rater_id"
+                                constraintName="fk_ratings_rater"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+
+        <addForeignKeyConstraint baseTableName="ratings" baseColumnNames="rated_id"
+                                constraintName="fk_ratings_rated"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+
+        <addUniqueConstraint tableName="ratings" columnNames="turn_id,rater_id" constraintName="uc_ratings_turn_rater"/>
+
+        <createIndex indexName="idx_ratings_turn_id" tableName="ratings">
+            <column name="turn_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_ratings_rated_id" tableName="ratings">
+            <column name="rated_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0009-02-add-rated-id" author="MediBook_Admin">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="ratings"/>
+                <not>
+                    <columnExists tableName="ratings" columnName="rated_id"/>
+                </not>
+            </and>
+        </preConditions>
+
+        <addColumn tableName="ratings">
+            <column name="rated_id" type="uuid"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="ratings" baseColumnNames="rated_id"
+                                constraintName="fk_ratings_rated"
+                                referencedTableName="users" referencedColumnNames="id"
+                                onDelete="RESTRICT"/>
+
+        <createIndex indexName="idx_ratings_rated_id" tableName="ratings">
+            <column name="rated_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0009-03-add-score-subcategory-createdat" author="MediBook_Admin">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="ratings"/>
+                <not>
+                    <and>
+                        <columnExists tableName="ratings" columnName="score"/>
+                        <columnExists tableName="ratings" columnName="subcategory"/>
+                        <columnExists tableName="ratings" columnName="created_at"/>
+                    </and>
+                </not>
+            </and>
+        </preConditions>
+
+        <!-- Add score with a safe default for existing rows -->
+        <addColumn tableName="ratings">
+            <column name="score" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Add optional subcategory -->
+        <addColumn tableName="ratings">
+            <column name="subcategory" type="text"/>
+        </addColumn>
+
+        <!-- Add created_at with now() default -->
+        <addColumn tableName="ratings">
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

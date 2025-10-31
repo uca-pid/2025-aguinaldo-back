@@ -1,0 +1,30 @@
+meta {
+  name: Patient_Rate_Doctor_InvalidScore
+  type: http
+  seq: 101
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json {
+    "score": 6,
+    "subcategory": "Explicación clara"
+  }
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return validation error for invalid score", function() {
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    expect(body).to.have.property('message');
+    expect(body.message).to.match(/Score must be between 1 and 5/);
+  });
+}
