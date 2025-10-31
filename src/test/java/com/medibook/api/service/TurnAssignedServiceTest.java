@@ -76,9 +76,9 @@ class TurnAssignedServiceTest {
                 .message("Email sent successfully")
                 .build();
                 
-        when(emailService.sendAppointmentConfirmationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(emailService.sendAppointmentConfirmationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
-        when(emailService.sendAppointmentConfirmationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(emailService.sendAppointmentConfirmationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
         when(emailService.sendAppointmentCancellationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));

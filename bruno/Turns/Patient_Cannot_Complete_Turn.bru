@@ -1,0 +1,30 @@
+meta {
+  name: Patient_Cannot_Complete_Turn
+  type: http
+  seq: 31
+}
+
+patch {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/complete
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("Should forbid patients from completing turns", function() {
+    expect(res.getStatus()).to.equal(403);
+    const body = res.getBody();
+    expect(typeof body).to.equal('string');
+    expect(body).to.include('Only doctors can mark turns as completed');
+  });
+}
+
+settings {
+  encodeUrl: true
+}

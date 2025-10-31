@@ -1,0 +1,39 @@
+meta {
+  name: Doctor_Complete_Own_Turn_Success
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/complete
+  auth: bearer
+  body: none
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.status: eq COMPLETED
+}
+
+tests {
+  test("Should mark turn as completed", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(body.status).to.equal('COMPLETED');
+    expect(body.id).to.equal(bru.getEnvVar('doctorOwnTurnId'));
+  });
+
+  test("Should include scheduling and patient info", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('scheduledAt');
+    expect(body).to.have.property('patientId');
+  });
+}
+
+

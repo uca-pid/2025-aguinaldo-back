@@ -82,14 +82,14 @@ public class TurnAssignedService {
             final String patientName = patient.getName();
             final String doctorEmail = doctor.getEmail();
             final String doctorName = doctor.getName();
-            
-            
+
             emailService.sendAppointmentConfirmationToPatientAsync(
-                patientEmail, 
-                patientName, 
-                doctorName, 
-                date, 
-                time
+                patientEmail,
+                patientName,
+                doctorName,
+                date,
+                time,
+                saved.getId().toString()
             ).thenAccept(response -> {
                 if (response.isSuccess()) {
                     log.info("Confirmación enviada al paciente: {}", patientEmail);
@@ -99,11 +99,12 @@ public class TurnAssignedService {
             });
             
             emailService.sendAppointmentConfirmationToDoctorAsync(
-                doctorEmail, 
-                doctorName, 
-                patientName, 
-                date, 
-                time
+                doctorEmail,
+                doctorName,
+                patientName,
+                date,
+                time,
+                saved.getId().toString()
             ).thenAccept(response -> {
                 if (response.isSuccess()) {
                     log.info("Confirmación enviada al doctor: {}", doctorEmail);
@@ -302,6 +303,24 @@ public class TurnAssignedService {
         if (hasPendingRequest) {
             turnModifyRequestRepository.deleteByTurnAssigned_IdAndStatus(turnId, "PENDING");
         }
+
+        return mapper.toDTO(saved);
+    }
+
+    public TurnResponseDTO completeTurn(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only complete your own turns");
+        }
+
+        if (!"SCHEDULED".equals(turn.getStatus()) && !"RESERVED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be completed. Current status: " + turn.getStatus());
+        }
+
+        turn.setStatus("COMPLETED");
+        TurnAssigned saved = turnRepo.save(turn);
 
         return mapper.toDTO(saved);
     }
