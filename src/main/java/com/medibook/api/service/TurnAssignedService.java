@@ -306,4 +306,22 @@ public class TurnAssignedService {
 
         return mapper.toDTO(saved);
     }
+
+    public TurnResponseDTO completeTurn(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only complete your own turns");
+        }
+
+        if (!"SCHEDULED".equals(turn.getStatus()) && !"RESERVED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be completed. Current status: " + turn.getStatus());
+        }
+
+        turn.setStatus("COMPLETED");
+        TurnAssigned saved = turnRepo.save(turn);
+
+        return mapper.toDTO(saved);
+    }
 }

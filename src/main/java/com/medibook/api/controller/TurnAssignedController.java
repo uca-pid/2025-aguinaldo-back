@@ -209,4 +209,25 @@ public class TurnAssignedController {
                 .body(e.getMessage());
         }
     }
+
+    @PostMapping("/{turnId}/complete")
+    public ResponseEntity<Object> completeTurn(
+            @PathVariable UUID turnId,
+            HttpServletRequest request) {
+
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+
+        if (!"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only doctors can complete turns");
+        }
+
+        try {
+            TurnResponseDTO completed = turnService.completeTurn(turnId, authenticatedUser.getId());
+            return ResponseEntity.ok(completed);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
+    }
 }
