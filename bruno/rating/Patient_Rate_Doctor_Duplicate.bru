@@ -1,0 +1,58 @@
+meta {
+  name: Patient_Rate_Doctor_Duplicate
+  type: http
+  seq: 103
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+body:json {
+  {
+    "score": 5,
+    "subcategory": "Explicación clara"
+  }
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+body:json {
+  {
+    "score": 4
+  }
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Second rating by same patient should fail", function() {
+    // first response is in resHistory[0], second is current res
+    const first = bru.getResponse(0).getBody();
+    expect(first).to.have.property('id');
+    const second = res.getBody();
+    expect(res.getStatus()).to.equal(400);
+    expect(second).to.have.property('message');
+    expect(second.message).to.match(/already rated/);
+  });
+}

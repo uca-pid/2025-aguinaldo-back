@@ -1,0 +1,35 @@
+meta {
+  name: Patient_Rate_Doctor_InvalidSubcategory
+  type: http
+  seq: 102
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+body:json{
+  {
+    "score": 4,
+    "subcategory": "Bad Subcategory"
+  }
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return validation error for invalid subcategory", function() {
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    expect(body).to.have.property('message');
+    expect(body.message).to.match(/Invalid subcategory/);
+  });
+}
