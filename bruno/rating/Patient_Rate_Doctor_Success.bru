@@ -1,0 +1,40 @@
+meta {
+  name: Patient_Rate_Doctor_Success
+  type: http
+  seq: 100
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+body:json{
+  {
+    "score": 5,
+    "subcategory": "Explicación clara"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.score: eq 5
+  res.body.subcategory: eq "Explicación clara"
+}
+
+tests {
+  test("Rating is anonymous for regular users", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('ratedId');
+    expect(body).to.have.property('score');
+    expect(body).to.not.have.property('raterId');
+    expect(body.score).to.equal(5);
+  });
+}
+
