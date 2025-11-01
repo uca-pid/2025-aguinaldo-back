@@ -5,7 +5,10 @@ import java.util.Arrays;
 public enum RatingSubcategoryPatient {
     PUNTUALIDAD("Puntualidad"),
     RESPETO("Respeto"),
-    HIGIENE("Higiene");
+    HIGIENE("Higiene"),
+    COLABORACION("Colaboración"),
+    COMUNICACION("Comunicación"),
+    CUMPLIMIENTO_DE_INDICACIONES("Cumplimiento de indicaciones");
 
     private final String label;
 
