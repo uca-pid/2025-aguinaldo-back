@@ -370,11 +370,34 @@ public class TurnAssignedService {
 
         String normalizedSubcategory = null;
         if (subcategory != null && !subcategory.trim().isEmpty()) {
-            com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
-            if (cat == null) {
-                throw new RuntimeException("Invalid subcategory. Allowed: " + com.medibook.api.dto.Rating.RatingSubcategory.allowedValues());
+            String role = rater.getRole() == null ? "" : rater.getRole().trim();
+            if ("PATIENT".equalsIgnoreCase(role)) {
+                com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
+                if (cat == null) {
+                    String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
+                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                    log.warn("Invalid subcategory '{}' for rater role '{}'. Patient allowed: {}. Doctor allowed: {}", subcategory, role, patientAllowed, doctorAllowed);
+                    throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
+                }
+                normalizedSubcategory = cat.getLabel();
+            } else if ("DOCTOR".equalsIgnoreCase(role)) {
+                com.medibook.api.dto.Rating.RatingSubcategoryPatient cat = com.medibook.api.dto.Rating.RatingSubcategoryPatient.fromString(subcategory);
+                if (cat == null) {
+                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                    log.warn("Invalid subcategory '{}' for rater role '{}'. Doctor allowed: {}", subcategory, role, doctorAllowed);
+                    throw new RuntimeException("Invalid subcategory. Allowed for doctors: " + doctorAllowed);
+                }
+                normalizedSubcategory = cat.getLabel();
+            } else {
+                // Unknown role: show both sets to help debugging
+                com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
+                if (cat == null) {
+                    String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
+                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                    throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
+                }
+                normalizedSubcategory = cat.getLabel();
             }
-            normalizedSubcategory = cat.getLabel();
         }
 
         Rating rating = Rating.builder()
