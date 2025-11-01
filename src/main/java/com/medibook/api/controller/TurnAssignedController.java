@@ -249,7 +249,7 @@ public class TurnAssignedController {
         }
 
         try {
-            Rating saved = turnService.addRating(turnId, authenticatedUser.getId(), dto.getScore(), dto.getSubcategory());
+            Rating saved = turnService.addRating(turnId, authenticatedUser.getId(), dto.getScore(), dto.getSubcategories());
 
             //Si es admin ve los nombres
             RatingResponseDTO ratingDto = ratingMapper.toDTO(saved);

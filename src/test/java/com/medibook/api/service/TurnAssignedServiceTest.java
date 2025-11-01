@@ -840,7 +840,7 @@ class TurnAssignedServiceTest {
 
         when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(saved);
 
-        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, "Respeto");
+    com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, java.util.List.of("Respeto"));
 
         assertNotNull(result);
         assertEquals("Respeto", result.getSubcategory());
@@ -862,7 +862,7 @@ class TurnAssignedServiceTest {
         when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, doctorId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> {
-            turnAssignedService.addRating(turnId, doctorId, 4, "Bad Subcategory");
+            turnAssignedService.addRating(turnId, doctorId, 4, java.util.List.of("Bad Subcategory"));
         });
 
         assertTrue(ex.getMessage().contains("Invalid subcategory"));
