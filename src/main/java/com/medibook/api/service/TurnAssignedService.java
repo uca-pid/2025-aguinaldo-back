@@ -328,6 +328,24 @@ public class TurnAssignedService {
         return mapper.toDTO(saved);
     }
 
+    public TurnResponseDTO markTurnAsNoShow(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only mark no-show for your own turns");
+        }
+
+        if (!"SCHEDULED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be marked as no-show. Current status: " + turn.getStatus());
+        }
+
+        turn.setStatus("CANCELED");
+        TurnAssigned saved = turnRepo.save(turn);
+
+        return mapper.toDTO(saved);
+    }
+
     public com.medibook.api.entity.Rating addRating(UUID turnId, UUID raterId, Integer score, java.util.List<String> subcategories) {
         if (score == null || score < 1 || score > 5) {
             throw new RuntimeException("Score must be between 1 and 5");
