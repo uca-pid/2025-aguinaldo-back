@@ -1,0 +1,35 @@
+meta {
+  name: Doctor_Rate_Before_Complete
+  type: http
+  seq: 202
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{tempUncompletedTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+body:json {
+    {
+    "score": 5
+  }
+}
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Doctor cannot rate before turn completed", function() {
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    expect(body).to.have.property('message');
+    expect(body.message).to.match(/completed/);
+  });
+}
+
+

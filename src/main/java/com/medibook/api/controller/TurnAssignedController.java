@@ -263,4 +263,17 @@ public class TurnAssignedController {
             return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
         }
     }
+
+    @GetMapping("/rating-subcategories")
+    public ResponseEntity<Object> getRatingSubcategories(@RequestParam(required = false) String role) {
+        
+        if ("DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategoryPatient.values())
+                    .map(com.medibook.api.dto.Rating.RatingSubcategoryPatient::getLabel)
+                    .toList());
+        }
+        return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategory.values())
+                .map(com.medibook.api.dto.Rating.RatingSubcategory::getLabel)
+                .toList());
+    }
 }
