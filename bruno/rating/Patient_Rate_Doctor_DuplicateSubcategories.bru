@@ -1,0 +1,38 @@
+meta {
+  name: Patient_Rate_Doctor_DuplicateSubcategories
+  type: http
+  seq: 106
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+body:json{
+  {
+    "score": 4,
+    "subcategories": ["Explicación clara", "Explicación clara", "Amabilidad"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.score: eq 4
+}
+
+tests {
+  test("Duplicates are removed and order preserved", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(Array.isArray(body.subcategories)).to.be.true;
+    expect(body.subcategories.length).to.equal(2);
+    expect(body.subcategories[0]).to.equal('Explicación clara');
+    expect(body.subcategories[1]).to.equal('Amabilidad');
+  });
+}
