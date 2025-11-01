@@ -1,0 +1,42 @@
+meta {
+  name: Doctor_Rate_Patient_Success_MultipleSubcategories
+  type: http
+  seq: 201
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{patientOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json{
+  {
+    "score": 5,
+    "subcategories": ["Puntualidad", "Colaboración"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.score: eq 5
+  res.body.subcategories: eq ["Puntualidad", "Colaboración"]
+}
+
+tests {
+  test("Rating is anonymous and contains multiple subcategories", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('ratedId');
+    expect(body).to.have.property('score');
+    expect(body).to.have.property('subcategories');
+    expect(body).to.not.have.property('raterId');
+    expect(Array.isArray(body.subcategories)).to.be.true;
+    expect(body.subcategories.length).to.equal(2);
+    expect(body.score).to.equal(5);
+  });
+}
