@@ -43,6 +43,9 @@ class TurnAssignedServiceTest {
     private TurnAssignedMapper mapper;
 
     @Mock
+    private com.medibook.api.repository.RatingRepository ratingRepo;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -76,9 +79,9 @@ class TurnAssignedServiceTest {
                 .message("Email sent successfully")
                 .build();
                 
-        when(emailService.sendAppointmentConfirmationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(emailService.sendAppointmentConfirmationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
-        when(emailService.sendAppointmentConfirmationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(emailService.sendAppointmentConfirmationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
         when(emailService.sendAppointmentCancellationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
@@ -809,5 +812,60 @@ class TurnAssignedServiceTest {
         verify(turnModifyRequestRepository).findByTurnAssigned_IdAndStatus(turnId, "PENDING");
         verify(turnModifyRequestRepository, never()).deleteByTurnAssigned_IdAndStatus(any(UUID.class), eq("PENDING"));
         assertEquals("CANCELED", scheduledTurn.getStatus());
+    }
+
+    @Test
+    void addRating_DoctorRatesPatient_Success() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, doctorId)).thenReturn(false);
+
+        com.medibook.api.entity.Rating saved = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(doctor)
+                .rated(patient)
+                .score(5)
+                .subcategory("Respeto")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(saved);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, "Respeto");
+
+        assertNotNull(result);
+        assertEquals("Respeto", result.getSubcategory());
+        verify(ratingRepo).save(any(com.medibook.api.entity.Rating.class));
+    }
+
+    @Test
+    void addRating_DoctorRatesPatient_InvalidSubcategory_ThrowsException() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(scheduledAt)
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, doctorId)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            turnAssignedService.addRating(turnId, doctorId, 4, "Bad Subcategory");
+        });
+
+        assertTrue(ex.getMessage().contains("Invalid subcategory"));
+        verify(ratingRepo, never()).save(any());
     }
 }

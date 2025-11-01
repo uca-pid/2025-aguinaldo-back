@@ -3,7 +3,6 @@ package com.medibook.api.controller;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +11,9 @@ import java.util.UUID;
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
+import com.medibook.api.dto.Rating.RatingRequestDTO;
+import com.medibook.api.dto.Rating.RatingResponseDTO;
+import com.medibook.api.entity.Rating;
 import com.medibook.api.entity.TurnAssigned;
 
 import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
@@ -28,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.medibook.api.util.ErrorResponseUtil;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -39,6 +42,7 @@ public class TurnAssignedController {
     private final TurnAssignedService turnService;
     private final DoctorAvailabilityService doctorAvailabilityService;
     private final TurnAssignedRepository turnAssignedRepository;
+    private final com.medibook.api.mapper.RatingMapper ratingMapper;
 
     @PostMapping
     public ResponseEntity<Object> createTurn(
@@ -208,5 +212,68 @@ public class TurnAssignedController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(e.getMessage());
         }
+    }
+
+    @PostMapping("/{turnId}/complete")
+    public ResponseEntity<Object> completeTurn(
+            @PathVariable UUID turnId,
+            HttpServletRequest request) {
+
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+
+        if (!"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only doctors can complete turns");
+        }
+
+        try {
+            TurnResponseDTO completed = turnService.completeTurn(turnId, authenticatedUser.getId());
+            return ResponseEntity.ok(completed);
+        } catch (RuntimeException e) {
+            var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
+            return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
+        }
+    }
+
+    @PostMapping("/{turnId}/rate")
+    public ResponseEntity<Object> rateTurn(
+            @PathVariable UUID turnId,
+            @RequestBody RatingRequestDTO dto,
+            HttpServletRequest request) {
+
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+
+        if (!"PATIENT".equals(authenticatedUser.getRole()) && !"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only patients and doctors can rate");
+        }
+
+        try {
+            Rating saved = turnService.addRating(turnId, authenticatedUser.getId(), dto.getScore(), dto.getSubcategory());
+
+            //Si es admin ve los nombres
+            RatingResponseDTO ratingDto = ratingMapper.toDTO(saved);
+            if (!"ADMIN".equals(authenticatedUser.getRole())) {
+            
+                ratingDto.setRaterId(null);
+            }
+            return ResponseEntity.ok(ratingDto);
+        } catch (RuntimeException e) {
+            var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
+            return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
+        }
+    }
+
+    @GetMapping("/rating-subcategories")
+    public ResponseEntity<Object> getRatingSubcategories(@RequestParam(required = false) String role) {
+        
+        if ("DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategoryPatient.values())
+                    .map(com.medibook.api.dto.Rating.RatingSubcategoryPatient::getLabel)
+                    .toList());
+        }
+        return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategory.values())
+                .map(com.medibook.api.dto.Rating.RatingSubcategory::getLabel)
+                .toList());
     }
 }

@@ -1,0 +1,27 @@
+meta {
+  name: Doctor_Complete_Turn_Not_Found
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/api/turns/12345678-1234-1234-1234-123456789012/complete
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Should return 400 for non-existent turn", function() {
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    expect(typeof body).to.equal('string');
+    expect(body).to.include('Turn not found');
+  });
+}
+

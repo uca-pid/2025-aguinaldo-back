@@ -13,6 +13,7 @@
     <include file="0005-insert-admin.xml" relativeToChangelogFile="true"/>
     <include file="0006-notifications.xml" relativeToChangelogFile="true"/>
     <include file="0007-turn-files.xml" relativeToChangelogFile="true"/>
-  <include file="0008-medical-history-turn.xml" relativeToChangelogFile="true"/>
+    <include file="0008-medical-history-turn.xml" relativeToChangelogFile="true"/>
+    <include file="0009-ratings.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

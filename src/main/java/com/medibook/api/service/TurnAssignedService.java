@@ -5,6 +5,8 @@ import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.TurnAssignedMapper;
+import com.medibook.api.entity.Rating;
+import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
 import com.medibook.api.util.DateTimeUtils;
@@ -29,6 +31,7 @@ public class TurnAssignedService {
     private final TurnAssignedRepository turnRepo;
     private final UserRepository userRepo;
     private final TurnAssignedMapper mapper;
+    private final RatingRepository ratingRepo;
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final TurnFileService turnFileService;
@@ -82,14 +85,14 @@ public class TurnAssignedService {
             final String patientName = patient.getName();
             final String doctorEmail = doctor.getEmail();
             final String doctorName = doctor.getName();
-            
-            
+
             emailService.sendAppointmentConfirmationToPatientAsync(
-                patientEmail, 
-                patientName, 
-                doctorName, 
-                date, 
-                time
+                patientEmail,
+                patientName,
+                doctorName,
+                date,
+                time,
+                saved.getId().toString()
             ).thenAccept(response -> {
                 if (response.isSuccess()) {
                     log.info("Confirmación enviada al paciente: {}", patientEmail);
@@ -99,11 +102,12 @@ public class TurnAssignedService {
             });
             
             emailService.sendAppointmentConfirmationToDoctorAsync(
-                doctorEmail, 
-                doctorName, 
-                patientName, 
-                date, 
-                time
+                doctorEmail,
+                doctorName,
+                patientName,
+                date,
+                time,
+                saved.getId().toString()
             ).thenAccept(response -> {
                 if (response.isSuccess()) {
                     log.info("Confirmación enviada al doctor: {}", doctorEmail);
@@ -304,5 +308,109 @@ public class TurnAssignedService {
         }
 
         return mapper.toDTO(saved);
+    }
+
+    public TurnResponseDTO completeTurn(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only complete your own turns");
+        }
+
+        if (!"SCHEDULED".equals(turn.getStatus()) && !"RESERVED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be completed. Current status: " + turn.getStatus());
+        }
+
+        turn.setStatus("COMPLETED");
+        TurnAssigned saved = turnRepo.save(turn);
+
+        return mapper.toDTO(saved);
+    }
+
+    public com.medibook.api.entity.Rating addRating(UUID turnId, UUID raterId, Integer score, String subcategory) {
+        if (score == null || score < 1 || score > 5) {
+            throw new RuntimeException("Score must be between 1 and 5");
+        }
+
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (!"COMPLETED".equals(turn.getStatus())) {
+            throw new RuntimeException("Can only rate completed turns");
+        }
+
+        User rater = userRepo.findById(raterId)
+                .orElseThrow(() -> new RuntimeException("Rater not found"));
+
+        User ratedUser;
+        if ("PATIENT".equals(rater.getRole())) {
+            if (turn.getPatient() == null || !turn.getPatient().getId().equals(raterId)) {
+                throw new RuntimeException("You can only rate your own turns");
+            }
+            if (turn.getDoctor() == null) {
+                throw new RuntimeException("No doctor to rate for this turn");
+            }
+            ratedUser = turn.getDoctor();
+        } else if ("DOCTOR".equals(rater.getRole())) {
+            if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(raterId)) {
+                throw new RuntimeException("You can only rate your own turns");
+            }
+            if (turn.getPatient() == null) {
+                throw new RuntimeException("No patient to rate for this turn");
+            }
+            ratedUser = turn.getPatient();
+        } else {
+            throw new RuntimeException("Only patients and doctors can rate");
+        }
+        boolean exists = ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, raterId);
+        if (exists) {
+            throw new RuntimeException("You have already rated this turn");
+        }
+
+        String normalizedSubcategory = null;
+        if (subcategory != null && !subcategory.trim().isEmpty()) {
+            String role = rater.getRole() == null ? "" : rater.getRole().trim();
+            if ("PATIENT".equalsIgnoreCase(role)) {
+                com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
+                if (cat == null) {
+                    String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
+                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                    log.warn("Invalid subcategory '{}' for rater role '{}'. Patient allowed: {}. Doctor allowed: {}", subcategory, role, patientAllowed, doctorAllowed);
+                    throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
+                }
+                normalizedSubcategory = cat.getLabel();
+            } else if ("DOCTOR".equalsIgnoreCase(role)) {
+                com.medibook.api.dto.Rating.RatingSubcategoryPatient cat = com.medibook.api.dto.Rating.RatingSubcategoryPatient.fromString(subcategory);
+                if (cat == null) {
+                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                    log.warn("Invalid subcategory '{}' for rater role '{}'. Doctor allowed: {}", subcategory, role, doctorAllowed);
+                    throw new RuntimeException("Invalid subcategory. Allowed for doctors: " + doctorAllowed);
+                }
+                normalizedSubcategory = cat.getLabel();
+            } else {
+                // Unknown role: show both sets to help debugging
+                com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
+                if (cat == null) {
+                    String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
+                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                    throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
+                }
+                normalizedSubcategory = cat.getLabel();
+            }
+        }
+
+        Rating rating = Rating.builder()
+                .turnAssigned(turn)
+                .rater(rater)
+                .rated(ratedUser)
+                .score(score)
+                .subcategory(normalizedSubcategory)
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        Rating saved = ratingRepo.save(rating);
+
+        return saved;
     }
 }

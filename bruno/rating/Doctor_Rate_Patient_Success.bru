@@ -1,0 +1,41 @@
+
+meta {
+  name: Doctor_Rate_Patient_Success
+  type: http
+  seq: 200
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{patientOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+body:json{
+  {
+    "score": 5,
+    "subcategory": "Respeto"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.score: eq 5
+  res.body.subcategory: eq "Respeto"
+}
+
+tests {
+  test("Rating is anonymous for regular users", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(body).to.have.property('ratedId');
+    expect(body).to.have.property('score');
+    expect(body).to.not.have.property('raterId');
+    expect(body.score).to.equal(5);
+  });
+}
+
