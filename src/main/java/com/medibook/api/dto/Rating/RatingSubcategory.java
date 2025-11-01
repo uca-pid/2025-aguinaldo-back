@@ -5,7 +5,10 @@ import java.util.Arrays;
 public enum RatingSubcategory {
     ATIENDEN_EN_HORARIO("Atienden en horario"),
     EXPLICACION_CLARA("Explicación clara"),
-    LIMPIEZA_DEL_CONSULTORIO("Limpieza del consultorio");
+    LIMPIEZA_DEL_CONSULTORIO("Limpieza del consultorio"),
+    AMABILIDAD("Amabilidad"),
+    EMPATIA("Empatía"),
+    DISPONIBILIDAD("Disponibilidad");
 
     private final String label;
 

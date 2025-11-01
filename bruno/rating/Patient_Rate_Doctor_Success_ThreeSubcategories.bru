@@ -1,0 +1,36 @@
+meta {
+  name: Patient_Rate_Doctor_Success_ThreeSubcategories
+  type: http
+  seq: 105
+}
+
+post {
+  url: {{baseUrl}}/api/turns/{{doctorOwnTurnId}}/rate
+  auth: bearer
+  body: json 
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+body:json{
+  {
+    "score": 5,
+    "subcategories": ["Explicación clara", "Amabilidad", "Empatía"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.score: eq 5
+}
+
+tests {
+  test("Rating accepts up to 3 subcategories", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(body.subcategories).to.be.an('array').that.has.lengthOf(3);
+    expect(body.subcategories[0]).to.equal('Explicación clara');
+  });
+}
