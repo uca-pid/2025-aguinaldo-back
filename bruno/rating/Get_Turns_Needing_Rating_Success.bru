@@ -1,0 +1,39 @@
+meta {
+  name: Get_Turns_Needing_Rating_Success
+  type: http
+  seq: 200
+}
+
+get {
+  url: {{baseUrl}}/api/turns/needing-rating
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{patientAccessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Returns turns needing rating for patient", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+    
+    // Check that all returned turns are completed and in the past
+    body.forEach(turn => {
+      expect(turn).to.have.property('id');
+      expect(turn).to.have.property('status');
+      expect(turn).to.have.property('scheduledAt');
+      expect(turn).to.have.property('doctorName');
+      expect(turn.status).to.equal('COMPLETED');
+      
+      // Check that the turn date is in the past
+      const turnDate = new Date(turn.scheduledAt);
+      const now = new Date();
+      expect(turnDate).to.be.lessThan(now);
+    });
+  });
+}

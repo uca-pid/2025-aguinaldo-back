@@ -336,8 +336,14 @@ public class TurnAssignedService {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
 
-        if (!"COMPLETED".equals(turn.getStatus())) {
-            throw new RuntimeException("Can only rate completed turns");
+        // Check if turn is not canceled and has passed
+        if ("CANCELED".equals(turn.getStatus()) || "CANCELLED".equals(turn.getStatus())) {
+            throw new RuntimeException("Cannot rate canceled turns");
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        if (turn.getScheduledAt().isAfter(now)) {
+            throw new RuntimeException("Can only rate turns that have already occurred");
         }
 
         User rater = userRepo.findById(raterId)
@@ -426,5 +432,27 @@ public class TurnAssignedService {
         Rating saved = ratingRepo.save(rating);
 
         return saved;
+    }
+
+    public List<TurnResponseDTO> getTurnsNeedingRating(UUID patientId) {
+        List<TurnAssigned> allTurns = turnRepo.findByPatient_IdOrderByScheduledAtDesc(patientId);
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        return allTurns.stream()
+                .filter(turn -> {
+                    // Skip canceled turns
+                    boolean isCanceled = "CANCELED".equals(turn.getStatus()) || "CANCELLED".equals(turn.getStatus());
+                    if (isCanceled) {
+                        return false;
+                    }
+                    
+                    boolean isInPast = turn.getScheduledAt().isBefore(now);
+                    boolean hasNoRating = !ratingRepo.existsByTurnAssigned_IdAndRater_Id(turn.getId(), patientId);
+                    
+                    return isInPast && hasNoRating;
+                })
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
     }
 }
