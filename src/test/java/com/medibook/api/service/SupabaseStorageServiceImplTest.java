@@ -37,7 +37,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_ValidPdfFile_ShouldNotThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.pdf",
@@ -51,7 +50,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_ValidJpgFile_ShouldNotThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -65,7 +63,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_ValidPngFile_ShouldNotThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.png",
@@ -82,12 +79,11 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(null));
-        assertEquals("File cannot be null or empty", exception.getMessage());
+        assertEquals("El archivo no puede estar vacío o ser nulo", exception.getMessage());
     }
 
     @Test
     void validateFile_EmptyFile_ShouldThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "empty.pdf",
@@ -98,7 +94,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File cannot be null or empty", exception.getMessage());
+        assertEquals("El archivo no puede estar vacío o ser nulo", exception.getMessage());
     }
 
     @Test
@@ -115,12 +111,11 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File size exceeds maximum limit of 5MB", exception.getMessage());
+        assertEquals("El tamaño del archivo excede el límite máximo de 5MB", exception.getMessage());
     }
 
     @Test
     void validateFile_InvalidContentType_ShouldThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.txt",
@@ -131,12 +126,11 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File type not allowed. Only PDF, JPG, and PNG files are accepted", exception.getMessage());
+        assertEquals("Tipo de archivo no permitido. Solo se aceptan archivos PDF, JPG y PNG", exception.getMessage());
     }
 
     @Test
     void validateFile_InvalidExtension_ShouldThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.txt",
@@ -147,26 +141,22 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File extension not allowed. Only .pdf, .jpg, .jpeg, and .png files are accepted", exception.getMessage());
+        assertEquals("Extensión de archivo no permitida. Solo se aceptan archivos .pdf, .jpg, .jpeg y .png", exception.getMessage());
     }
 
     @Test
     void getPublicUrl_ShouldReturnCorrectUrl() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
-        // Act
         String result = supabaseStorageService.getPublicUrl(bucketName, fileName);
 
-        // Assert
         String expectedUrl = "https://zfkjwcngqgmmlpngtsbg.storage.supabase.co/storage/v1/object/public/test-bucket/test.pdf";
         assertEquals(expectedUrl, result);
     }
 
     @Test
     void uploadFile_Success_ShouldReturnPublicUrl() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
         MockMultipartFile file = new MockMultipartFile(
@@ -176,10 +166,8 @@ class SupabaseStorageServiceImplTest {
                 "test content".getBytes()
         );
 
-        // Act
         String result = supabaseStorageService.uploadFile(bucketName, fileName, file).block();
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.contains("test-bucket"));
         assertTrue(result.contains("test.pdf"));
@@ -188,7 +176,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void uploadFile_IOException_ShouldThrowRuntimeException() throws IOException {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
@@ -202,25 +189,21 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> supabaseStorageService.uploadFile(bucketName, fileName, file).block());
-        assertTrue(exception.getMessage().contains("Error uploading file"));
+        assertTrue(exception.getMessage().contains("Error al subir el archivo"));
     }
 
     @Test
     void deleteFile_Success_ShouldCompleteWithoutError() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
-        // Act
         supabaseStorageService.deleteFile(bucketName, fileName).block();
 
-        // Assert
         verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
     }
 
     @Test
     void deleteFile_Exception_ShouldThrowRuntimeException() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
@@ -230,6 +213,6 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> supabaseStorageService.deleteFile(bucketName, fileName).block());
-        assertTrue(exception.getMessage().contains("Error deleting file"));
+        assertTrue(exception.getMessage().contains("Error al eliminar el archivo"));
     }
 }

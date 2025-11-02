@@ -54,20 +54,15 @@ public class StorageController {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .body("{\"error\":\"" + error.getMessage() + "\"}"));
                     }
+                    if (error.getMessage().contains("turno completado")) {
+                        return Mono.just(ResponseEntity.status(400)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body("{\"error\":\"" + error.getMessage() + "\"}"));
+                    }
                     return Mono.just(ResponseEntity.status(500)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"error\":\"" + error.getMessage() + "\"}"));
                 });
-    }
-
-    @GetMapping("/turn-file/{turnId}")
-    @PreAuthorize("hasRole('DOCTOR') or hasRole('PATIENT')")
-    public ResponseEntity<String> getTurnFileInfo(@PathVariable UUID turnId) {
-        return turnFileService.getTurnFileInfo(turnId)
-                .map(turnFile -> ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"url\":\"" + turnFile.getFileUrl() + "\", \"fileName\":\"" + turnFile.getFileName() + "\", \"uploadedAt\":\"" + turnFile.getUploadedAt() + "\"}"))
-                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -100,7 +95,7 @@ public class StorageController {
         return supabaseStorageService.deleteFile(bucketName, fileName)
                 .then(Mono.just(ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"message\":\"File deleted successfully\"}")))
+                        .body("{\"message\":\"Archivo eliminado exitosamente\"}")))
                 .onErrorResume(error -> {
                     log.error("Error deleting file: {}", error.getMessage());
                     return Mono.just(ResponseEntity.badRequest()
