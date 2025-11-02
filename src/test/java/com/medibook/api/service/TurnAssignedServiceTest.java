@@ -834,16 +834,16 @@ class TurnAssignedServiceTest {
                 .rater(doctor)
                 .rated(patient)
                 .score(5)
-                .subcategory("Respeto")
+                .subcategory("Respetuoso")
                 .createdAt(OffsetDateTime.now())
                 .build();
 
         when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(saved);
 
-    com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, java.util.List.of("Respeto"));
+    com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, java.util.List.of("Respetuoso"));
 
         assertNotNull(result);
-        assertEquals("Respeto", result.getSubcategory());
+        assertEquals("Respetuoso", result.getSubcategory());
         verify(ratingRepo).save(any(com.medibook.api.entity.Rating.class));
     }
 
