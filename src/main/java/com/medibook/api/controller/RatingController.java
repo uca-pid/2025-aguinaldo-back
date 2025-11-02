@@ -56,11 +56,13 @@ public class RatingController {
     @GetMapping("/rating-subcategories")
     public ResponseEntity<Object> getRatingSubcategories(@RequestParam(required = false) String role) {
 
+        // When DOCTOR is rating a PATIENT, show patient subcategories
         if ("DOCTOR".equalsIgnoreCase(role)) {
             return ResponseEntity.ok(Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategoryPatient.values())
                     .map(com.medibook.api.dto.Rating.RatingSubcategoryPatient::getLabel)
                     .toList());
         }
+        // When PATIENT is rating a DOCTOR, show doctor subcategories
         return ResponseEntity.ok(Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategory.values())
                 .map(com.medibook.api.dto.Rating.RatingSubcategory::getLabel)
                 .toList());
