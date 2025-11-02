@@ -16,4 +16,6 @@ public class TurnResponseDTO {
     private String patientName;
     private OffsetDateTime scheduledAt;
     private String status;
+    private Boolean needsPatientRating;
+    private Boolean needsDoctorRating;
 }

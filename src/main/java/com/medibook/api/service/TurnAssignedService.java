@@ -461,26 +461,4 @@ public class TurnAssignedService {
 
         return saved;
     }
-
-    public List<TurnResponseDTO> getTurnsNeedingRating(UUID patientId) {
-        List<TurnAssigned> allTurns = turnRepo.findByPatient_IdOrderByScheduledAtDesc(patientId);
-        
-        OffsetDateTime now = OffsetDateTime.now();
-        
-        return allTurns.stream()
-                .filter(turn -> {
-                    // Skip canceled turns
-                    boolean isCanceled = "CANCELED".equals(turn.getStatus()) || "CANCELLED".equals(turn.getStatus());
-                    if (isCanceled) {
-                        return false;
-                    }
-                    
-                    boolean isInPast = turn.getScheduledAt().isBefore(now);
-                    boolean hasNoRating = !ratingRepo.existsByTurnAssigned_IdAndRater_Id(turn.getId(), patientId);
-                    
-                    return isInPast && hasNoRating;
-                })
-                .map(mapper::toDTO)
-                .collect(Collectors.toList());
-    }
 }
