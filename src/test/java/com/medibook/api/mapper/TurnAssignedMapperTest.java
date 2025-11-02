@@ -18,7 +18,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class TurnAssignedMapperTest {
@@ -50,8 +50,8 @@ class TurnAssignedMapperTest {
         doctorUser = createUser(doctorId, "doctor@test.com", 12345678L, "DOCTOR", "ACTIVE", "Dr. Juan", "Pérez");
         patientUser = createUser(patientId, "patient@test.com", 87654321L, "PATIENT", "ACTIVE", "María", "González");
         
-        // Default mock behavior - no ratings exist
-        when(ratingRepository.existsByTurnAssigned_IdAndRater_Id(any(), any())).thenReturn(false);
+        // Default mock behavior - no ratings exist (lenient to avoid UnnecessaryStubbingException)
+        lenient().when(ratingRepository.existsByTurnAssigned_IdAndRater_Id(any(), any())).thenReturn(false);
 
         doctorProfile = new DoctorProfile();
         doctorProfile.setId(doctorId);
