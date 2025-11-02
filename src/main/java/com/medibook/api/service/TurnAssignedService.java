@@ -340,7 +340,7 @@ public class TurnAssignedService {
             throw new RuntimeException("Turn cannot be marked as no-show. Current status: " + turn.getStatus());
         }
 
-        turn.setStatus("CANCELED");
+        turn.setStatus("NO_SHOW");
         TurnAssigned saved = turnRepo.save(turn);
 
         return mapper.toDTO(saved);
