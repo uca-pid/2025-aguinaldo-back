@@ -96,7 +96,8 @@ public class DoctorService {
                 .gender(patient.getGender())
                 .status(patient.getStatus())
                 .medicalHistories(medicalHistories)
-                .medicalHistory(latestMedicalHistory) 
+                .medicalHistory(latestMedicalHistory)
+                .score(patient.getScore())
                 .build();
     }
 }
