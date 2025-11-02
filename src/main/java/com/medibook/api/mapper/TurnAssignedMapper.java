@@ -50,6 +50,7 @@ public class TurnAssignedMapper {
                     turn.getDoctor().getDoctorProfile().getSpecialty() : null)
                 .patientId(turn.getPatient() != null ? turn.getPatient().getId() : null)
                 .patientName(turn.getPatient() != null ? turn.getPatient().getName() + " " + turn.getPatient().getSurname() : null)
+                .patientScore(turn.getPatient() != null ? turn.getPatient().getScore() : null)
                 .scheduledAt(turn.getScheduledAt())
                 .status(turn.getStatus())
                 .needsPatientRating(needsPatientRating)

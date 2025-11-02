@@ -14,6 +14,7 @@ public class TurnResponseDTO {
     private String doctorSpecialty;
     private UUID patientId;     
     private String patientName;
+    private Double patientScore;
     private OffsetDateTime scheduledAt;
     private String status;
     private Boolean needsPatientRating;
