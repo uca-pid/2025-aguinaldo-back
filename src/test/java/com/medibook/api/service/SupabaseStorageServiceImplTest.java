@@ -37,7 +37,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_ValidPdfFile_ShouldNotThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.pdf",
@@ -51,7 +50,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_ValidJpgFile_ShouldNotThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.jpg",
@@ -65,7 +63,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_ValidPngFile_ShouldNotThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.png",
@@ -87,7 +84,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_EmptyFile_ShouldThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "empty.pdf",
@@ -120,7 +116,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_InvalidContentType_ShouldThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.txt",
@@ -136,7 +131,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void validateFile_InvalidExtension_ShouldThrowException() {
-        // Arrange
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.txt",
@@ -152,21 +146,17 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void getPublicUrl_ShouldReturnCorrectUrl() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
-        // Act
         String result = supabaseStorageService.getPublicUrl(bucketName, fileName);
 
-        // Assert
         String expectedUrl = "https://zfkjwcngqgmmlpngtsbg.storage.supabase.co/storage/v1/object/public/test-bucket/test.pdf";
         assertEquals(expectedUrl, result);
     }
 
     @Test
     void uploadFile_Success_ShouldReturnPublicUrl() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
         MockMultipartFile file = new MockMultipartFile(
@@ -176,10 +166,8 @@ class SupabaseStorageServiceImplTest {
                 "test content".getBytes()
         );
 
-        // Act
         String result = supabaseStorageService.uploadFile(bucketName, fileName, file).block();
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.contains("test-bucket"));
         assertTrue(result.contains("test.pdf"));
@@ -188,7 +176,6 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void uploadFile_IOException_ShouldThrowRuntimeException() throws IOException {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
@@ -207,20 +194,16 @@ class SupabaseStorageServiceImplTest {
 
     @Test
     void deleteFile_Success_ShouldCompleteWithoutError() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 
-        // Act
         supabaseStorageService.deleteFile(bucketName, fileName).block();
 
-        // Assert
         verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
     }
 
     @Test
     void deleteFile_Exception_ShouldThrowRuntimeException() {
-        // Arrange
         String bucketName = "test-bucket";
         String fileName = "test.pdf";
 

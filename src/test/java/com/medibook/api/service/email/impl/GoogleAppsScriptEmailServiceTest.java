@@ -38,7 +38,6 @@ class GoogleAppsScriptEmailServiceTest {
 
     @Test
     void testSendEmailSuccess() {
-        // Arrange
         EmailRequestDto emailRequest = EmailRequestDto.builder()
                 .to("test@example.com")
                 .subject("Test Subject")
@@ -50,10 +49,8 @@ class GoogleAppsScriptEmailServiceTest {
         when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
                 .thenReturn(mockResponse);
 
-        // Act
         EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isSuccess());
         assertEquals("Email sent successfully via Google Apps Script", result.getMessage());
@@ -63,7 +60,6 @@ class GoogleAppsScriptEmailServiceTest {
 
     @Test
     void testSendEmailUnauthorized() {
-        // Arrange
         EmailRequestDto emailRequest = EmailRequestDto.builder()
                 .to("test@example.com")
                 .subject("Test Subject")
@@ -74,10 +70,8 @@ class GoogleAppsScriptEmailServiceTest {
         when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
                 .thenReturn(mockResponse);
 
-        // Act
         EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
 
-        // Assert
         assertNotNull(result);
         assertFalse(result.isSuccess());
         assertEquals("Unauthorized access to email service", result.getMessage());
@@ -86,7 +80,6 @@ class GoogleAppsScriptEmailServiceTest {
 
     @Test
     void testSendEmailRestClientException() {
-        // Arrange
         EmailRequestDto emailRequest = EmailRequestDto.builder()
                 .to("test@example.com")
                 .subject("Test Subject")
@@ -96,10 +89,8 @@ class GoogleAppsScriptEmailServiceTest {
         when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
                 .thenThrow(new RestClientException("Connection failed"));
 
-        // Act
         EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
 
-        // Assert
         assertNotNull(result);
         assertFalse(result.isSuccess());
         assertEquals("Error communicating with email service", result.getMessage());
@@ -108,7 +99,6 @@ class GoogleAppsScriptEmailServiceTest {
 
     @Test
     void testSendEmailOnlyTextContent() {
-        // Arrange
         EmailRequestDto emailRequest = EmailRequestDto.builder()
                 .to("test@example.com")
                 .subject("Test Subject")
@@ -119,10 +109,8 @@ class GoogleAppsScriptEmailServiceTest {
         when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
                 .thenReturn(mockResponse);
 
-        // Act
         EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
 
-        // Assert
         assertNotNull(result);
         assertTrue(result.isSuccess());
     }

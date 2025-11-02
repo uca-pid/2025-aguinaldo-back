@@ -3,16 +3,21 @@ package com.medibook.api.mapper;
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.TurnAssigned;
+import com.medibook.api.entity.TurnFile;
 import com.medibook.api.entity.User;
 import com.medibook.api.repository.RatingRepository;
+import com.medibook.api.service.TurnFileService;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
 public class TurnAssignedMapper {
 
     private final RatingRepository ratingRepository;
+    private final TurnFileService turnFileService;
 
     public TurnAssigned toEntity(TurnCreateRequestDTO dto, User doctor) {
         return TurnAssigned.builder()
@@ -29,18 +34,19 @@ public class TurnAssignedMapper {
         boolean needsDoctorRating = false;
         
         if (turn.getPatient() != null && turn.getDoctor() != null) {
-            // Patient can only rate completed turns
+            
             if (isCompleted) {
                 needsPatientRating = !ratingRepository.existsByTurnAssigned_IdAndRater_Id(
                     turn.getId(), turn.getPatient().getId());
             }
             
-            // Doctor can only rate completed turns
             if (isCompleted) {
                 needsDoctorRating = !ratingRepository.existsByTurnAssigned_IdAndRater_Id(
                     turn.getId(), turn.getDoctor().getId());
             }
         }
+        
+        Optional<TurnFile> turnFile = turnFileService.getTurnFileInfo(turn.getId());
         
         return TurnResponseDTO.builder()
                 .id(turn.getId())
@@ -55,6 +61,9 @@ public class TurnAssignedMapper {
                 .status(turn.getStatus())
                 .needsPatientRating(needsPatientRating)
                 .needsDoctorRating(needsDoctorRating)
+                .fileUrl(turnFile.map(TurnFile::getFileUrl).orElse(null))
+                .fileName(turnFile.map(TurnFile::getFileName).orElse(null))
+                .uploadedAt(turnFile.map(TurnFile::getUploadedAt).orElse(null))
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.medibook.api.dto.Turn;
 import lombok.Builder;
 import lombok.Data;
 import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -19,4 +20,7 @@ public class TurnResponseDTO {
     private String status;
     private Boolean needsPatientRating;
     private Boolean needsDoctorRating;
+    private String fileUrl;
+    private String fileName;
+    private Instant uploadedAt;
 }

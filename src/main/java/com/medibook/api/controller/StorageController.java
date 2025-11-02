@@ -65,16 +65,6 @@ public class StorageController {
                 });
     }
 
-    @GetMapping("/turn-file/{turnId}")
-    @PreAuthorize("hasRole('DOCTOR') or hasRole('PATIENT')")
-    public ResponseEntity<String> getTurnFileInfo(@PathVariable UUID turnId) {
-        return turnFileService.getTurnFileInfo(turnId)
-                .map(turnFile -> ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"url\":\"" + turnFile.getFileUrl() + "\", \"fileName\":\"" + turnFile.getFileName() + "\", \"uploadedAt\":\"" + turnFile.getUploadedAt() + "\"}"))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('DOCTOR') or hasRole('PATIENT') or hasRole('ADMIN')")
     public Mono<ResponseEntity<String>> uploadFile(
