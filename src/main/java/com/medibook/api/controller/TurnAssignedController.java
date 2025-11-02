@@ -248,6 +248,27 @@ public class TurnAssignedController {
         }
     }
 
+    @PostMapping("/{turnId}/no-show")
+    public ResponseEntity<Object> markTurnAsNoShow(
+            @PathVariable UUID turnId,
+            HttpServletRequest request) {
+
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+
+        if (!"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only doctors can mark turns as no-show");
+        }
+
+        try {
+            TurnResponseDTO noShow = turnService.markTurnAsNoShow(turnId, authenticatedUser.getId());
+            return ResponseEntity.ok(noShow);
+        } catch (RuntimeException e) {
+            var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
+            return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
+        }
+    }
+
     @PostMapping("/{turnId}/rate")
     public ResponseEntity<Object> rateTurn(
             @PathVariable UUID turnId,
