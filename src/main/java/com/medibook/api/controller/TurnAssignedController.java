@@ -268,46 +268,5 @@ public class TurnAssignedController {
             return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
         }
     }
-
-    @PostMapping("/{turnId}/rate")
-    public ResponseEntity<Object> rateTurn(
-            @PathVariable UUID turnId,
-            @RequestBody RatingRequestDTO dto,
-            HttpServletRequest request) {
-
-        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
-
-        if (!"PATIENT".equals(authenticatedUser.getRole()) && !"DOCTOR".equals(authenticatedUser.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Only patients and doctors can rate");
-        }
-
-        try {
-            Rating saved = turnService.addRating(turnId, authenticatedUser.getId(), dto.getScore(), dto.getSubcategories());
-
-            //Si es admin ve los nombres
-            RatingResponseDTO ratingDto = ratingMapper.toDTO(saved);
-            if (!"ADMIN".equals(authenticatedUser.getRole())) {
-            
-                ratingDto.setRaterId(null);
-            }
-            return ResponseEntity.ok(ratingDto);
-        } catch (RuntimeException e) {
-            var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
-            return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
-        }
-    }
-
-    @GetMapping("/rating-subcategories")
-    public ResponseEntity<Object> getRatingSubcategories(@RequestParam(required = false) String role) {
-        
-        if ("DOCTOR".equalsIgnoreCase(role)) {
-            return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategoryPatient.values())
-                    .map(com.medibook.api.dto.Rating.RatingSubcategoryPatient::getLabel)
-                    .toList());
-        }
-        return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategory.values())
-                .map(com.medibook.api.dto.Rating.RatingSubcategory::getLabel)
-                .toList());
-    }
+   
 }

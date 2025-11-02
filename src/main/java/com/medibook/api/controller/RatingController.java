@@ -1,0 +1,68 @@
+package com.medibook.api.controller;
+
+import java.util.Arrays;
+
+import com.medibook.api.dto.Rating.RatingRequestDTO;
+import com.medibook.api.dto.Rating.RatingResponseDTO;
+import com.medibook.api.entity.Rating;
+import com.medibook.api.entity.User;
+import com.medibook.api.service.TurnAssignedService;
+import com.medibook.api.util.ErrorResponseUtil;
+import com.medibook.api.mapper.RatingMapper;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/ratings")
+@RequiredArgsConstructor
+@Slf4j
+public class RatingController {
+
+    private final TurnAssignedService turnService;
+    private final RatingMapper ratingMapper;
+
+    @PostMapping("/turns/{turnId}/rate")
+    public ResponseEntity<Object> rateTurn(
+            @PathVariable java.util.UUID turnId,
+            @RequestBody RatingRequestDTO dto,
+            HttpServletRequest request) {
+
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+
+        if (!"PATIENT".equals(authenticatedUser.getRole()) && !"DOCTOR".equals(authenticatedUser.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Only patients and doctors can rate");
+        }
+
+        try {
+            Rating saved = turnService.addRating(turnId, authenticatedUser.getId(), dto.getScore(), dto.getSubcategories());
+
+            RatingResponseDTO ratingDto = ratingMapper.toDTO(saved);
+            if (!"ADMIN".equals(authenticatedUser.getRole())) {
+                ratingDto.setRaterId(null);
+            }
+            return ResponseEntity.ok(ratingDto);
+        } catch (RuntimeException e) {
+            var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
+            return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
+        }
+    }
+
+    @GetMapping("/rating-subcategories")
+    public ResponseEntity<Object> getRatingSubcategories(@RequestParam(required = false) String role) {
+
+        if ("DOCTOR".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategoryPatient.values())
+                    .map(com.medibook.api.dto.Rating.RatingSubcategoryPatient::getLabel)
+                    .toList());
+        }
+        return ResponseEntity.ok(Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategory.values())
+                .map(com.medibook.api.dto.Rating.RatingSubcategory::getLabel)
+                .toList());
+    }
+}
