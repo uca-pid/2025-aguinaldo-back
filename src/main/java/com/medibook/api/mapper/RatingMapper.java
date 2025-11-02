@@ -16,11 +16,21 @@ public class RatingMapper {
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toList());
 
+    String doctorSpecialty = null;
+    if ("DOCTOR".equals(r.getRated().getRole()) && r.getRated().getDoctorProfile() != null) {
+        doctorSpecialty = r.getRated().getDoctorProfile().getSpecialty();
+    } else if ("DOCTOR".equals(r.getRater().getRole()) && r.getRater().getDoctorProfile() != null) {
+        doctorSpecialty = r.getRater().getDoctorProfile().getSpecialty();
+    }
+
     return RatingResponseDTO.builder()
                 .id(r.getId())
                 .turnId(r.getTurnAssigned().getId())
                 .raterId(r.getRater().getId())
                 .ratedId(r.getRated().getId())
+                .raterName(r.getRater().getName() + " " + r.getRater().getSurname())
+                .ratedName(r.getRated().getName() + " " + r.getRated().getSurname())
+                .doctorSpecialty(doctorSpecialty)
                 .score(r.getScore())
         .subcategories(subcats)
                 .createdAt(r.getCreatedAt())
