@@ -2,10 +2,15 @@ package com.medibook.api.controller;
 
 import com.medibook.api.dto.ErrorResponseDTO;
 import com.medibook.api.dto.Admin.AdminStatsDTO;
+import com.medibook.api.dto.Admin.AdminRatingsResponseDTO;
 import com.medibook.api.dto.Admin.DoctorApprovalResponseDTO;
 import com.medibook.api.dto.Admin.PendingDoctorDTO;
+import com.medibook.api.dto.Rating.RatingResponseDTO;
+import com.medibook.api.entity.Rating;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AdminMapper;
+import com.medibook.api.mapper.RatingMapper;
+import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.UserRepository;
 import com.medibook.api.service.EmailService;
 import com.medibook.api.util.AuthorizationUtil;
@@ -29,11 +34,16 @@ public class AdminController {
     private final UserRepository userRepository;
     private final AdminMapper adminMapper;
     private final EmailService emailService;
+    private final RatingRepository ratingRepository;
+    private final RatingMapper ratingMapper;
 
-    public AdminController(UserRepository userRepository, AdminMapper adminMapper, EmailService emailService) {
+    public AdminController(UserRepository userRepository, AdminMapper adminMapper, EmailService emailService, 
+                          RatingRepository ratingRepository, RatingMapper ratingMapper) {
         this.userRepository = userRepository;
         this.adminMapper = adminMapper;
         this.emailService = emailService;
+        this.ratingRepository = ratingRepository;
+        this.ratingMapper = ratingMapper;
     }
 
     @GetMapping("/pending-doctors")
@@ -198,6 +208,49 @@ public class AdminController {
 
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
+            return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
+        }
+    }
+
+    @GetMapping("/ratings")
+    public ResponseEntity<?> getAllRatings(HttpServletRequest request) {
+        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
+        
+        if (!AuthorizationUtil.isAdmin(authenticatedUser)) {
+            return AuthorizationUtil.createAdminAccessDeniedResponse(request.getRequestURI());
+        }
+
+        try {
+            List<Rating> allRatings = ratingRepository.findAllOrderByCreatedAtDesc();
+            
+            List<RatingResponseDTO> allRatingDTOs = allRatings.stream()
+                .map(ratingMapper::toDTO)
+                .collect(Collectors.toList());
+            
+            List<RatingResponseDTO> patientRatings = allRatingDTOs.stream()
+                .filter(rating -> {
+                    return allRatings.stream()
+                        .anyMatch(r -> r.getId().equals(rating.getId()) && "PATIENT".equals(r.getRater().getRole()));
+                })
+                .collect(Collectors.toList());
+                
+            List<RatingResponseDTO> doctorRatings = allRatingDTOs.stream()
+                .filter(rating -> {
+                    return allRatings.stream()
+                        .anyMatch(r -> r.getId().equals(rating.getId()) && "DOCTOR".equals(r.getRater().getRole()));
+                })
+                .collect(Collectors.toList());
+            
+            AdminRatingsResponseDTO response = AdminRatingsResponseDTO.builder()
+                .allRatings(allRatingDTOs)
+                .patientRatings(patientRatings)
+                .doctorRatings(doctorRatings)
+                .stats(null) 
+                .build();
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching admin ratings: ", e);
             return ErrorResponseUtil.createDatabaseErrorResponse(request.getRequestURI());
         }
     }
