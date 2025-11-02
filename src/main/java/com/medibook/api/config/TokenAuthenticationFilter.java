@@ -36,11 +36,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         }
         
         String requestPath = request.getRequestURI();
+        // Ensure the authentication filter runs for all endpoints that require authentication.
+        // Add /api/ratings so rating endpoints that expect an authenticated user get the token processed.
         if (!requestPath.startsWith("/api/turns") && 
             !requestPath.startsWith("/api/admin") && 
             !requestPath.startsWith("/api/profile") &&
             !requestPath.startsWith("/api/notifications") &&
-            !requestPath.startsWith("/api/doctors")) {
+            !requestPath.startsWith("/api/doctors") &&
+            !requestPath.startsWith("/api/ratings")) {
             filterChain.doFilter(request, response);
             return;
         }

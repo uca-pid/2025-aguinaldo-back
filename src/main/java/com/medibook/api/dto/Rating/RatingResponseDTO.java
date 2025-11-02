@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.List;
 
 @Getter
 @Setter
@@ -15,7 +16,16 @@ public class RatingResponseDTO {
     private UUID turnId;
     private UUID raterId;
     private UUID ratedId;
+    private String raterName;
+    private String ratedName;
+    private String doctorSpecialty;
     private Integer score;
-    private String subcategory;
+    private List<String> subcategories;
     private OffsetDateTime createdAt;
+
+    @Deprecated
+    public String getSubcategory() {
+        if (subcategories == null || subcategories.isEmpty()) return null;
+        return subcategories.get(0);
+    }
 }

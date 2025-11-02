@@ -1,7 +1,7 @@
 meta {
-  name: Doctor_Rate_Patient_InvalidScore
+  name: Doctor_Rate_Patient_TooManySubcategories
   type: http
-  seq: 204
+  seq: 202
 }
 
 post {
@@ -15,21 +15,21 @@ auth:bearer {
 }
 
 body:json{
-    {
-    "score": 6,
-    "subcategory": "Respeto"
+  {
+    "score": 4,
+    "subcategories": ["Puntualidad", "Respeto", "Higiene", "Colaboración"]
   }
 }
+
 assert {
   res.status: eq 400
 }
 
 tests {
-  test("Should return validation error for invalid score", function() {
+  test("Should return validation error when more than 3 subcategories are provided", function() {
     expect(res.getStatus()).to.equal(400);
     const body = res.getBody();
     expect(body).to.have.property('message');
-    expect(body.message).to.match(/Score must be between 1 and 5/);
+    expect(body.message).to.match(/up to 3/);
   });
 }
-

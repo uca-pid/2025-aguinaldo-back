@@ -4,19 +4,38 @@ import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.DoctorProfile;
 import com.medibook.api.entity.TurnAssigned;
+import com.medibook.api.entity.TurnFile;
 import com.medibook.api.entity.User;
+import com.medibook.api.repository.RatingRepository;
+import com.medibook.api.service.TurnFileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class TurnAssignedMapperTest {
 
     private TurnAssignedMapper turnAssignedMapper;
+    
+    @Mock
+    private RatingRepository ratingRepository;
+    
+    @Mock
+    private TurnFileService turnFileService;
+    
     private User doctorUser;
     private User patientUser;
     private DoctorProfile doctorProfile;
@@ -29,7 +48,7 @@ class TurnAssignedMapperTest {
 
     @BeforeEach
     void setUp() {
-        turnAssignedMapper = new TurnAssignedMapper();
+        turnAssignedMapper = new TurnAssignedMapper(ratingRepository, turnFileService);
         
         doctorId = UUID.randomUUID();
         patientId = UUID.randomUUID();
@@ -38,6 +57,12 @@ class TurnAssignedMapperTest {
 
         doctorUser = createUser(doctorId, "doctor@test.com", 12345678L, "DOCTOR", "ACTIVE", "Dr. Juan", "Pérez");
         patientUser = createUser(patientId, "patient@test.com", 87654321L, "PATIENT", "ACTIVE", "María", "González");
+        
+        // Default mock behavior - no ratings exist (lenient to avoid UnnecessaryStubbingException)
+        lenient().when(ratingRepository.existsByTurnAssigned_IdAndRater_Id(any(), any())).thenReturn(false);
+        
+        // Default mock behavior - no files exist (lenient to avoid UnnecessaryStubbingException)
+        lenient().when(turnFileService.getTurnFileInfo(any())).thenReturn(Optional.empty());
 
         doctorProfile = new DoctorProfile();
         doctorProfile.setId(doctorId);
@@ -420,5 +445,42 @@ class TurnAssignedMapperTest {
         result.setStatus("MODIFIED");
 
         assertEquals(scheduledDateTime, originalDTO.getScheduledAt()); 
+    }
+
+    @Test
+    void toDTO_WithTurnFile_IncludesFileInformation() {
+        UUID turnFileId = UUID.randomUUID();
+        String fileUrl = "https://storage.example.com/test-file.pdf";
+        String fileName = "test-file.pdf";
+        Instant uploadedAt = Instant.now();
+        
+        TurnFile turnFile = TurnFile.builder()
+                .id(turnFileId)
+                .turnId(turnId)
+                .fileUrl(fileUrl)
+                .fileName(fileName)
+                .uploadedAt(uploadedAt)
+                .build();
+        
+        when(turnFileService.getTurnFileInfo(turnId)).thenReturn(Optional.of(turnFile));
+
+        TurnResponseDTO result = turnAssignedMapper.toDTO(turnAssigned);
+
+        assertNotNull(result);
+        assertEquals(fileUrl, result.getFileUrl());
+        assertEquals(fileName, result.getFileName());
+        assertEquals(uploadedAt, result.getUploadedAt());
+    }
+
+    @Test
+    void toDTO_WithoutTurnFile_HasNullFileFields() {
+        when(turnFileService.getTurnFileInfo(turnId)).thenReturn(Optional.empty());
+
+        TurnResponseDTO result = turnAssignedMapper.toDTO(turnAssigned);
+
+        assertNotNull(result);
+        assertNull(result.getFileUrl());
+        assertNull(result.getFileName());
+        assertNull(result.getUploadedAt());
     }
 }

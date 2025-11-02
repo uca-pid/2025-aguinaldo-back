@@ -820,7 +820,7 @@ class TurnAssignedServiceTest {
                 .id(turnId)
                 .doctor(doctor)
                 .patient(patient)
-                .scheduledAt(scheduledAt)
+                .scheduledAt(OffsetDateTime.now().minusDays(1)) // Turno pasado
                 .status("COMPLETED")
                 .build();
 
@@ -834,16 +834,16 @@ class TurnAssignedServiceTest {
                 .rater(doctor)
                 .rated(patient)
                 .score(5)
-                .subcategory("Respeto")
+                .subcategory("Respetuoso")
                 .createdAt(OffsetDateTime.now())
                 .build();
 
         when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(saved);
 
-        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, "Respeto");
+    com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 5, java.util.List.of("Respetuoso"));
 
         assertNotNull(result);
-        assertEquals("Respeto", result.getSubcategory());
+        assertEquals("Respetuoso", result.getSubcategory());
         verify(ratingRepo).save(any(com.medibook.api.entity.Rating.class));
     }
 
@@ -853,7 +853,7 @@ class TurnAssignedServiceTest {
                 .id(turnId)
                 .doctor(doctor)
                 .patient(patient)
-                .scheduledAt(scheduledAt)
+                .scheduledAt(OffsetDateTime.now().minusDays(1)) // Turno pasado
                 .status("COMPLETED")
                 .build();
 
@@ -862,7 +862,7 @@ class TurnAssignedServiceTest {
         when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, doctorId)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> {
-            turnAssignedService.addRating(turnId, doctorId, 4, "Bad Subcategory");
+            turnAssignedService.addRating(turnId, doctorId, 4, java.util.List.of("Bad Subcategory"));
         });
 
         assertTrue(ex.getMessage().contains("Invalid subcategory"));

@@ -20,6 +20,7 @@ public class DoctorMapper {
                 .medicalLicense(user.getDoctorProfile().getMedicalLicense())
                 .specialty(user.getDoctorProfile().getSpecialty())
                 .slotDurationMin(user.getDoctorProfile().getSlotDurationMin())
+                .score(user.getScore())
                 .build();
     }
 }

@@ -57,6 +57,9 @@ public class User {
     @Column(nullable = false)
     private String role = "PATIENT";
 
+    @Column(name = "score")
+    private Double score;
+
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MedicalHistory> medicalHistories = new ArrayList<>();
 

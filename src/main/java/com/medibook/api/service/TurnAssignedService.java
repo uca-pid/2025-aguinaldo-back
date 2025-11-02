@@ -328,7 +328,25 @@ public class TurnAssignedService {
         return mapper.toDTO(saved);
     }
 
-    public com.medibook.api.entity.Rating addRating(UUID turnId, UUID raterId, Integer score, String subcategory) {
+    public TurnResponseDTO markTurnAsNoShow(UUID turnId, UUID doctorId) {
+        TurnAssigned turn = turnRepo.findById(turnId)
+                .orElseThrow(() -> new RuntimeException("Turn not found"));
+
+        if (turn.getDoctor() == null || !turn.getDoctor().getId().equals(doctorId)) {
+            throw new RuntimeException("You can only mark no-show for your own turns");
+        }
+
+        if (!"SCHEDULED".equals(turn.getStatus())) {
+            throw new RuntimeException("Turn cannot be marked as no-show. Current status: " + turn.getStatus());
+        }
+
+        turn.setStatus("NO_SHOW");
+        TurnAssigned saved = turnRepo.save(turn);
+
+        return mapper.toDTO(saved);
+    }
+
+    public com.medibook.api.entity.Rating addRating(UUID turnId, UUID raterId, Integer score, java.util.List<String> subcategories) {
         if (score == null || score < 1 || score > 5) {
             throw new RuntimeException("Score must be between 1 and 5");
         }
@@ -336,8 +354,14 @@ public class TurnAssignedService {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
 
-        if (!"COMPLETED".equals(turn.getStatus())) {
-            throw new RuntimeException("Can only rate completed turns");
+        // Check if turn is not canceled and has passed
+        if ("CANCELED".equals(turn.getStatus()) || "CANCELLED".equals(turn.getStatus())) {
+            throw new RuntimeException("Cannot rate canceled turns");
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        if (turn.getScheduledAt().isAfter(now)) {
+            throw new RuntimeException("Can only rate turns that have already occurred");
         }
 
         User rater = userRepo.findById(raterId)
@@ -369,35 +393,49 @@ public class TurnAssignedService {
         }
 
         String normalizedSubcategory = null;
-        if (subcategory != null && !subcategory.trim().isEmpty()) {
-            String role = rater.getRole() == null ? "" : rater.getRole().trim();
-            if ("PATIENT".equalsIgnoreCase(role)) {
-                com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
-                if (cat == null) {
-                    String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
-                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
-                    log.warn("Invalid subcategory '{}' for rater role '{}'. Patient allowed: {}. Doctor allowed: {}", subcategory, role, patientAllowed, doctorAllowed);
-                    throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
-                }
-                normalizedSubcategory = cat.getLabel();
-            } else if ("DOCTOR".equalsIgnoreCase(role)) {
-                com.medibook.api.dto.Rating.RatingSubcategoryPatient cat = com.medibook.api.dto.Rating.RatingSubcategoryPatient.fromString(subcategory);
-                if (cat == null) {
-                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
-                    log.warn("Invalid subcategory '{}' for rater role '{}'. Doctor allowed: {}", subcategory, role, doctorAllowed);
-                    throw new RuntimeException("Invalid subcategory. Allowed for doctors: " + doctorAllowed);
-                }
-                normalizedSubcategory = cat.getLabel();
-            } else {
-                // Unknown role: show both sets to help debugging
-                com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(subcategory);
-                if (cat == null) {
-                    String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
-                    String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
-                    throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
-                }
-                normalizedSubcategory = cat.getLabel();
+        if (subcategories != null && !subcategories.isEmpty()) {
+            if (subcategories.size() > 3) {
+                throw new RuntimeException("You can select up to 3 subcategories");
             }
+
+            String role = rater.getRole() == null ? "" : rater.getRole().trim();
+            java.util.List<String> normalized = new java.util.ArrayList<>();
+
+            for (String s : subcategories) {
+                if (s == null || s.trim().isEmpty()) continue;
+                if ("PATIENT".equalsIgnoreCase(role)) {
+                    com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(s);
+                    if (cat == null) {
+                        String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
+                        String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                        log.warn("Invalid subcategory '{}' for rater role '{}'. Patient allowed: {}. Doctor allowed: {}", s, role, patientAllowed, doctorAllowed);
+                        throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
+                    }
+                    normalized.add(cat.getLabel());
+                } else if ("DOCTOR".equalsIgnoreCase(role)) {
+                    com.medibook.api.dto.Rating.RatingSubcategoryPatient cat = com.medibook.api.dto.Rating.RatingSubcategoryPatient.fromString(s);
+                    if (cat == null) {
+                        String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                        log.warn("Invalid subcategory '{}' for rater role '{}'. Doctor allowed: {}", s, role, doctorAllowed);
+                        throw new RuntimeException("Invalid subcategory. Allowed for doctors: " + doctorAllowed);
+                    }
+                    normalized.add(cat.getLabel());
+                } else {
+                    com.medibook.api.dto.Rating.RatingSubcategory cat = com.medibook.api.dto.Rating.RatingSubcategory.fromString(s);
+                    if (cat == null) {
+                        String patientAllowed = com.medibook.api.dto.Rating.RatingSubcategory.allowedValues();
+                        String doctorAllowed = com.medibook.api.dto.Rating.RatingSubcategoryPatient.allowedValues();
+                        throw new RuntimeException("Invalid subcategory. Allowed for patients: " + patientAllowed + "; Allowed for doctors: " + doctorAllowed);
+                    }
+                    normalized.add(cat.getLabel());
+                }
+            }
+
+     
+            java.util.List<String> unique = new java.util.ArrayList<>();
+            for (String v : normalized) if (!unique.contains(v)) unique.add(v);
+
+            normalizedSubcategory = String.join(", ", unique);
         }
 
         Rating rating = Rating.builder()
@@ -410,6 +448,16 @@ public class TurnAssignedService {
                 .build();
 
         Rating saved = ratingRepo.save(rating);
+
+        
+        try {
+            Double avg = ratingRepo.findAverageScoreByRatedId(ratedUser.getId());
+           
+            ratedUser.setScore(avg == null ? null : Math.round(avg * 100.0) / 100.0);
+            userRepo.save(ratedUser);
+        } catch (Exception e) {
+            log.warn("Failed to update average score for user {}: {}", ratedUser.getId(), e.getMessage());
+        }
 
         return saved;
     }

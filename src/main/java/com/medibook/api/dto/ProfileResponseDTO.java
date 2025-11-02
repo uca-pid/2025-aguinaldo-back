@@ -17,6 +17,8 @@ public class ProfileResponseDTO {
     private String role;
     private String status;
 
+    private Double score;
+
     private String medicalLicense;
     private String specialty;
     private Integer slotDurationMin;

@@ -11,9 +11,6 @@ import java.util.UUID;
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
-import com.medibook.api.dto.Rating.RatingRequestDTO;
-import com.medibook.api.dto.Rating.RatingResponseDTO;
-import com.medibook.api.entity.Rating;
 import com.medibook.api.entity.TurnAssigned;
 
 import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
@@ -42,7 +39,6 @@ public class TurnAssignedController {
     private final TurnAssignedService turnService;
     private final DoctorAvailabilityService doctorAvailabilityService;
     private final TurnAssignedRepository turnAssignedRepository;
-    private final com.medibook.api.mapper.RatingMapper ratingMapper;
 
     @PostMapping
     public ResponseEntity<Object> createTurn(
@@ -235,45 +231,25 @@ public class TurnAssignedController {
         }
     }
 
-    @PostMapping("/{turnId}/rate")
-    public ResponseEntity<Object> rateTurn(
+    @PostMapping("/{turnId}/no-show")
+    public ResponseEntity<Object> markTurnAsNoShow(
             @PathVariable UUID turnId,
-            @RequestBody RatingRequestDTO dto,
             HttpServletRequest request) {
 
         User authenticatedUser = (User) request.getAttribute("authenticatedUser");
 
-        if (!"PATIENT".equals(authenticatedUser.getRole()) && !"DOCTOR".equals(authenticatedUser.getRole())) {
+        if (!"DOCTOR".equals(authenticatedUser.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Only patients and doctors can rate");
+                    .body("Only doctors can mark turns as no-show");
         }
 
         try {
-            Rating saved = turnService.addRating(turnId, authenticatedUser.getId(), dto.getScore(), dto.getSubcategory());
-
-            //Si es admin ve los nombres
-            RatingResponseDTO ratingDto = ratingMapper.toDTO(saved);
-            if (!"ADMIN".equals(authenticatedUser.getRole())) {
-            
-                ratingDto.setRaterId(null);
-            }
-            return ResponseEntity.ok(ratingDto);
+            TurnResponseDTO noShow = turnService.markTurnAsNoShow(turnId, authenticatedUser.getId());
+            return ResponseEntity.ok(noShow);
         } catch (RuntimeException e) {
             var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
             return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
         }
     }
-
-    @GetMapping("/rating-subcategories")
-    public ResponseEntity<Object> getRatingSubcategories(@RequestParam(required = false) String role) {
-        
-        if ("DOCTOR".equalsIgnoreCase(role)) {
-            return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategoryPatient.values())
-                    .map(com.medibook.api.dto.Rating.RatingSubcategoryPatient::getLabel)
-                    .toList());
-        }
-        return ResponseEntity.ok(java.util.Arrays.stream(com.medibook.api.dto.Rating.RatingSubcategory.values())
-                .map(com.medibook.api.dto.Rating.RatingSubcategory::getLabel)
-                .toList());
-    }
+   
 }

@@ -20,4 +20,5 @@ public class PatientDTO {
     private String status;
     private List<MedicalHistoryDTO> medicalHistories;
     private String medicalHistory;
+    private Double score;
 }

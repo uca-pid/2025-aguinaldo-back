@@ -31,5 +31,5 @@ public class TurnAssigned {
     private OffsetDateTime scheduledAt;
 
     @Column(name = "status", nullable = false)
-    private String status; // Ej: SCHEDULED, COMPLETED, CANCELED
+    private String status; // Ej: SCHEDULED, COMPLETED, CANCELED, NO_SHOW
 }
