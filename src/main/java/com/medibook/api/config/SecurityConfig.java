@@ -42,6 +42,7 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/ratings/**").authenticated()
                 .requestMatchers("/api/turns/**").authenticated()
                 .requestMatchers("/api/admin/**").authenticated()
                 .requestMatchers("/api/profile/**").authenticated()

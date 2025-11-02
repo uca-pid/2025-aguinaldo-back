@@ -43,6 +43,7 @@
             <column name="role" type="text" defaultValue="PATIENT">
                 <constraints nullable="false"/>
             </column>
+            <column name="score" type="numeric(3,2)"/>
         </createTable>
     </changeSet>
 

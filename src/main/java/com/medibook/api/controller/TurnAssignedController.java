@@ -11,9 +11,6 @@ import java.util.UUID;
 import com.medibook.api.dto.Turn.TurnCreateRequestDTO;
 import com.medibook.api.dto.Turn.TurnReserveRequestDTO;
 import com.medibook.api.dto.Turn.TurnResponseDTO;
-import com.medibook.api.dto.Rating.RatingRequestDTO;
-import com.medibook.api.dto.Rating.RatingResponseDTO;
-import com.medibook.api.entity.Rating;
 import com.medibook.api.entity.TurnAssigned;
 
 import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
@@ -42,7 +39,6 @@ public class TurnAssignedController {
     private final TurnAssignedService turnService;
     private final DoctorAvailabilityService doctorAvailabilityService;
     private final TurnAssignedRepository turnAssignedRepository;
-    private final com.medibook.api.mapper.RatingMapper ratingMapper;
 
     @PostMapping
     public ResponseEntity<Object> createTurn(

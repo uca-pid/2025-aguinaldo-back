@@ -449,6 +449,16 @@ public class TurnAssignedService {
 
         Rating saved = ratingRepo.save(rating);
 
+        
+        try {
+            Double avg = ratingRepo.findAverageScoreByRatedId(ratedUser.getId());
+           
+            ratedUser.setScore(avg == null ? null : Math.round(avg * 100.0) / 100.0);
+            userRepo.save(ratedUser);
+        } catch (Exception e) {
+            log.warn("Failed to update average score for user {}: {}", ratedUser.getId(), e.getMessage());
+        }
+
         return saved;
     }
 
