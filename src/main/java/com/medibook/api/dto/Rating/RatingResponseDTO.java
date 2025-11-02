@@ -16,6 +16,9 @@ public class RatingResponseDTO {
     private UUID turnId;
     private UUID raterId;
     private UUID ratedId;
+    private String raterName;
+    private String ratedName;
+    private String doctorSpecialty;
     private Integer score;
     private List<String> subcategories;
     private OffsetDateTime createdAt;
