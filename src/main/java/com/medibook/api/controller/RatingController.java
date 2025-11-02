@@ -9,6 +9,8 @@ import com.medibook.api.entity.User;
 import com.medibook.api.service.TurnAssignedService;
 import com.medibook.api.util.ErrorResponseUtil;
 import com.medibook.api.mapper.RatingMapper;
+import com.medibook.api.repository.RatingRepository;
+import com.medibook.api.dto.Rating.SubcategoryCountDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class RatingController {
 
     private final TurnAssignedService turnService;
     private final RatingMapper ratingMapper;
+    private final RatingRepository ratingRepository;
 
     @PostMapping("/turns/{turnId}/rate")
     public ResponseEntity<Object> rateTurn(
@@ -49,6 +52,25 @@ public class RatingController {
             return ResponseEntity.ok(ratingDto);
         } catch (RuntimeException e) {
             var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), request.getRequestURI());
+            return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
+        }
+    }
+
+    @GetMapping("/rated/{ratedId}/subcategories-counts")
+    public ResponseEntity<Object> getSubcategoryCounts(
+            @PathVariable java.util.UUID ratedId,
+            @RequestParam(required = false) String raterRole) {
+
+        try {
+            java.util.List<RatingRepository.SubcategoryCount> results = ratingRepository.countSubcategoriesByRatedId(ratedId, raterRole);
+
+            java.util.List<SubcategoryCountDTO> dto = results.stream()
+                    .map(r -> new SubcategoryCountDTO(r.getSubcategory(), r.getCount()))
+                    .toList();
+
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            var resp = ErrorResponseUtil.createBadRequestResponse(e.getMessage(), "/api/ratings/rated/" + ratedId + "/subcategories-counts");
             return new ResponseEntity<Object>(resp.getBody(), resp.getStatusCode());
         }
     }
