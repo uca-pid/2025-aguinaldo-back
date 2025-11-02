@@ -1,0 +1,28 @@
+meta {
+  name: Get_Turns_Needing_Rating_Forbidden
+  type: http
+  seq: 201
+}
+
+get {
+  url: {{baseUrl}}/api/turns/needing-rating
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{doctorAccessToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("Returns forbidden for non-patient users", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('error');
+    expect(body.error).to.equal('Forbidden');
+    expect(body).to.have.property('message');
+    expect(body.message).to.equal('Only patients can access this endpoint');
+  });
+}
