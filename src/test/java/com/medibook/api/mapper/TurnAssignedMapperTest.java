@@ -5,18 +5,29 @@ import com.medibook.api.dto.Turn.TurnResponseDTO;
 import com.medibook.api.entity.DoctorProfile;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
+import com.medibook.api.repository.RatingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class TurnAssignedMapperTest {
 
     private TurnAssignedMapper turnAssignedMapper;
+    
+    @Mock
+    private RatingRepository ratingRepository;
+    
     private User doctorUser;
     private User patientUser;
     private DoctorProfile doctorProfile;
@@ -29,7 +40,7 @@ class TurnAssignedMapperTest {
 
     @BeforeEach
     void setUp() {
-        turnAssignedMapper = new TurnAssignedMapper();
+        turnAssignedMapper = new TurnAssignedMapper(ratingRepository);
         
         doctorId = UUID.randomUUID();
         patientId = UUID.randomUUID();
@@ -38,6 +49,9 @@ class TurnAssignedMapperTest {
 
         doctorUser = createUser(doctorId, "doctor@test.com", 12345678L, "DOCTOR", "ACTIVE", "Dr. Juan", "Pérez");
         patientUser = createUser(patientId, "patient@test.com", 87654321L, "PATIENT", "ACTIVE", "María", "González");
+        
+        // Default mock behavior - no ratings exist
+        when(ratingRepository.existsByTurnAssigned_IdAndRater_Id(any(), any())).thenReturn(false);
 
         doctorProfile = new DoctorProfile();
         doctorProfile.setId(doctorId);

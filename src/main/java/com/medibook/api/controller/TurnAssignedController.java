@@ -143,19 +143,6 @@ public class TurnAssignedController {
         return ResponseEntity.ok(turns);
     }
 
-    @GetMapping("/needing-rating")
-    public ResponseEntity<Object> getTurnsNeedingRating(HttpServletRequest request) {
-        User authenticatedUser = (User) request.getAttribute("authenticatedUser");
-        
-        if (!"PATIENT".equals(authenticatedUser.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Forbidden", "message", "Only patients can access this endpoint"));
-        }
-        
-        List<TurnResponseDTO> turns = turnService.getTurnsNeedingRating(authenticatedUser.getId());
-        return ResponseEntity.ok(turns);
-    }
-
     @GetMapping("/doctor/{doctorId}")
     public ResponseEntity<Object> getTurnsByDoctor(
             @PathVariable UUID doctorId,
