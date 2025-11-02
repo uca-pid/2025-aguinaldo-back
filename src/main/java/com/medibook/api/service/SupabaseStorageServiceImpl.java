@@ -54,7 +54,7 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
 
             } catch (IOException e) {
                 log.error("Error uploading file {}: {}", fileName, e.getMessage());
-                throw new RuntimeException("Error uploading file: " + e.getMessage());
+                throw new RuntimeException("Error al subir el archivo: " + e.getMessage());
             }
         });
     }
@@ -73,7 +73,7 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
 
             } catch (Exception e) {
                 log.error("Error deleting file {}: {}", fileName, e.getMessage());
-                throw new RuntimeException("Error deleting file: " + e.getMessage());
+                throw new RuntimeException("Error al eliminar el archivo: " + e.getMessage());
             }
         });
     }
@@ -87,23 +87,23 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
     @Override
     public void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File cannot be null or empty");
+            throw new IllegalArgumentException("El archivo no puede estar vacío o ser nulo");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File size exceeds maximum limit of 5MB");
+            throw new IllegalArgumentException("El tamaño del archivo excede el límite máximo de 5MB");
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
-            throw new IllegalArgumentException("File type not allowed. Only PDF, JPG, and PNG files are accepted");
+            throw new IllegalArgumentException("Tipo de archivo no permitido. Solo se aceptan archivos PDF, JPG y PNG");
         }
 
         String originalFilename = file.getOriginalFilename();
         if (originalFilename != null) {
             String extension = getFileExtension(originalFilename).toLowerCase();
             if (!Arrays.asList("pdf", "jpg", "jpeg", "png").contains(extension)) {
-                throw new IllegalArgumentException("File extension not allowed. Only .pdf, .jpg, .jpeg, and .png files are accepted");
+                throw new IllegalArgumentException("Extensión de archivo no permitida. Solo se aceptan archivos .pdf, .jpg, .jpeg y .png");
             }
         }
     }

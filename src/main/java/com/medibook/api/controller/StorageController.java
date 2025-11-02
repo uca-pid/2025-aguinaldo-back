@@ -54,6 +54,11 @@ public class StorageController {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .body("{\"error\":\"" + error.getMessage() + "\"}"));
                     }
+                    if (error.getMessage().contains("turno completado")) {
+                        return Mono.just(ResponseEntity.status(400)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body("{\"error\":\"" + error.getMessage() + "\"}"));
+                    }
                     return Mono.just(ResponseEntity.status(500)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"error\":\"" + error.getMessage() + "\"}"));
@@ -100,7 +105,7 @@ public class StorageController {
         return supabaseStorageService.deleteFile(bucketName, fileName)
                 .then(Mono.just(ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"message\":\"File deleted successfully\"}")))
+                        .body("{\"message\":\"Archivo eliminado exitosamente\"}")))
                 .onErrorResume(error -> {
                     log.error("Error deleting file: {}", error.getMessage());
                     return Mono.just(ResponseEntity.badRequest()

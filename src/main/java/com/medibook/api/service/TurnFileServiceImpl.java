@@ -34,7 +34,8 @@ public class TurnFileServiceImpl implements TurnFileService {
             return Mono.error(new IllegalStateException("Ya existe un archivo para este turno. Elimínalo antes de subir uno nuevo."));
         }
 
-        String customFileName = turnId + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        String sanitizedOriginalName = sanitizeFileName(file.getOriginalFilename());
+        String customFileName = sanitizedOriginalName + "_" + turnId + "_" + System.currentTimeMillis();
         log.info("Generated filename: {} for turnId: {}", customFileName, turnId);
 
         return supabaseStorageService.uploadFile(BUCKET_NAME, customFileName, file)
@@ -85,7 +86,18 @@ public class TurnFileServiceImpl implements TurnFileService {
     public Mono<Void> deleteTurnFile(UUID turnId) {
         log.info("Starting delete process for turnId: {}", turnId);
         
-        return Mono.fromCallable(() -> turnFileRepository.findByTurnId(turnId))
+        return Mono.fromCallable(() -> {
+            // Verificar que el turno no esté completado
+            Optional<TurnAssigned> turnOpt = turnAssignedRepository.findById(turnId);
+            if (turnOpt.isPresent()) {
+                TurnAssigned turn = turnOpt.get();
+                if ("COMPLETED".equals(turn.getStatus())) {
+                    throw new IllegalStateException("No se puede eliminar el archivo de un turno completado");
+                }
+            }
+            
+            return turnFileRepository.findByTurnId(turnId);
+        })
                 .flatMap(optionalTurnFile -> {
                     if (optionalTurnFile.isEmpty()) {
                         log.warn("No file found in database for turnId: {}", turnId);
@@ -117,5 +129,38 @@ public class TurnFileServiceImpl implements TurnFileService {
     public boolean fileExistsForTurn(UUID turnId) {
         log.debug("Checking if file exists for turnId: {}", turnId);
         return turnFileRepository.existsByTurnId(turnId);
+    }
+
+    /**
+     * Sanitiza el nombre del archivo para que sea válido en S3/Supabase Storage
+     * Reemplaza espacios y caracteres especiales por guiones bajos
+     */
+    private String sanitizeFileName(String originalFileName) {
+        if (originalFileName == null) {
+            return "archivo_sin_nombre.bin";
+        }
+        
+        // Normalizar caracteres Unicode (convertir acentos)
+        String normalized = java.text.Normalizer.normalize(originalFileName, java.text.Normalizer.Form.NFD);
+        
+        // Reemplazar caracteres con acentos por sus equivalentes sin acentos
+        normalized = normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        
+        // Reemplazar espacios y caracteres especiales por guiones bajos
+        // Mantener solo letras, números, puntos y guiones bajos
+        String sanitized = normalized.replaceAll("[^a-zA-Z0-9._]", "_");
+        
+        // Evitar múltiples guiones bajos consecutivos
+        sanitized = sanitized.replaceAll("_{2,}", "_");
+        
+        // Asegurar que no empiece o termine con guión bajo
+        sanitized = sanitized.replaceAll("^_+|_+$", "");
+        
+        // Si el nombre queda vacío, usar un nombre por defecto
+        if (sanitized.isEmpty()) {
+            sanitized = "archivo_sin_nombre";
+        }
+        
+        return sanitized;
     }
 }

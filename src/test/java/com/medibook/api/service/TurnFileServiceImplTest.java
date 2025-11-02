@@ -333,4 +333,123 @@ class TurnFileServiceImplTest {
         verify(notificationService, never()).createPatientFileUploadedNotification(
                 any(), any(), any(), any(), any(), any());
     }
+
+    @Test
+    void uploadTurnFile_FileNameWithSpecialCharacters_SanitizesFileName() {
+        // Arrange
+        String originalFileName = "Estudio Médico - Análisis #1 (2024).pdf";
+        String publicUrl = "https://storage.example.com/sanitized-file.pdf";
+
+        when(turnFileRepository.existsByTurnId(any(UUID.class))).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn(originalFileName);
+        when(supabaseStorageService.uploadFile(eq("archivosTurnos"), anyString(), eq(file)))
+                .thenReturn(Mono.just(publicUrl));
+        when(turnAssignedRepository.findById(any(UUID.class))).thenReturn(Optional.of(turn));
+
+        // Act & Assert
+        StepVerifier.create(turnFileService.uploadTurnFile(turnId, file))
+                .assertNext(result -> {
+                    assertTrue(result.contains("\"url\":\"" + publicUrl + "\""));
+                })
+                .verifyComplete();
+
+        // Verify that supabaseStorageService.uploadFile was called with a sanitized filename
+        verify(supabaseStorageService).uploadFile(eq("archivosTurnos"), argThat(fileName -> {
+            // El nombre del archivo debe empezar con el nombre sanitizado
+            return fileName.startsWith("Estudio_Medico_Analisis_1_2024_.pdf_") && 
+                   !fileName.contains(" ") && 
+                   !fileName.contains("á") && 
+                   !fileName.contains("é") && 
+                   !fileName.contains("#") && 
+                   !fileName.contains("(") && 
+                   !fileName.contains(")");
+        }), eq(file));
+
+        verify(turnFileRepository).save(any(TurnFile.class));
+    }
+
+    @Test
+    void uploadTurnFile_FileNameWithOnlySpecialCharacters_UsesDefaultName() {
+        // Arrange
+        String originalFileName = "!@#$%^&*()";
+        String publicUrl = "https://storage.example.com/default-file.pdf";
+
+        when(turnFileRepository.existsByTurnId(any(UUID.class))).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn(originalFileName);
+        when(supabaseStorageService.uploadFile(eq("archivosTurnos"), anyString(), eq(file)))
+                .thenReturn(Mono.just(publicUrl));
+        when(turnAssignedRepository.findById(any(UUID.class))).thenReturn(Optional.of(turn));
+
+        // Act & Assert
+        StepVerifier.create(turnFileService.uploadTurnFile(turnId, file))
+                .assertNext(result -> {
+                    assertTrue(result.contains("\"url\":\"" + publicUrl + "\""));
+                })
+                .verifyComplete();
+
+        // Verify that supabaseStorageService.uploadFile was called with a default filename
+        verify(supabaseStorageService).uploadFile(eq("archivosTurnos"), argThat(fileName -> {
+            return fileName.startsWith("archivo_sin_nombre_");
+        }), eq(file));
+
+        verify(turnFileRepository).save(any(TurnFile.class));
+    }
+
+    @Test
+    void deleteTurnFile_CompletedTurn_ShouldThrowException() {
+        // Arrange
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(completedTurn));
+
+        // Act & Assert
+        StepVerifier.create(turnFileService.deleteTurnFile(turnId))
+                .expectErrorMatches(error -> {
+                    return error instanceof IllegalStateException && 
+                           error.getMessage().contains("turno completado");
+                })
+                .verify();
+
+        verify(turnAssignedRepository).findById(turnId);
+        verify(turnFileRepository, never()).findByTurnId(any());
+        verify(supabaseStorageService, never()).deleteFile(any(), any());
+    }
+
+    @Test
+    void deleteTurnFile_NonCompletedTurn_ShouldDeleteSuccessfully() {
+        // Arrange
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnFile existingFile = TurnFile.builder()
+                .turnId(turnId)
+                .fileName("test-file.pdf")
+                .fileUrl("https://example.com/test-file.pdf")
+                .build();
+
+        when(turnAssignedRepository.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnFileRepository.findByTurnId(turnId)).thenReturn(Optional.of(existingFile));
+        when(supabaseStorageService.deleteFile("archivosTurnos", "test-file.pdf"))
+                .thenReturn(Mono.empty());
+
+        // Act & Assert
+        StepVerifier.create(turnFileService.deleteTurnFile(turnId))
+                .verifyComplete();
+
+        verify(turnAssignedRepository).findById(turnId);
+        verify(turnFileRepository).findByTurnId(turnId);
+        verify(supabaseStorageService).deleteFile("archivosTurnos", "test-file.pdf");
+        verify(turnFileRepository).deleteByTurnId(turnId);
+    }
 }

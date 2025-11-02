@@ -82,7 +82,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(null));
-        assertEquals("File cannot be null or empty", exception.getMessage());
+        assertEquals("El archivo no puede estar vacío o ser nulo", exception.getMessage());
     }
 
     @Test
@@ -98,7 +98,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File cannot be null or empty", exception.getMessage());
+        assertEquals("El archivo no puede estar vacío o ser nulo", exception.getMessage());
     }
 
     @Test
@@ -115,7 +115,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File size exceeds maximum limit of 5MB", exception.getMessage());
+        assertEquals("El tamaño del archivo excede el límite máximo de 5MB", exception.getMessage());
     }
 
     @Test
@@ -131,7 +131,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File type not allowed. Only PDF, JPG, and PNG files are accepted", exception.getMessage());
+        assertEquals("Tipo de archivo no permitido. Solo se aceptan archivos PDF, JPG y PNG", exception.getMessage());
     }
 
     @Test
@@ -147,7 +147,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> supabaseStorageService.validateFile(file));
-        assertEquals("File extension not allowed. Only .pdf, .jpg, .jpeg, and .png files are accepted", exception.getMessage());
+        assertEquals("Extensión de archivo no permitida. Solo se aceptan archivos .pdf, .jpg, .jpeg y .png", exception.getMessage());
     }
 
     @Test
@@ -202,7 +202,7 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> supabaseStorageService.uploadFile(bucketName, fileName, file).block());
-        assertTrue(exception.getMessage().contains("Error uploading file"));
+        assertTrue(exception.getMessage().contains("Error al subir el archivo"));
     }
 
     @Test
@@ -230,6 +230,6 @@ class SupabaseStorageServiceImplTest {
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> supabaseStorageService.deleteFile(bucketName, fileName).block());
-        assertTrue(exception.getMessage().contains("Error deleting file"));
+        assertTrue(exception.getMessage().contains("Error al eliminar el archivo"));
     }
 }
