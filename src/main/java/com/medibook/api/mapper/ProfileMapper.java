@@ -20,6 +20,7 @@ public class ProfileMapper {
         dto.setBirthdate(user.getBirthdate());
         dto.setGender(user.getGender());
         dto.setStatus(user.getStatus());
+    dto.setScore(user.getScore());
 
         if ("DOCTOR".equalsIgnoreCase(user.getRole()) && user.getDoctorProfile() != null) {
             DoctorProfile profile = user.getDoctorProfile();

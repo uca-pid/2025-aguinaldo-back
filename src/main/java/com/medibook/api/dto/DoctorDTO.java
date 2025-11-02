@@ -14,4 +14,5 @@ public class DoctorDTO {
     private String medicalLicense;
     private String specialty;
     private int slotDurationMin;
+    private Double score;
 }

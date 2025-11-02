@@ -11,4 +11,7 @@ import java.util.UUID;
 public interface RatingRepository extends JpaRepository<Rating, UUID> {
     boolean existsByTurnAssigned_IdAndRater_Id(UUID turnId, UUID raterId);
     Optional<Rating> findByTurnAssigned_IdAndRater_Id(UUID turnId, UUID raterId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT AVG(r.score) FROM Rating r WHERE r.rated.id = :ratedId")
+    Double findAverageScoreByRatedId(java.util.UUID ratedId);
 }
