@@ -2,6 +2,7 @@ package com.medibook.api.controller;
 
 import com.medibook.api.dto.Availability.*;
 import com.medibook.api.dto.DoctorDTO;
+import com.medibook.api.dto.DoctorMetricsDTO;
 import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.dto.UpdateMedicalHistoryRequestDTO;
 import com.medibook.api.dto.CreateMedicalHistoryRequestDTO;
@@ -141,5 +142,12 @@ public class DoctorController {
         
         medicalHistoryService.deleteMedicalHistory(doctorId, historyId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{doctorId}/metrics")
+    @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
+    public ResponseEntity<DoctorMetricsDTO> getDoctorMetrics(@PathVariable UUID doctorId) {
+        DoctorMetricsDTO metrics = doctorService.getDoctorMetrics(doctorId);
+        return ResponseEntity.ok(metrics);
     }
 }
