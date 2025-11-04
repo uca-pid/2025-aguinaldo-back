@@ -1,17 +1,23 @@
 package com.medibook.api.service;
 
 import com.medibook.api.dto.DoctorDTO;
+import com.medibook.api.dto.DoctorMetricsDTO;
 import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.dto.PatientDTO;
+import com.medibook.api.dto.Rating.SubcategoryCountDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
+import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,6 +31,7 @@ public class DoctorService {
     private final TurnAssignedRepository turnAssignedRepository;
     private final DoctorMapper doctorMapper;
     private final MedicalHistoryService medicalHistoryService;
+    private final RatingRepository ratingRepository;
 
     public List<DoctorDTO> getAllDoctors() {
         List<User> doctors = userRepository.findDoctorsByStatus("ACTIVE");
@@ -85,6 +92,32 @@ public class DoctorService {
         
         String latestMedicalHistory = medicalHistoryService.getLatestMedicalHistoryContent(patient.getId());
         
+        // Get rating subcategories (ratings from doctors about this patient)
+        List<RatingRepository.SubcategoryCount> subcategoryCounts = 
+                ratingRepository.countSubcategoriesByRatedId(patient.getId(), "DOCTOR");
+        
+        // Split comma-separated subcategories and count each one individually
+        java.util.Map<String, Long> subcategoryMap = new java.util.HashMap<>();
+        for (RatingRepository.SubcategoryCount sc : subcategoryCounts) {
+            String subcategoriesString = sc.getSubcategory();
+            if (subcategoriesString != null && !subcategoriesString.trim().isEmpty()) {
+                String[] subcategories = subcategoriesString.split(",");
+                for (String subcategory : subcategories) {
+                    String trimmed = subcategory.trim();
+                    if (!trimmed.isEmpty()) {
+                        subcategoryMap.merge(trimmed, sc.getCount(), Long::sum);
+                    }
+                }
+            }
+        }
+        
+        // Convert to list, sort by count descending, and take top 3
+        List<SubcategoryCountDTO> ratingSubcategories = subcategoryMap.entrySet().stream()
+                .map(entry -> new SubcategoryCountDTO(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .limit(3)
+                .collect(Collectors.toList());
+        
         return PatientDTO.builder()
                 .id(patient.getId())
                 .name(patient.getName())
@@ -98,6 +131,83 @@ public class DoctorService {
                 .medicalHistories(medicalHistories)
                 .medicalHistory(latestMedicalHistory)
                 .score(patient.getScore())
+                .ratingSubcategories(ratingSubcategories)
+                .build();
+    }
+
+    public DoctorMetricsDTO getDoctorMetrics(UUID doctorId) {
+        // Get doctor
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        if (!"DOCTOR".equals(doctor.getRole())) {
+            throw new RuntimeException("User is not a doctor");
+        }
+
+        // Get all turns for the doctor
+        List<TurnAssigned> allTurns = turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId);
+        
+        // Calculate metrics
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime startOfMonth = YearMonth.now().atDay(1).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+        
+        // Upcoming turns (SCHEDULED status and in the future)
+        int upcomingTurns = (int) allTurns.stream()
+                .filter(turn -> "SCHEDULED".equals(turn.getStatus()) && turn.getScheduledAt().isAfter(now))
+                .count();
+        
+        // Completed turns this month (COMPLETED status in current month)
+        int completedTurnsThisMonth = (int) allTurns.stream()
+                .filter(turn -> "COMPLETED".equals(turn.getStatus()) 
+                        && turn.getScheduledAt().isAfter(startOfMonth) 
+                        && turn.getScheduledAt().isBefore(now))
+                .count();
+        
+        // Cancelled turns (all time)
+        int cancelledTurns = (int) allTurns.stream()
+                .filter(turn -> "CANCELED".equals(turn.getStatus()))
+                .count();
+        
+        // Total patients
+        List<User> patients = turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId);
+        int totalPatients = patients.size();
+        
+        // Get rating subcategories (ratings from patients about this doctor)
+        List<RatingRepository.SubcategoryCount> subcategoryCounts = 
+                ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT");
+        
+        // Split comma-separated subcategories and count each one individually
+        java.util.Map<String, Long> subcategoryMap = new java.util.HashMap<>();
+        for (RatingRepository.SubcategoryCount sc : subcategoryCounts) {
+            String subcategoriesString = sc.getSubcategory();
+            if (subcategoriesString != null && !subcategoriesString.trim().isEmpty()) {
+                String[] subcategories = subcategoriesString.split(",");
+                for (String subcategory : subcategories) {
+                    String trimmed = subcategory.trim();
+                    if (!trimmed.isEmpty()) {
+                        subcategoryMap.merge(trimmed, sc.getCount(), Long::sum);
+                    }
+                }
+            }
+        }
+        
+        // Convert to list and sort by count descending (NO LIMIT - return all for doctor's own metrics)
+        List<SubcategoryCountDTO> ratingSubcategories = subcategoryMap.entrySet().stream()
+                .map(entry -> new SubcategoryCountDTO(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .collect(Collectors.toList());
+        
+        return DoctorMetricsDTO.builder()
+                .doctorId(doctor.getId())
+                .name(doctor.getName())
+                .surname(doctor.getSurname())
+                .specialty(doctor.getDoctorProfile() != null ? doctor.getDoctorProfile().getSpecialty() : null)
+                .score(doctor.getScore())
+                .ratingSubcategories(ratingSubcategories)
+                .totalPatients(totalPatients)
+                .upcomingTurns(upcomingTurns)
+                .completedTurnsThisMonth(completedTurnsThisMonth)
+                .cancelledTurns(cancelledTurns)
                 .build();
     }
 }
