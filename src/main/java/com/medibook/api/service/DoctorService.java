@@ -92,6 +92,32 @@ public class DoctorService {
         
         String latestMedicalHistory = medicalHistoryService.getLatestMedicalHistoryContent(patient.getId());
         
+        // Get rating subcategories (ratings from doctors about this patient)
+        List<RatingRepository.SubcategoryCount> subcategoryCounts = 
+                ratingRepository.countSubcategoriesByRatedId(patient.getId(), "DOCTOR");
+        
+        // Split comma-separated subcategories and count each one individually
+        java.util.Map<String, Long> subcategoryMap = new java.util.HashMap<>();
+        for (RatingRepository.SubcategoryCount sc : subcategoryCounts) {
+            String subcategoriesString = sc.getSubcategory();
+            if (subcategoriesString != null && !subcategoriesString.trim().isEmpty()) {
+                String[] subcategories = subcategoriesString.split(",");
+                for (String subcategory : subcategories) {
+                    String trimmed = subcategory.trim();
+                    if (!trimmed.isEmpty()) {
+                        subcategoryMap.merge(trimmed, sc.getCount(), Long::sum);
+                    }
+                }
+            }
+        }
+        
+        // Convert to list, sort by count descending, and take top 3
+        List<SubcategoryCountDTO> ratingSubcategories = subcategoryMap.entrySet().stream()
+                .map(entry -> new SubcategoryCountDTO(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+                .limit(3)
+                .collect(Collectors.toList());
+        
         return PatientDTO.builder()
                 .id(patient.getId())
                 .name(patient.getName())
@@ -105,6 +131,7 @@ public class DoctorService {
                 .medicalHistories(medicalHistories)
                 .medicalHistory(latestMedicalHistory)
                 .score(patient.getScore())
+                .ratingSubcategories(ratingSubcategories)
                 .build();
     }
 
@@ -149,8 +176,25 @@ public class DoctorService {
         List<RatingRepository.SubcategoryCount> subcategoryCounts = 
                 ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT");
         
-        List<SubcategoryCountDTO> ratingSubcategories = subcategoryCounts.stream()
-                .map(sc -> new SubcategoryCountDTO(sc.getSubcategory(), sc.getCount()))
+        // Split comma-separated subcategories and count each one individually
+        java.util.Map<String, Long> subcategoryMap = new java.util.HashMap<>();
+        for (RatingRepository.SubcategoryCount sc : subcategoryCounts) {
+            String subcategoriesString = sc.getSubcategory();
+            if (subcategoriesString != null && !subcategoriesString.trim().isEmpty()) {
+                String[] subcategories = subcategoriesString.split(",");
+                for (String subcategory : subcategories) {
+                    String trimmed = subcategory.trim();
+                    if (!trimmed.isEmpty()) {
+                        subcategoryMap.merge(trimmed, sc.getCount(), Long::sum);
+                    }
+                }
+            }
+        }
+        
+        // Convert to list and sort by count descending (NO LIMIT - return all for doctor's own metrics)
+        List<SubcategoryCountDTO> ratingSubcategories = subcategoryMap.entrySet().stream()
+                .map(entry -> new SubcategoryCountDTO(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .collect(Collectors.toList());
         
         return DoctorMetricsDTO.builder()

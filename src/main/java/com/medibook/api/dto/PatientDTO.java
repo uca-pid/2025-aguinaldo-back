@@ -1,5 +1,6 @@
 package com.medibook.api.dto;
 
+import com.medibook.api.dto.Rating.SubcategoryCountDTO;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDate;
@@ -21,4 +22,5 @@ public class PatientDTO {
     private List<MedicalHistoryDTO> medicalHistories;
     private String medicalHistory;
     private Double score;
+    private List<SubcategoryCountDTO> ratingSubcategories;
 }
