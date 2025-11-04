@@ -5,6 +5,7 @@ import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.entity.DoctorProfile;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
+import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,9 @@ class DoctorServiceComprehensiveTest {
 
     @Mock
     private MedicalHistoryService medicalHistoryService;
+
+    @Mock
+    private RatingRepository ratingRepository;
 
     @InjectMocks
     private DoctorService doctorService;
@@ -246,6 +250,8 @@ class DoctorServiceComprehensiveTest {
         when(userRepository.findById(doctorId1)).thenReturn(Optional.of(doctorUser1));
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId1))
                 .thenReturn(Arrays.asList(patientUser1, patientUser2));
+        when(ratingRepository.countSubcategoriesByRatedId(any(UUID.class), anyString()))
+                .thenReturn(Collections.emptyList());
 
         List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId1);
 
