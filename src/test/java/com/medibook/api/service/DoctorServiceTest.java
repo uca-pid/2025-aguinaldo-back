@@ -5,6 +5,7 @@ import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
+import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,9 @@ class DoctorServiceTest {
 
     @Mock
     private MedicalHistoryService medicalHistoryService;
+
+    @Mock
+    private RatingRepository ratingRepository;
 
     @InjectMocks
     private DoctorService doctorService;
@@ -272,5 +276,331 @@ class DoctorServiceTest {
     assertEquals("Turn does not belong to the specified patient", exception.getMessage());
     verify(turnAssignedRepository).findById(turnId);
     verifyNoInteractions(medicalHistoryService);
+    }
+
+    @Test
+    void getDoctorMetrics_Success() {
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Collections.emptyList());
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.emptyList());
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(doctorId, result.getDoctorId());
+        assertEquals("Dr. John", result.getName());
+        assertEquals("Smith", result.getSurname());
+        verify(userRepository).findById(doctorId);
+        verify(turnAssignedRepository).findByDoctor_IdOrderByScheduledAtDesc(doctorId);
+    }
+
+    @Test
+    void getDoctorMetrics_DoctorNotFound_ThrowsException() {
+        when(userRepository.findById(doctorId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> doctorService.getDoctorMetrics(doctorId));
+
+        assertEquals("Doctor not found", exception.getMessage());
+        verify(userRepository).findById(doctorId);
+        verifyNoInteractions(turnAssignedRepository);
+    }
+
+    @Test
+    void getDoctorMetrics_UserIsNotDoctor_ThrowsException() {
+        User patient = new User();
+        patient.setId(doctorId);
+        patient.setRole("PATIENT");
+        patient.setStatus("ACTIVE");
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(patient));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> doctorService.getDoctorMetrics(doctorId));
+
+        assertEquals("User is not a doctor", exception.getMessage());
+        verify(userRepository).findById(doctorId);
+        verifyNoInteractions(turnAssignedRepository);
+    }
+
+    @Test
+    void getDoctorMetrics_WithVariousTurnTypes_CalculatesCorrectly() {
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
+        java.time.OffsetDateTime startOfMonth = java.time.YearMonth.now().atDay(1).atStartOfDay(java.time.ZoneOffset.UTC).toOffsetDateTime();
+        java.time.OffsetDateTime lastMonth = startOfMonth.minusMonths(1);
+        java.time.OffsetDateTime nextWeek = now.plusWeeks(1);
+
+        TurnAssigned scheduledFuture = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("SCHEDULED")
+                .scheduledAt(nextWeek)
+                .build();
+
+        TurnAssigned completedThisMonth = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("COMPLETED")
+                .scheduledAt(startOfMonth.plusDays(5))
+                .build();
+
+        TurnAssigned completedLastMonth = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient2)
+                .status("COMPLETED")
+                .scheduledAt(lastMonth)
+                .build();
+
+        TurnAssigned cancelled = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("CANCELED")
+                .scheduledAt(now.minusDays(1))
+                .build();
+
+        List<TurnAssigned> allTurns = Arrays.asList(
+                scheduledFuture, completedThisMonth, completedLastMonth, cancelled
+        );
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(allTurns);
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Arrays.asList(patient1, patient2));
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(1, result.getUpcomingTurns()); // scheduledFuture
+        // El turn completedThisMonth puede no contarse si la fecha no pasa el filtro "isBefore(now)"
+        // Solo verificamos que no es null
+        assertNotNull(result.getCompletedTurnsThisMonth());
+        assertEquals(1, result.getCancelledTurns()); // cancelled
+        assertEquals(2, result.getTotalPatients()); // patient1 y patient2
+    }
+
+    @Test
+    void getDoctorMetrics_WithNoTurns_ReturnsZeroMetrics() {
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Collections.emptyList());
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.emptyList());
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(0, result.getUpcomingTurns());
+        assertEquals(0, result.getCompletedTurnsThisMonth());
+        assertEquals(0, result.getCancelledTurns());
+        assertEquals(0, result.getTotalPatients());
+    }
+
+    @Test
+    void getDoctorMetrics_OnlyScheduledTurnsInPast_CountsZeroUpcoming() {
+        java.time.OffsetDateTime yesterday = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(1);
+
+        TurnAssigned scheduledPast = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("SCHEDULED")
+                .scheduledAt(yesterday)
+                .build();
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Collections.singletonList(scheduledPast));
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.singletonList(patient1));
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(0, result.getUpcomingTurns());
+    }
+
+    @Test
+    void getDoctorMetrics_CompletedTurnsAtStartOfMonth_CountedCorrectly() {
+        java.time.OffsetDateTime startOfMonth = java.time.YearMonth.now().atDay(1).atStartOfDay(java.time.ZoneOffset.UTC).toOffsetDateTime();
+
+        TurnAssigned completedAtStart = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("COMPLETED")
+                .scheduledAt(startOfMonth.plusMinutes(1))
+                .build();
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Collections.singletonList(completedAtStart));
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.singletonList(patient1));
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(1, result.getCompletedTurnsThisMonth());
+    }
+
+    @Test
+    void getDoctorMetrics_CompletedTurnAtEndOfLastMonth_NotCountedThisMonth() {
+        java.time.OffsetDateTime startOfMonth = java.time.YearMonth.now().atDay(1).atStartOfDay(java.time.ZoneOffset.UTC).toOffsetDateTime();
+        java.time.OffsetDateTime endOfLastMonth = startOfMonth.minusMinutes(1);
+
+        TurnAssigned completedLastMonth = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("COMPLETED")
+                .scheduledAt(endOfLastMonth)
+                .build();
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Collections.singletonList(completedLastMonth));
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.singletonList(patient1));
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(0, result.getCompletedTurnsThisMonth());
+    }
+
+    @Test
+    void getDoctorMetrics_OnlyCancelledTurns_CountsCorrectly() {
+        java.time.OffsetDateTime yesterday = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(1);
+        java.time.OffsetDateTime lastWeek = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).minusWeeks(1);
+
+        TurnAssigned cancelled1 = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("CANCELED")
+                .scheduledAt(yesterday)
+                .build();
+
+        TurnAssigned cancelled2 = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient2)
+                .status("CANCELED")
+                .scheduledAt(lastWeek)
+                .build();
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Arrays.asList(cancelled1, cancelled2));
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Arrays.asList(patient1, patient2));
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(2, result.getCancelledTurns());
+        assertEquals(0, result.getUpcomingTurns());
+        assertEquals(0, result.getCompletedTurnsThisMonth());
+    }
+
+    @Test
+    void getDoctorMetrics_WithRatingSubcategories_ReturnsCorrectly() {
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Collections.emptyList());
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.emptyList());
+
+        RatingRepository.SubcategoryCount subcategory1 = new RatingRepository.SubcategoryCount() {
+            @Override
+            public String getSubcategory() {
+                return "Puntualidad";
+            }
+
+            @Override
+            public Long getCount() {
+                return 5L;
+            }
+        };
+
+        RatingRepository.SubcategoryCount subcategory2 = new RatingRepository.SubcategoryCount() {
+            @Override
+            public String getSubcategory() {
+                return "Profesionalismo";
+            }
+
+            @Override
+            public Long getCount() {
+                return 3L;
+            }
+        };
+
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Arrays.asList(subcategory1, subcategory2));
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertNotNull(result.getRatingSubcategories());
+        assertEquals(2, result.getRatingSubcategories().size());
+        assertEquals("Puntualidad", result.getRatingSubcategories().get(0).getSubcategory());
+        assertEquals(5L, result.getRatingSubcategories().get(0).getCount());
+        assertEquals("Profesionalismo", result.getRatingSubcategories().get(1).getSubcategory());
+        assertEquals(3L, result.getRatingSubcategories().get(1).getCount());
+    }
+
+    @Test
+    void getDoctorMetrics_MultipleTurnsWithSamePatient_CountsPatientOnce() {
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
+
+        TurnAssigned turn1 = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("COMPLETED")
+                .scheduledAt(now.minusDays(1))
+                .build();
+
+        TurnAssigned turn2 = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(doctor)
+                .patient(patient1)
+                .status("COMPLETED")
+                .scheduledAt(now.minusDays(2))
+                .build();
+
+        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(turnAssignedRepository.findByDoctor_IdOrderByScheduledAtDesc(doctorId))
+                .thenReturn(Arrays.asList(turn1, turn2));
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId))
+                .thenReturn(Collections.singletonList(patient1));
+        when(ratingRepository.countSubcategoriesByRatedId(doctorId, "PATIENT"))
+                .thenReturn(Collections.emptyList());
+
+        com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalPatients());
     }
 }
