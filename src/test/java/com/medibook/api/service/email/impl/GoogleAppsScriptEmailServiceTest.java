@@ -114,4 +114,101 @@ class GoogleAppsScriptEmailServiceTest {
         assertNotNull(result);
         assertTrue(result.isSuccess());
     }
+
+    @Test
+    void testSendEmailUnexpectedResponse() {
+        EmailRequestDto emailRequest = EmailRequestDto.builder()
+                .to("test@example.com")
+                .subject("Test Subject")
+                .textContent("Test content")
+                .build();
+
+        ResponseEntity<String> mockResponse = new ResponseEntity<>("UNEXPECTED_RESPONSE", HttpStatus.OK);
+        when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
+                .thenReturn(mockResponse);
+
+        EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
+
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertEquals("Unexpected response from email service", result.getMessage());
+        assertTrue(result.getErrorDetails().contains("UNEXPECTED_RESPONSE"));
+    }
+
+    @Test
+    void testSendEmailGeneralException() {
+        EmailRequestDto emailRequest = EmailRequestDto.builder()
+                .to("test@example.com")
+                .subject("Test Subject")
+                .textContent("Test content")
+                .build();
+
+        when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
+                .thenThrow(new RuntimeException("Unexpected error"));
+
+        EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
+
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertEquals("General error sending email", result.getMessage());
+        assertTrue(result.getErrorDetails().contains("Unexpected error"));
+    }
+
+    @Test
+    void testSendEmailNullTextContent() {
+        EmailRequestDto emailRequest = EmailRequestDto.builder()
+                .to("test@example.com")
+                .subject("Test Subject")
+                .textContent(null)
+                .htmlContent("<h1>Only HTML</h1>")
+                .build();
+
+        ResponseEntity<String> mockResponse = new ResponseEntity<>("OK", HttpStatus.OK);
+        when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
+                .thenReturn(mockResponse);
+
+        EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+    }
+
+    @Test
+    void testSendEmailEmptyHtmlContent() {
+        EmailRequestDto emailRequest = EmailRequestDto.builder()
+                .to("test@example.com")
+                .subject("Test Subject")
+                .textContent("Test content")
+                .htmlContent("   ")
+                .build();
+
+        ResponseEntity<String> mockResponse = new ResponseEntity<>("OK", HttpStatus.OK);
+        when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
+                .thenReturn(mockResponse);
+
+        EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+    }
+
+    @Test
+    void testSendEmailNonOkStatusCode() {
+        EmailRequestDto emailRequest = EmailRequestDto.builder()
+                .to("test@example.com")
+                .subject("Test Subject")
+                .textContent("Test content")
+                .build();
+
+        ResponseEntity<String> mockResponse = new ResponseEntity<>("Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
+        when(restTemplate.postForEntity(any(String.class), any(), eq(String.class)))
+                .thenReturn(mockResponse);
+
+        EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
+
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertEquals("Unexpected response from email service", result.getMessage());
+        assertTrue(result.getErrorDetails().contains("Server Error"));
+    }
 }

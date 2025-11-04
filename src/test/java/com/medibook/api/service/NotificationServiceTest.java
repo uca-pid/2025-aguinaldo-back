@@ -239,4 +239,78 @@ class NotificationServiceTest {
         verify(userRepository).findById(testUser.getId());
         verify(notificationRepository).save(any(Notification.class));
     }
+
+    @Test
+    void testCreateModifyRequestRejectedNotification_WithEmptyReason() {
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+
+        notificationService.createModifyRequestRejectedNotification(
+            testUser.getId(), 
+            testNotification.getRelatedEntityId(), 
+            "   ",  // Empty whitespace reason
+            "Dr. John Smith",
+            "2024-01-15",
+            "10:30",
+            "2024-01-16",
+            "14:00"
+        );
+
+        verify(userRepository).findById(testUser.getId());
+        verify(notificationRepository).save(any(Notification.class));
+    }
+
+    @Test
+    void testCreatePatientFileUploadedNotification() {
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+
+        notificationService.createPatientFileUploadedNotification(
+            testUser.getId(),
+            testNotification.getRelatedEntityId(),
+            "Jane Doe",
+            "2024-01-15",
+            "10:30",
+            "analysis.pdf"
+        );
+
+        verify(userRepository).findById(testUser.getId());
+        verify(notificationRepository).save(any(Notification.class));
+    }
+
+    @Test
+    void testCreateTurnReservedNotification() {
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+
+        notificationService.createTurnReservedNotification(
+            testUser.getId(),
+            testNotification.getRelatedEntityId(),
+            "Jane Doe",
+            "2024-01-15",
+            "10:30"
+        );
+
+        verify(userRepository).findById(testUser.getId());
+        verify(notificationRepository).save(any(Notification.class));
+    }
+
+    @Test
+    void testCreateTurnCancellationNotification_CancelledByPatient() {
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(notificationRepository.save(any(Notification.class))).thenReturn(testNotification);
+
+        notificationService.createTurnCancellationNotification(
+            testUser.getId(), 
+            testNotification.getRelatedEntityId(), 
+            "patient",
+            "Dr. John Smith",
+            "Jane Doe",
+            "2024-01-15",
+            "10:30"
+        );
+
+        verify(userRepository).findById(testUser.getId());
+        verify(notificationRepository).save(any(Notification.class));
+    }
 }

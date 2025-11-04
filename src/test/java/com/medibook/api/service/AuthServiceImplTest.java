@@ -9,6 +9,8 @@ import com.medibook.api.entity.RefreshToken;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
+
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 
@@ -709,5 +711,994 @@ class AuthServiceImplTest {
         verify(userRepository).save(argThat(user -> 
                 !user.getPasswordHash().equals(validPatientRequest.password())
         ));
+    }
+
+    @Test
+    void registerPatient_DNIWith7Digits_Success() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                1234567L, // 7 dígitos
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(eq(request), eq("PATIENT"), eq("hashedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(
+            new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), 
+                sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        assertDoesNotThrow(() -> authService.registerPatient(request));
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerPatient_DNIWith8Digits_Success() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L, // 8 dígitos
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(eq(request), eq("PATIENT"), eq("hashedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(
+            new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), 
+                sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        assertDoesNotThrow(() -> authService.registerPatient(request));
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerPatient_DNILowerBoundValid_Success() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                1000000L, // Límite inferior válido
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(eq(request), eq("PATIENT"), eq("hashedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(
+            new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), 
+                sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        assertDoesNotThrow(() -> authService.registerPatient(request));
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerPatient_DNIUpperBoundValid_Success() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                99999999L, // Límite superior válido
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(eq(request), eq("PATIENT"), eq("hashedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(
+            new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), 
+                sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        assertDoesNotThrow(() -> authService.registerPatient(request));
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerPatient_DNIWith6Digits_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                123456L, // 6 dígitos - inválido
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid DNI format"));
+    }
+
+    @Test
+    void registerPatient_DNIWith9Digits_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                123456789L, // 9 dígitos - inválido
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid DNI format"));
+    }
+
+    @Test
+    void registerPatient_DNIBelowRange_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                999999L, // Menor a 1000000
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid DNI format"));
+    }
+
+    @Test
+    void registerPatient_DNIAboveRange_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                1000000000L, // Mayor a 999999999
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid DNI format"));
+    }
+
+    @Test
+    void registerPatient_Exactly18YearsOld_Success() {
+        LocalDate exactly18YearsAgo = LocalDate.now(ARGENTINA_ZONE).minusYears(18);
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                exactly18YearsAgo,
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(eq(request), eq("PATIENT"), eq("hashedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(
+            new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), 
+                sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        assertDoesNotThrow(() -> authService.registerPatient(request));
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerPatient_Under18YearsOld_ThrowsException() {
+        LocalDate under18 = LocalDate.now(ARGENTINA_ZONE).minusYears(17);
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                under18,
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Must be at least 18 years old"));
+    }
+
+    @Test
+    void registerPatient_Exactly120YearsOld_Success() {
+        LocalDate exactly120YearsAgo = LocalDate.now(ARGENTINA_ZONE).minusYears(120);
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                exactly120YearsAgo,
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByDni(request.dni())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(userMapper.toUser(eq(request), eq("PATIENT"), eq("hashedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(
+            new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), 
+                sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        assertDoesNotThrow(() -> authService.registerPatient(request));
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void registerPatient_Over120YearsOld_ThrowsException() {
+        LocalDate over120 = LocalDate.now(ARGENTINA_ZONE).minusYears(121);
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                over120,
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid birth date"));
+    }
+
+    @Test
+    void registerPatient_EmptyName_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        // Empty name throws NullPointerException in UserMapper
+        assertThrows(
+                NullPointerException.class,
+                () -> authService.registerPatient(request)
+        );
+    }
+
+    @Test
+    void registerPatient_WhitespaceName_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "   ",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        // Whitespace name throws NullPointerException in UserMapper
+        assertThrows(
+                NullPointerException.class,
+                () -> authService.registerPatient(request)
+        );
+    }
+
+    @Test
+    void registerPatient_EmptySurname_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        // Empty surname throws NullPointerException in UserMapper
+        assertThrows(
+                NullPointerException.class,
+                () -> authService.registerPatient(request)
+        );
+    }
+
+    @Test
+    void registerPatient_WhitespaceSurname_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "   ",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        // Whitespace surname throws NullPointerException in UserMapper
+        assertThrows(
+                NullPointerException.class,
+                () -> authService.registerPatient(request)
+        );
+    }
+
+    @Test
+    void registerPatient_EmptyPhone_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Phone is required"));
+    }
+
+    @Test
+    void registerPatient_WhitespacePhone_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "   ",
+                LocalDate.of(1990, 1, 1),
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Phone is required"));
+    }
+
+    @Test
+    void registerPatient_EmptyGender_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Gender is required"));
+    }
+
+    @Test
+    void registerPatient_WhitespaceGender_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                LocalDate.of(1990, 1, 1),
+                "   ",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Gender is required"));
+    }
+
+    @Test
+    void registerPatient_NullBirthdate_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "patient@test.com",
+                12345678L,
+                "password123",
+                "John",
+                "Doe",
+                "1234567890",
+                null,
+                "MALE",
+                null,
+                null,
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerPatient(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Birthdate is required"));
+    }
+
+    @Test
+    void registerDoctor_WhitespaceMedicalLicense_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "   ",
+                "CARDIOLOGY",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Medical license is required for doctors"));
+    }
+
+    @Test
+    void registerDoctor_WhitespaceSpecialty_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                "   ",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Specialty is required for doctors"));
+    }
+
+    @Test
+    void signIn_UserWithNullRole_ThrowsException() {
+        User userNullRole = new User();
+        userNullRole.setId(UUID.randomUUID());
+        userNullRole.setEmail(validSignInRequest.email());
+        userNullRole.setPasswordHash("hashedPassword");
+        userNullRole.setRole(null);
+        userNullRole.setStatus("ACTIVE");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(userNullRole));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_UserWithNullStatus_ThrowsException() {
+        User userNullStatus = new User();
+        userNullStatus.setId(UUID.randomUUID());
+        userNullStatus.setEmail(validSignInRequest.email());
+        userNullStatus.setPasswordHash("hashedPassword");
+        userNullStatus.setRole("PATIENT");
+        userNullStatus.setStatus(null);
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(userNullStatus));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_UserWithEmptyRole_ThrowsException() {
+        User userEmptyRole = new User();
+        userEmptyRole.setId(UUID.randomUUID());
+        userEmptyRole.setEmail(validSignInRequest.email());
+        userEmptyRole.setPasswordHash("hashedPassword");
+        userEmptyRole.setRole("");
+        userEmptyRole.setStatus("ACTIVE");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(userEmptyRole));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_UserWithEmptyStatus_ThrowsException() {
+        User userEmptyStatus = new User();
+        userEmptyStatus.setId(UUID.randomUUID());
+        userEmptyStatus.setEmail(validSignInRequest.email());
+        userEmptyStatus.setPasswordHash("hashedPassword");
+        userEmptyStatus.setRole("PATIENT");
+        userEmptyStatus.setStatus("");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(userEmptyStatus));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_UserWithUnknownRole_ThrowsException() {
+        User userUnknownRole = new User();
+        userUnknownRole.setId(UUID.randomUUID());
+        userUnknownRole.setEmail(validSignInRequest.email());
+        userUnknownRole.setPasswordHash("hashedPassword");
+        userUnknownRole.setRole("SUPERADMIN");
+        userUnknownRole.setStatus("ACTIVE");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(userUnknownRole));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_DoctorWithRejectedStatus_ThrowsException() {
+        User rejectedDoctor = new User();
+        rejectedDoctor.setId(UUID.randomUUID());
+        rejectedDoctor.setEmail(validSignInRequest.email());
+        rejectedDoctor.setPasswordHash("hashedPassword");
+        rejectedDoctor.setRole("DOCTOR");
+        rejectedDoctor.setStatus("REJECTED");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(rejectedDoctor));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_AdminWithPendingStatus_ThrowsException() {
+        User pendingAdmin = new User();
+        pendingAdmin.setId(UUID.randomUUID());
+        pendingAdmin.setEmail(validSignInRequest.email());
+        pendingAdmin.setPasswordHash("hashedPassword");
+        pendingAdmin.setRole("ADMIN");
+        pendingAdmin.setStatus("PENDING");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(pendingAdmin));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void signIn_PatientWithPendingStatus_ThrowsException() {
+        User pendingPatient = new User();
+        pendingPatient.setId(UUID.randomUUID());
+        pendingPatient.setEmail(validSignInRequest.email());
+        pendingPatient.setPasswordHash("hashedPassword");
+        pendingPatient.setRole("PATIENT");
+        pendingPatient.setStatus("PENDING");
+
+        when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(pendingPatient));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.signIn(validSignInRequest)
+        );
+
+        assertEquals("Invalid email or password", exception.getMessage());
+    }
+
+    @Test
+    void registerPatient_EmailSendFailure_DoesNotThrow() {
+        // Simulate email service returning a failure response
+        EmailResponseDto failureResponse = EmailResponseDto.builder()
+                .success(false)
+                .message("send failed")
+                .build();
+
+        when(emailService.sendWelcomeEmailToPatientAsync(anyString(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(failureResponse));
+
+        when(userRepository.existsByEmail(validPatientRequest.email())).thenReturn(false);
+        when(userRepository.existsByDni(validPatientRequest.dni())).thenReturn(false);
+        when(passwordEncoder.encode(validPatientRequest.password())).thenReturn("encodedPassword");
+        when(userMapper.toUser(eq(validPatientRequest), eq("PATIENT"), eq("encodedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        // Should not throw even if email send reports failure
+        assertDoesNotThrow(() -> authService.registerPatient(validPatientRequest));
+        verify(emailService).sendWelcomeEmailToPatientAsync(anyString(), anyString());
+    }
+
+    @Test
+    void registerPatient_EmailSendThrowsException_DoesNotPropagate() {
+        CompletableFuture<EmailResponseDto> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("send failure"));
+
+        when(emailService.sendWelcomeEmailToPatientAsync(anyString(), anyString()))
+                .thenReturn(failedFuture);
+
+        when(userRepository.existsByEmail(validPatientRequest.email())).thenReturn(false);
+        when(userRepository.existsByDni(validPatientRequest.dni())).thenReturn(false);
+        when(passwordEncoder.encode(validPatientRequest.password())).thenReturn("encodedPassword");
+        when(userMapper.toUser(eq(validPatientRequest), eq("PATIENT"), eq("encodedPassword"))).thenReturn(sampleUser);
+        when(userRepository.save(any(User.class))).thenReturn(sampleUser);
+        when(userMapper.toRegisterResponse(any(User.class))).thenReturn(new RegisterResponseDTO(sampleUser.getId(), sampleUser.getEmail(), sampleUser.getName(), sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus()));
+
+        // Exception in async email should be handled internally, not propagated
+        assertDoesNotThrow(() -> authService.registerPatient(validPatientRequest));
+        verify(emailService).sendWelcomeEmailToPatientAsync(anyString(), anyString());
+    }
+
+    @Test
+    void registerDoctor_MedicalLicense_NonDigits_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "ABC123",
+                "CARDIOLOGY",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Medical license must be 4-10 digits"));
+    }
+
+    @Test
+    void registerDoctor_MedicalLicense_TooShort_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123",
+                "CARDIOLOGY",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Medical license must be 4-10 digits"));
+    }
+
+    @Test
+    void registerDoctor_MedicalLicense_TooLong_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "12345678901",
+                "CARDIOLOGY",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Medical license must be 4-10 digits"));
+    }
+
+    @Test
+    void registerDoctor_Specialty_InvalidCharacters_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                "Cardiology123",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Specialty can only contain letters and spaces"));
+    }
+
+    @Test
+    void registerDoctor_Specialty_TooShort_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                "A",
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Specialty minimum 2 characters"));
+    }
+
+    @Test
+    void registerDoctor_Specialty_TooLong_ThrowsException() {
+        String longSpecialty = "A".repeat(51);
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                longSpecialty,
+                30
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Specialty maximum 50 characters"));
+    }
+
+    @Test
+    void registerDoctor_SlotDuration_Null_ThrowsException() {
+        RegisterRequestDTO request = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                "CARDIOLOGY",
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(request)
+        );
+
+        assertTrue(exception.getMessage().contains("Slot duration is required for doctors"));
+    }
+
+    @Test
+    void registerDoctor_SlotDuration_OutOfRange_ThrowsException() {
+        RegisterRequestDTO requestLow = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                "CARDIOLOGY",
+                1
+        );
+
+        IllegalArgumentException e1 = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(requestLow)
+        );
+        assertTrue(e1.getMessage().contains("Slot duration must be between 5 and 180 minutes"));
+
+        RegisterRequestDTO requestHigh = new RegisterRequestDTO(
+                "doctor@test.com",
+                87654321L,
+                "password123",
+                "Dr. Jane",
+                "Smith",
+                "0987654321",
+                LocalDate.of(1980, 1, 1),
+                "FEMALE",
+                "123456",
+                "CARDIOLOGY",
+                1000
+        );
+
+        IllegalArgumentException e2 = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.registerDoctor(requestHigh)
+        );
+        assertTrue(e2.getMessage().contains("Slot duration must be between 5 and 180 minutes"));
     }
 }
