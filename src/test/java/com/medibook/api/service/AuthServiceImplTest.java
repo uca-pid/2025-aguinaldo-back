@@ -9,6 +9,8 @@ import com.medibook.api.entity.RefreshToken;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
+
+import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 
@@ -925,7 +927,7 @@ class AuthServiceImplTest {
 
     @Test
     void registerPatient_Exactly18YearsOld_Success() {
-        LocalDate exactly18YearsAgo = LocalDate.now().minusYears(18);
+        LocalDate exactly18YearsAgo = LocalDate.now(ARGENTINA_ZONE).minusYears(18);
         RegisterRequestDTO request = new RegisterRequestDTO(
                 "patient@test.com",
                 12345678L,
@@ -955,7 +957,7 @@ class AuthServiceImplTest {
 
     @Test
     void registerPatient_Under18YearsOld_ThrowsException() {
-        LocalDate under18 = LocalDate.now().minusYears(17);
+        LocalDate under18 = LocalDate.now(ARGENTINA_ZONE).minusYears(17);
         RegisterRequestDTO request = new RegisterRequestDTO(
                 "patient@test.com",
                 12345678L,
@@ -980,7 +982,7 @@ class AuthServiceImplTest {
 
     @Test
     void registerPatient_Exactly120YearsOld_Success() {
-        LocalDate exactly120YearsAgo = LocalDate.now().minusYears(120);
+        LocalDate exactly120YearsAgo = LocalDate.now(ARGENTINA_ZONE).minusYears(120);
         RegisterRequestDTO request = new RegisterRequestDTO(
                 "patient@test.com",
                 12345678L,
@@ -1010,7 +1012,7 @@ class AuthServiceImplTest {
 
     @Test
     void registerPatient_Over120YearsOld_ThrowsException() {
-        LocalDate over120 = LocalDate.now().minusYears(121);
+        LocalDate over120 = LocalDate.now(ARGENTINA_ZONE).minusYears(121);
         RegisterRequestDTO request = new RegisterRequestDTO(
                 "patient@test.com",
                 12345678L,
