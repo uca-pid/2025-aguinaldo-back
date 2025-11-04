@@ -1,5 +1,5 @@
-# Use the official OpenJDK 21 image as the base image
-FROM openjdk:21-jdk-slim
+# Use Eclipse Temurin (formerly AdoptOpenJDK) - the recommended replacement for OpenJDK
+FROM eclipse-temurin:21-jdk-jammy
 
 # Install netcat for database connectivity check
 RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
