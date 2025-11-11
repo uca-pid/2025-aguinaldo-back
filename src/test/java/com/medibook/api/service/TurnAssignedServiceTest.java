@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
@@ -54,6 +56,9 @@ class TurnAssignedServiceTest {
     @Mock
     private TurnFileService turnFileService;
 
+    @Mock
+    private com.medibook.api.service.BadgeEvaluationTriggerService badgeEvaluationTrigger;
+
     @InjectMocks
     private TurnAssignedService turnAssignedService;
 
@@ -69,10 +74,10 @@ class TurnAssignedServiceTest {
     private TurnAssigned turnEntity;
     private TurnResponseDTO turnResponse;
     private OffsetDateTime scheduledAt;
+    private TurnAssigned turn;
 
     @BeforeEach
     void setUp() {
-        // Mock EmailService async methods
         EmailResponseDto successResponse = EmailResponseDto.builder()
                 .success(true)
                 .messageId("test-message-id")
@@ -126,6 +131,14 @@ class TurnAssignedServiceTest {
                 .doctorName("Dr. Hugo Martinez")
                 .patientId(patientId)
                 .patientName("Juan Perez")
+                .scheduledAt(scheduledAt)
+                .status("SCHEDULED")
+                .build();
+
+        turn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
                 .scheduledAt(scheduledAt)
                 .status("SCHEDULED")
                 .build();
@@ -759,7 +772,6 @@ class TurnAssignedServiceTest {
                 .status("CANCELED")
                 .build();
 
-        // Simular que existe una solicitud PENDING
         com.medibook.api.entity.TurnModifyRequest pendingRequest = new com.medibook.api.entity.TurnModifyRequest();
         pendingRequest.setId(UUID.randomUUID());
         when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
@@ -1413,7 +1425,6 @@ class TurnAssignedServiceTest {
         when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, doctorId)).thenReturn(false);
         when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
 
-        // Same subcategory repeated
         List<String> duplicateSubcategories = Arrays.asList("Llega puntual", "Llega puntual", "Llega puntual");
 
         com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 4, duplicateSubcategories);
@@ -1449,5 +1460,408 @@ class TurnAssignedServiceTest {
 
         assertTrue(exception.getMessage().contains("Invalid subcategory") || exception.getMessage().contains("Only patients and doctors can rate"));
         verify(ratingRepo, never()).save(any());
+    }
+
+    @Test
+    void completeTurn_NullDoctor_ThrowsException() {
+        TurnAssigned turnWithNullDoctor = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(null)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(turnWithNullDoctor));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> turnAssignedService.completeTurn(turnId, doctorId));
+
+        assertEquals("You can only complete your own turns", exception.getMessage());
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void completeTurn_NullPatient_NoBadgeEvaluation() {
+        TurnAssigned turnWithNullPatient = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(null)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(null)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        TurnResponseDTO turnResponse = TurnResponseDTO.builder()
+                .id(turnId)
+                .doctorId(doctorId)
+                .patientId(null)
+                .scheduledAt(completedTurn.getScheduledAt())
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(turnWithNullPatient));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(completedTurn);
+        when(mapper.toDTO(completedTurn)).thenReturn(turnResponse);
+
+        TurnResponseDTO result = turnAssignedService.completeTurn(turnId, doctorId);
+
+        assertNotNull(result);
+        assertEquals("COMPLETED", result.getStatus());
+        verify(badgeEvaluationTrigger, never()).evaluateAfterTurnCompletion(any(UUID.class), any(UUID.class));
+    }
+
+    @Test
+    void markTurnAsNoShow_NullDoctor_ThrowsException() {
+        TurnAssigned turnWithNullDoctor = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(null)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(turnWithNullDoctor));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> turnAssignedService.markTurnAsNoShow(turnId, doctorId));
+
+        assertEquals("You can only mark no-show for your own turns", exception.getMessage());
+        verify(turnRepo, never()).save(any());
+    }
+
+    @Test
+    void addRating_DoctorRatingNullPatient_ThrowsException() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(null)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> turnAssignedService.addRating(turnId, doctorId, 4, java.util.List.of()));
+
+        assertEquals("No patient to rate for this turn", exception.getMessage());
+        verify(ratingRepo, never()).save(any());
+    }
+
+    @Test
+    void addRating_PatientRatingNullDoctor_ThrowsException() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(null)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> turnAssignedService.addRating(turnId, patientId, 4, java.util.List.of()));
+
+        assertEquals("No doctor to rate for this turn", exception.getMessage());
+        verify(ratingRepo, never()).save(any());
+    }
+
+    @Test
+    void addRating_FutureTurn_ThrowsException() {
+        TurnAssigned futureTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(2))
+                .status("SCHEDULED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(futureTurn));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> turnAssignedService.addRating(turnId, patientId, 4, java.util.List.of()));
+
+        assertEquals("Can only rate turns that have already occurred", exception.getMessage());
+        verify(ratingRepo, never()).save(any());
+    }
+
+    @Test
+    void addRating_EmptySubcategoriesList_Success() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        com.medibook.api.entity.Rating savedRating = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(patient)
+                .rated(doctor)
+                .score(4)
+                .subcategory(null)
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, patientId)).thenReturn(false);
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, patientId, 4, java.util.Collections.emptyList());
+
+        assertNotNull(result);
+        assertEquals(4, result.getScore());
+        assertNull(result.getSubcategory());
+        verify(ratingRepo).save(any(com.medibook.api.entity.Rating.class));
+    }
+
+    @Test
+    void addRating_NullSubcategoriesList_Success() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        com.medibook.api.entity.Rating savedRating = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(patient)
+                .rated(doctor)
+                .score(4)
+                .subcategory(null)
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, patientId)).thenReturn(false);
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, patientId, 4, null);
+
+        assertNotNull(result);
+        assertEquals(4, result.getScore());
+        assertNull(result.getSubcategory());
+        verify(ratingRepo).save(any(com.medibook.api.entity.Rating.class));
+    }
+
+    @Test
+    void addRating_CommunicationScoreExtraction_CommunicationKeywords() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        com.medibook.api.entity.Rating savedRating = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(patient)
+                .rated(doctor)
+                .score(4)
+                .subcategory("explica claramente, escucha atentamente")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, patientId)).thenReturn(false);
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, patientId, 4,
+                Arrays.asList("Explica claramente", "Escucha al paciente"));
+
+        assertNotNull(result);
+        verify(badgeEvaluationTrigger).evaluateAfterRating(eq(doctorId), eq(4), isNull(), isNull());
+    }
+
+    @Test
+    void addRating_EmpathyScoreExtraction_EmpathyKeywords() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        com.medibook.api.entity.Rating savedRating = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(patient)
+                .rated(doctor)
+                .score(5)
+                .subcategory("empatía, confianza")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, patientId)).thenReturn(false);
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, patientId, 5,
+                Arrays.asList("Demuestra empatía", "Genera confianza"));
+
+        assertNotNull(result);
+        verify(badgeEvaluationTrigger).evaluateAfterRating(eq(doctorId), isNull(), eq(5), isNull());
+    }
+
+    @Test
+    void addRating_PunctualityScoreExtraction_PunctualityKeywords() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        com.medibook.api.entity.Rating savedRating = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(patient)
+                .rated(doctor)
+                .score(4)
+                .subcategory("respeta horarios, tiempo de espera")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, patientId)).thenReturn(false);
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, patientId, 4,
+                Arrays.asList("Respeta horarios", "Tiempo de espera aceptable"));
+
+        assertNotNull(result);
+        verify(badgeEvaluationTrigger).evaluateAfterRating(eq(doctorId), isNull(), isNull(), eq(4));
+    }
+
+    @Test
+    void addRating_DoctorRatingPatient_ExtractsScoresCorrectly() {
+        TurnAssigned completedTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().minusDays(1))
+                .status("COMPLETED")
+                .build();
+
+        com.medibook.api.entity.Rating savedRating = com.medibook.api.entity.Rating.builder()
+                .id(UUID.randomUUID())
+                .turnAssigned(completedTurn)
+                .rater(doctor)
+                .rated(patient)
+                .score(4)
+                .subcategory("Llega puntual")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(completedTurn));
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(ratingRepo.existsByTurnAssigned_IdAndRater_Id(turnId, doctorId)).thenReturn(false);
+        when(ratingRepo.save(any(com.medibook.api.entity.Rating.class))).thenReturn(savedRating);
+
+        com.medibook.api.entity.Rating result = turnAssignedService.addRating(turnId, doctorId, 4,
+                Arrays.asList("Llega puntual"));
+
+        assertNotNull(result);
+        verify(badgeEvaluationTrigger, never()).evaluateAfterRating(any(), any(), any(), any());
+    }
+
+    @Test
+    void createTurn_EmailFailure_ContinuesExecution() {
+        TurnCreateRequestDTO dto = createTurnRequestDTO();
+        TurnAssigned savedTurn = TurnAssigned.builder()
+                .id(UUID.randomUUID())
+                .doctor(turn.getDoctor())
+                .patient(turn.getPatient())
+                .scheduledAt(turn.getScheduledAt())
+                .status(turn.getStatus())
+                .build();
+
+        when(userRepo.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(userRepo.findById(patientId)).thenReturn(Optional.of(patient));
+        when(turnRepo.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, dto.getScheduledAt()))
+                .thenReturn(false);
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(savedTurn);
+        when(mapper.toDTO(savedTurn)).thenReturn(turnResponse);
+
+        when(emailService.sendAppointmentConfirmationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Email service error")));
+        when(emailService.sendAppointmentConfirmationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Email service error")));
+
+        TurnResponseDTO result = turnAssignedService.createTurn(dto);
+
+        assertThat(result).isEqualTo(turnResponse);
+        verify(turnRepo).save(any(TurnAssigned.class));
+        verify(notificationService).createTurnReservedNotification(eq(doctorId), any(UUID.class), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void cancelTurn_EmailFailure_ContinuesExecution() {
+        TurnAssigned scheduledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("SCHEDULED")
+                .build();
+
+        TurnAssigned canceledTurn = TurnAssigned.builder()
+                .id(turnId)
+                .doctor(doctor)
+                .patient(patient)
+                .scheduledAt(OffsetDateTime.now().plusDays(1))
+                .status("CANCELED")
+                .build();
+
+        when(turnRepo.findById(turnId)).thenReturn(Optional.of(scheduledTurn));
+        when(turnRepo.save(any(TurnAssigned.class))).thenReturn(canceledTurn);
+        when(mapper.toDTO(canceledTurn)).thenReturn(turnResponse);
+        when(turnFileService.fileExistsForTurn(turnId)).thenReturn(false);
+
+        when(emailService.sendAppointmentCancellationToPatientAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Email service error")));
+        when(emailService.sendAppointmentCancellationToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Email service error")));
+
+        TurnResponseDTO result = turnAssignedService.cancelTurn(turnId, patientId, "PATIENT");
+
+        assertNotNull(result);
+        verify(turnRepo).findById(turnId);
+        verify(turnRepo).save(scheduledTurn);
+        verify(mapper).toDTO(canceledTurn);
+        assertEquals("CANCELED", scheduledTurn.getStatus());
+    }
+
+    private TurnCreateRequestDTO createTurnRequestDTO() {
+        TurnCreateRequestDTO dto = new TurnCreateRequestDTO();
+        dto.setDoctorId(doctorId);
+        dto.setPatientId(patientId);
+        dto.setScheduledAt(scheduledAt);
+        return dto;
     }
 }

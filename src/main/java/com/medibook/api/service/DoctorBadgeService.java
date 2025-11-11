@@ -21,17 +21,17 @@ public class DoctorBadgeService {
     // Centralized threshold values matching DoctorBadgeStatisticsUpdateService
     
     // Rating-related thresholds
-    private static final int EXCEPTIONAL_COMMUNICATOR_THRESHOLD = 15;
-    private static final int EMPATHETIC_DOCTOR_THRESHOLD = 15;
-    private static final int PUNCTUALITY_PROFESSIONAL_THRESHOLD = 12;
-    private static final double PUNCTUALITY_CANCELLATION_MAX = 10.0;
+    private static final double EXCEPTIONAL_COMMUNICATOR_THRESHOLD = 0.15;
+    private static final double EMPATHETIC_DOCTOR_THRESHOLD = 0.15;
+    private static final double PUNCTUALITY_PROFESSIONAL_THRESHOLD = 0.12;
+    private static final double PUNCTUALITY_CANCELLATION_MAX = 0.1;
     private static final double SUSTAINED_EXCELLENCE_AVG_RATING = 4.7;
     private static final int SUSTAINED_EXCELLENCE_MIN_RATINGS = 100;
-    private static final double SUSTAINED_EXCELLENCE_LOW_SCORE_MAX = 5.0;
+    private static final double SUSTAINED_EXCELLENCE_LOW_SCORE_MAX = 0.05;
     
     // Documentation thresholds
-    private static final double COMPLETE_DOCUMENTER_THRESHOLD = 96.0;
-    private static final double DETAILED_HISTORIAN_THRESHOLD = 90.0;
+    private static final double COMPLETE_DOCUMENTER_THRESHOLD = 0.8;
+    private static final double DETAILED_HISTORIAN_THRESHOLD = 0.9;
     private static final double DETAILED_HISTORIAN_MIN_WORDS = 150.0;
     
     // Relationship thresholds
@@ -39,11 +39,11 @@ public class DoctorBadgeService {
     private static final int RELATIONSHIP_BUILDER_RETURNING_MIN = 10;
     
     // Consistency thresholds
-    private static final double CONSISTENT_PROFESSIONAL_CANCELLATION_MAX = 10.0;
+    private static final double CONSISTENT_PROFESSIONAL_CANCELLATION_MAX = 0.1;
     
     // Top specialist thresholds
     private static final int TOP_SPECIALIST_MIN_TURNS = 100;
-    private static final double TOP_SPECIALIST_PERCENTILE = 10.0;
+    private static final double TOP_SPECIALIST_PERCENTILE = 0.1;
     
     // Medical legend thresholds
     private static final int MEDICAL_LEGEND_MIN_TURNS = 500;

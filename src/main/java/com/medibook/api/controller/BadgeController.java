@@ -50,7 +50,7 @@ public class BadgeController {
     }
 
     @PostMapping("/doctor/{doctorId}/evaluate")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId))")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and #doctorId.equals(authentication.principal.id))")
     public ResponseEntity<Void> evaluateDoctorBadges(@PathVariable UUID doctorId) {
         badgeService.evaluateAllBadges(doctorId);
         return ResponseEntity.ok().build();

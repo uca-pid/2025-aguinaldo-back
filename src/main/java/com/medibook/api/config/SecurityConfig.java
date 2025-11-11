@@ -3,6 +3,7 @@ package com.medibook.api.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -12,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
@@ -46,6 +48,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/turns/**").authenticated()
                 .requestMatchers("/api/admin/**").authenticated()
                 .requestMatchers("/api/profile/**").authenticated()
+                .requestMatchers("/api/badges/**").authenticated()
                 .anyRequest().permitAll()
             )
             .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

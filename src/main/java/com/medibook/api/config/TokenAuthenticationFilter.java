@@ -43,7 +43,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             !requestPath.startsWith("/api/profile") &&
             !requestPath.startsWith("/api/notifications") &&
             !requestPath.startsWith("/api/doctors") &&
-            !requestPath.startsWith("/api/ratings")) {
+            !requestPath.startsWith("/api/ratings") &&
+            !requestPath.startsWith("/api/badges")) {
             filterChain.doFilter(request, response);
             return;
         }
