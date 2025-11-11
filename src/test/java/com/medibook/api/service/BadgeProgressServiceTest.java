@@ -67,9 +67,9 @@ class BadgeProgressServiceTest {
                 .totalUniquePatients(80)
                 .returningPatientsCount(15)
                 .last10RequestsHandled(8)
-                .progressExcellenceInCare(85.0)
-                .progressEmpathyChampion(90.0)
-                .progressClearCommunicator(75.0)
+                .progressExcellenceInCare(30.0)
+                .progressEmpathyChampion(55.0)
+                .progressClearCommunicator(80.0)
                 .progressDetailedDiagnostician(60.0)
                 .progressTimelyProfessional(80.0)
                 .progressReliableExpert(95.0)
@@ -94,8 +94,35 @@ class BadgeProgressServiceTest {
 
     @Test
     void getBadgeProgress_DoctorFoundWithStatsAndBadges_ReturnsCompleteProgressList() {
+        // Create stats with higher progress values for earned badges
+        DoctorBadgeStatistics highProgressStats = DoctorBadgeStatistics.builder()
+                .doctorId(doctorId)
+                .totalRatingsReceived(100)
+                .last50CommunicationCount(20)
+                .last50EmpathyCount(18)
+                .last50PunctualityCount(15)
+                .totalTurnsCompleted(200)
+                .totalTurnsCancelled(5)
+                .last30DocumentedCount(25)
+                .totalUniquePatients(80)
+                .returningPatientsCount(15)
+                .last10RequestsHandled(8)
+                .progressExcellenceInCare(85.0)  // Higher progress for earned badge
+                .progressEmpathyChampion(90.0)   // Higher progress for earned badge
+                .progressClearCommunicator(80.0)
+                .progressDetailedDiagnostician(60.0)
+                .progressTimelyProfessional(80.0)
+                .progressReliableExpert(95.0)
+                .progressFlexibleCaregiver(88.0)
+                .progressAgileResponder(70.0)
+                .progressRelationshipBuilder(65.0)
+                .progressTopSpecialist(92.0)
+                .progressMedicalLegend(78.0)
+                .progressAllStarDoctor(0.0)
+                .build();
+
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
+        when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(highProgressStats));
         when(badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId)).thenReturn(earnedBadges);
 
         List<BadgeProgressSummaryDTO> result = badgeProgressService.getBadgeProgress(doctorId);
