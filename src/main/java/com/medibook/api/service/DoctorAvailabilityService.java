@@ -5,15 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medibook.api.dto.Availability.*;
 import com.medibook.api.entity.DoctorProfile;
 import com.medibook.api.entity.User;
+import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +26,7 @@ public class DoctorAvailabilityService {
 
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final TurnAssignedRepository turnAssignedRepository;
 
     @Transactional
     public void saveAvailability(UUID doctorId, DoctorAvailabilityRequestDTO request) {
@@ -114,6 +114,21 @@ public class DoctorAvailabilityService {
                     });
         }
 
+        return slots;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AvailableSlotDTO> getAvailableSlotsWithOccupancy(UUID doctorId, LocalDate fromDate, LocalDate toDate) {
+        List<AvailableSlotDTO> slots = getAvailableSlots(doctorId, fromDate, toDate);
+        ZoneOffset argentinaOffset = ZoneOffset.of("-03:00");
+        
+        // Check occupancy for each slot
+        for (AvailableSlotDTO slot : slots) {
+            OffsetDateTime slotDateTime = slot.getDate().atTime(slot.getStartTime()).atOffset(argentinaOffset);
+            boolean isOccupied = turnAssignedRepository.existsByDoctor_IdAndScheduledAtAndStatusNotCancelled(doctorId, slotDateTime);
+            slot.setIsOccupied(isOccupied);
+        }
+        
         return slots;
     }
 

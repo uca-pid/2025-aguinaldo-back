@@ -16,4 +16,5 @@ public class AvailableSlotDTO {
     private LocalTime startTime;
     private LocalTime endTime;
     private String dayOfWeek;
+    private Boolean isOccupied; // null if not checked, true if occupied, false if available
 }

@@ -84,6 +84,15 @@ public class DoctorController {
         return ResponseEntity.ok(slots);
     }
 
+    @GetMapping("/{doctorId}/available-slots-with-occupancy")
+    public ResponseEntity<List<AvailableSlotDTO>> getAvailableSlotsWithOccupancy(
+            @PathVariable UUID doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        List<AvailableSlotDTO> slots = availabilityService.getAvailableSlotsWithOccupancy(doctorId, fromDate, toDate);
+        return ResponseEntity.ok(slots);
+    }
+
     @PutMapping("/{doctorId}/patients/medical-history")
     @PreAuthorize("hasRole('DOCTOR') and authentication.principal.id.equals(#doctorId)")
     public ResponseEntity<Void> updatePatientMedicalHistory(
