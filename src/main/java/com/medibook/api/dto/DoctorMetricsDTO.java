@@ -1,5 +1,6 @@
 package com.medibook.api.dto;
 
+import com.medibook.api.dto.Badge.BadgeDTO;
 import com.medibook.api.dto.Rating.SubcategoryCountDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,4 +25,6 @@ public class DoctorMetricsDTO {
     private Integer upcomingTurns;
     private Integer completedTurnsThisMonth;
     private Integer cancelledTurns;
+    private List<BadgeDTO> activeBadges;
+    private Integer totalActiveBadges;
 }

@@ -35,6 +35,7 @@ public class TurnAssignedService {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final TurnFileService turnFileService;
+    private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
@@ -123,7 +124,6 @@ public class TurnAssignedService {
             log.warn("Error encolando emails de confirmación de cita: {}", e.getMessage());
         }
 
-        // Create notification for the doctor
         try {
             String dateFormatted = DateTimeUtils.formatDate(saved.getScheduledAt());
             String timeFormatted = DateTimeUtils.formatTime(saved.getScheduledAt());
@@ -141,7 +141,6 @@ public class TurnAssignedService {
                     saved.getDoctor().getId(), patient.getId());
         } catch (Exception e) {
             log.error("Error creating notification for turn creation: {}", e.getMessage());
-            // Don't fail the creation if notification fails
         }
         
         return mapper.toDTO(saved);
@@ -222,6 +221,9 @@ public class TurnAssignedService {
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
 
+        if (turn.getDoctor() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getDoctor().getId());
+        }
         
         try {
             if (turnFileService.fileExistsForTurn(turnId)) {
@@ -325,6 +327,13 @@ public class TurnAssignedService {
         turn.setStatus("COMPLETED");
         TurnAssigned saved = turnRepo.save(turn);
 
+        if (turn.getDoctor() != null && turn.getPatient() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnCompletion(
+                turn.getDoctor().getId(), 
+                turn.getPatient().getId()
+            );
+        }
+
         return mapper.toDTO(saved);
     }
 
@@ -354,7 +363,6 @@ public class TurnAssignedService {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
 
-        // Check if turn is not canceled and has passed
         if ("CANCELED".equals(turn.getStatus()) || "CANCELLED".equals(turn.getStatus())) {
             throw new RuntimeException("Cannot rate canceled turns");
         }
@@ -459,6 +467,41 @@ public class TurnAssignedService {
             log.warn("Failed to update average score for user {}: {}", ratedUser.getId(), e.getMessage());
         }
 
+        if ("DOCTOR".equals(ratedUser.getRole())) {
+            Integer communicationScore = extractCommunicationScore(score, normalizedSubcategory);
+            Integer empathyScore = extractEmpathyScore(score, normalizedSubcategory);
+            Integer punctualityScore = extractPunctualityScore(score, normalizedSubcategory);
+            
+            badgeEvaluationTrigger.evaluateAfterRating(ratedUser.getId(), communicationScore, empathyScore, punctualityScore);
+        }
+
         return saved;
+    }
+    
+    private Integer extractCommunicationScore(Integer score, String subcategories) {
+        if (subcategories == null || score == null) return null;
+        String lower = subcategories.toLowerCase();
+        if (lower.contains("explica") || lower.contains("escucha") || lower.contains("claramente")) {
+            return score;
+        }
+        return null;
+    }
+    
+    private Integer extractEmpathyScore(Integer score, String subcategories) {
+        if (subcategories == null || score == null) return null;
+        String lower = subcategories.toLowerCase();
+        if (lower.contains("empatía") || lower.contains("empat") || lower.contains("confianza") || lower.contains("atención")) {
+            return score;
+        }
+        return null;
+    }
+    
+    private Integer extractPunctualityScore(Integer score, String subcategories) {
+        if (subcategories == null || score == null) return null;
+        String lower = subcategories.toLowerCase();
+        if (lower.contains("horarios") || lower.contains("respeta horarios") || lower.contains("tiempo de espera")) {
+            return score;
+        }
+        return null;
     }
 }

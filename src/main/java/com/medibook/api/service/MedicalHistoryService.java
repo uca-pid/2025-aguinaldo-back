@@ -25,11 +25,9 @@ public class MedicalHistoryService {
     
     private final MedicalHistoryRepository medicalHistoryRepository;
     private final TurnAssignedRepository turnAssignedRepository;
+    private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
-    /**
-     * Add a new medical history entry
-     */
     @Transactional
     public MedicalHistoryDTO addMedicalHistory(UUID doctorId, UUID turnId, String content) {
         TurnAssigned turn = turnAssignedRepository.findById(turnId)
@@ -67,12 +65,11 @@ public class MedicalHistoryService {
         MedicalHistory savedHistory = medicalHistoryRepository.save(medicalHistory);
         log.info("Added medical history entry for turn {} (patient {} by doctor {})", turnId, patient.getId(), doctorId);
 
+        badgeEvaluationTrigger.evaluateAfterMedicalHistoryDocumented(doctorId, content);
+
         return mapToDTO(savedHistory);
     }
 
-    /**
-     * Update an existing medical history entry (only the doctor who created it can update)
-     */
     @Transactional
     public MedicalHistoryDTO updateMedicalHistory(UUID doctorId, UUID historyId, String content) {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
@@ -88,12 +85,11 @@ public class MedicalHistoryService {
         MedicalHistory updatedHistory = medicalHistoryRepository.save(medicalHistory);
         log.info("Updated medical history entry {} by doctor {}", historyId, doctorId);
         
+        badgeEvaluationTrigger.evaluateAfterMedicalHistoryDocumented(doctorId, content);
+        
         return mapToDTO(updatedHistory);
     }
 
-    /**
-     * Get all medical history entries for a patient
-     */
     public List<MedicalHistoryDTO> getPatientMedicalHistory(UUID patientId) {
         return medicalHistoryRepository.findByPatient_IdOrderByCreatedAtDesc(patientId)
                 .stream()
@@ -101,9 +97,6 @@ public class MedicalHistoryService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get all medical history entries created by a doctor
-     */
     public List<MedicalHistoryDTO> getDoctorMedicalHistoryEntries(UUID doctorId) {
         return medicalHistoryRepository.findByDoctor_IdOrderByCreatedAtDesc(doctorId)
                 .stream()
@@ -111,9 +104,7 @@ public class MedicalHistoryService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get medical history entries for a specific patient created by a specific doctor
-     */
+
     public List<MedicalHistoryDTO> getPatientMedicalHistoryByDoctor(UUID patientId, UUID doctorId) {
         return medicalHistoryRepository.findByPatient_IdAndDoctor_IdOrderByCreatedAtDesc(patientId, doctorId)
                 .stream()
@@ -121,17 +112,11 @@ public class MedicalHistoryService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get the latest medical history entry for a patient (for backward compatibility)
-     */
     public String getLatestMedicalHistoryContent(UUID patientId) {
         MedicalHistory latestHistory = medicalHistoryRepository.findFirstByPatient_IdOrderByCreatedAtDesc(patientId);
         return latestHistory != null ? latestHistory.getContent() : null;
     }
 
-    /**
-     * Delete a medical history entry (only the doctor who created it can delete)
-     */
     @Transactional
     public void deleteMedicalHistory(UUID doctorId, UUID historyId) {
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(historyId)
