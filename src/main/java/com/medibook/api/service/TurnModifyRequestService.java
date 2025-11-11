@@ -33,6 +33,7 @@ public class TurnModifyRequestService {
     private final TurnModifyRequestMapper mapper;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
     
     @Transactional
     public TurnModifyRequestResponseDTO createModifyRequest(TurnModifyRequestDTO dto, User patient) {
@@ -180,6 +181,8 @@ public class TurnModifyRequestService {
                 newTime
         );
 
+        badgeEvaluationTrigger.evaluateAfterModifyRequestHandled(doctor.getId());
+
         return mapper.toResponseDTO(savedRequest);
     }
 
@@ -218,6 +221,8 @@ public class TurnModifyRequestService {
                 requestedDate,
                 requestedTime
         );
+
+        badgeEvaluationTrigger.evaluateAfterModifyRequestHandled(doctor.getId());
 
         return mapper.toResponseDTO(savedRequest);
     }

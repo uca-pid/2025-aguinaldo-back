@@ -47,6 +47,9 @@ class TurnModifyRequestServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private BadgeEvaluationTriggerService badgeEvaluationTrigger;
     
     @InjectMocks
     private TurnModifyRequestService service;
@@ -70,7 +73,6 @@ class TurnModifyRequestServiceTest {
         doctor.setEmail("doctor@test.com");
         doctor.setName("Dr. García");
         
-        // Usar fechas fijas futuras para evitar problemas con OffsetDateTime.now()
         OffsetDateTime originalDate = OffsetDateTime.parse("2028-10-09T10:00:00Z");
         OffsetDateTime newDate = OffsetDateTime.parse("2028-10-10T11:00:00Z");
         
@@ -98,7 +100,6 @@ class TurnModifyRequestServiceTest {
         responseDTO.setId(modifyRequest.getId());
         responseDTO.setStatus("PENDING");
         
-        // Configurar mocks del EmailService para devolver CompletableFuture exitosos
         EmailResponseDto successEmailResponse = EmailResponseDto.builder()
                 .success(true)
                 .messageId("test-message-id")
@@ -379,7 +380,6 @@ class TurnModifyRequestServiceTest {
         when(turnModifyRequestRepository.save(any(TurnModifyRequest.class))).thenReturn(modifyRequest);
         when(mapper.toResponseDTO(any(TurnModifyRequest.class))).thenReturn(responseDTO);
 
-        // Simular fallo en envío de email al doctor
         CompletableFuture<EmailResponseDto> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new RuntimeException("Email service error"));
         when(emailService.sendAppointmentModificationApprovedToDoctorAsync(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
@@ -388,7 +388,6 @@ class TurnModifyRequestServiceTest {
         TurnModifyRequestResponseDTO result = service.approveModifyRequest(modifyRequest.getId(), doctor);
 
         assertNotNull(result);
-        // El status se actualiza en la entidad pero el mapper puede devolver el status actualizado
         verify(turnModifyRequestRepository).save(modifyRequest);
 
         verify(turnModifyRequestRepository).findById(modifyRequest.getId());

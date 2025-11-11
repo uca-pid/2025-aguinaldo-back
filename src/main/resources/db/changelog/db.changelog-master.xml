@@ -14,7 +14,8 @@
     <include file="0006-notifications.xml" relativeToChangelogFile="true"/>
     <include file="0007-turn-files.xml" relativeToChangelogFile="true"/>
     <include file="0008-medical-history-turn.xml" relativeToChangelogFile="true"/>
-  <include file="0009-ratings.xml" relativeToChangelogFile="true"/>
+    <include file="0009-ratings.xml" relativeToChangelogFile="true"/>
+    <include file="0010-doctor-badges.xml" relativeToChangelogFile="true"/>
   <!-- score column for users was added directly into 0002-tables.xml -->
 
 </databaseChangeLog>
