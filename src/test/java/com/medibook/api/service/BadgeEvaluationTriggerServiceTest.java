@@ -59,8 +59,8 @@ class BadgeEvaluationTriggerServiceTest {
         triggerService.evaluateAfterRating(doctorId, communicationScore, empathyScore, punctualityScore);
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterRatingAdded(doctorId, communicationScore, empathyScore, punctualityScore);
-        verify(statisticsUpdateService).updateProgressAfterRating(doctorId);
+        verify(statisticsUpdateService).updateAfterRatingAddedSync(doctorId, communicationScore, empathyScore, punctualityScore);
+        verify(statisticsUpdateService).updateProgressAfterRatingSync(doctorId);
         verify(badgeService).evaluateRatingRelatedBadges(doctorId);
     }
 
@@ -96,14 +96,14 @@ class BadgeEvaluationTriggerServiceTest {
     void evaluateAfterRating_ExceptionInStatisticsUpdate_HandlesGracefully() {
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
         doThrow(new RuntimeException("Statistics update failed"))
-            .when(statisticsUpdateService).updateAfterRatingAdded(any(), any(), any(), any());
+            .when(statisticsUpdateService).updateAfterRatingAddedSync(any(), any(), any(), any());
 
         assertDoesNotThrow(() ->
             triggerService.evaluateAfterRating(doctorId, 4, 5, 4));
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterRatingAdded(doctorId, 4, 5, 4);
-        verify(statisticsUpdateService, never()).updateProgressAfterRating(any());
+        verify(statisticsUpdateService).updateAfterRatingAddedSync(doctorId, 4, 5, 4);
+        verify(statisticsUpdateService, never()).updateProgressAfterRatingSync(any());
         verify(badgeService, never()).evaluateRatingRelatedBadges(any());
     }
 
@@ -114,8 +114,8 @@ class BadgeEvaluationTriggerServiceTest {
         triggerService.evaluateAfterTurnCompletion(doctorId, patientId);
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterTurnCompleted(doctorId, patientId);
-        verify(statisticsUpdateService).updateProgressAfterTurnCompletion(doctorId);
+        verify(statisticsUpdateService).updateAfterTurnCompletedSync(doctorId, patientId);
+        verify(statisticsUpdateService).updateProgressAfterTurnCompletionSync(doctorId);
         verify(badgeService).evaluateTurnCompletionRelatedBadges(doctorId);
     }
 
@@ -144,8 +144,8 @@ class BadgeEvaluationTriggerServiceTest {
         triggerService.evaluateAfterMedicalHistoryDocumented(doctorId, content);
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterMedicalHistoryDocumented(doctorId, content);
-        verify(statisticsUpdateService).updateProgressAfterMedicalHistory(doctorId);
+        verify(statisticsUpdateService).updateAfterMedicalHistoryDocumentedSync(doctorId, content);
+        verify(statisticsUpdateService).updateProgressAfterMedicalHistorySync(doctorId);
         verify(badgeService).evaluateDocumentationRelatedBadges(doctorId);
     }
 
@@ -158,8 +158,8 @@ class BadgeEvaluationTriggerServiceTest {
         triggerService.evaluateAfterMedicalHistoryDocumented(doctorId, content);
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterMedicalHistoryDocumented(doctorId, content);
-        verify(statisticsUpdateService).updateProgressAfterMedicalHistory(doctorId);
+        verify(statisticsUpdateService).updateAfterMedicalHistoryDocumentedSync(doctorId, content);
+        verify(statisticsUpdateService).updateProgressAfterMedicalHistorySync(doctorId);
         verify(badgeService).evaluateDocumentationRelatedBadges(doctorId);
     }
 
@@ -170,8 +170,8 @@ class BadgeEvaluationTriggerServiceTest {
         triggerService.evaluateAfterModifyRequestHandled(doctorId);
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterModifyRequestHandled(doctorId);
-        verify(statisticsUpdateService).updateProgressAfterModifyRequest(doctorId);
+        verify(statisticsUpdateService).updateAfterModifyRequestHandledSync(doctorId);
+        verify(statisticsUpdateService).updateProgressAfterModifyRequestSync(doctorId);
         verify(badgeService).evaluateResponseRelatedBadges(doctorId);
     }
 
@@ -182,8 +182,8 @@ class BadgeEvaluationTriggerServiceTest {
         triggerService.evaluateAfterTurnCancellation(doctorId);
 
         verify(userRepository).findById(doctorId);
-        verify(statisticsUpdateService).updateAfterTurnCancelled(doctorId);
-        verify(statisticsUpdateService).updateProgressAfterCancellation(doctorId);
+        verify(statisticsUpdateService).updateAfterTurnCancelledSync(doctorId);
+        verify(statisticsUpdateService).updateProgressAfterCancellationSync(doctorId);
         verify(badgeService).evaluateConsistencyRelatedBadges(doctorId);
     }
 

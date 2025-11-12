@@ -121,13 +121,11 @@ public class TurnFileServiceImpl implements TurnFileService {
 
     @Override
     public Optional<TurnFile> getTurnFileInfo(UUID turnId) {
-        log.debug("Getting file info for turnId: {}", turnId);
         return turnFileRepository.findByTurnId(turnId);
     }
 
     @Override
     public boolean fileExistsForTurn(UUID turnId) {
-        log.debug("Checking if file exists for turnId: {}", turnId);
         return turnFileRepository.existsByTurnId(turnId);
     }
 

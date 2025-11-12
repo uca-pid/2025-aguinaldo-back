@@ -41,6 +41,14 @@ public interface DoctorBadgeStatisticsRepository extends JpaRepository<DoctorBad
            "s.lastUpdatedAt = CURRENT_TIMESTAMP " +
            "WHERE s.doctorId = :doctorId")
     void incrementTurnCancelled(@Param("doctorId") UUID doctorId);
+
+    @Modifying
+    @Query("UPDATE DoctorBadgeStatistics s SET " +
+           "s.totalTurnsCancelled = s.totalTurnsCancelled + 1, " +
+           "s.cancellationsLast90Days = s.cancellationsLast90Days + 1, " +
+           "s.lastUpdatedAt = CURRENT_TIMESTAMP " +
+           "WHERE s.doctorId = :doctorId")
+    void incrementTurnNoShow(@Param("doctorId") UUID doctorId);
     
     @Modifying
     @Query("UPDATE DoctorBadgeStatistics s SET " +

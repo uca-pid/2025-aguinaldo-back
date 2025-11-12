@@ -90,8 +90,6 @@ public class DoctorBadgeService {
 
     @Transactional
     public void evaluateAllBadges(UUID doctorId) {
-        log.info("Evaluating all badges for doctor: {}", doctorId);
-        
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
@@ -111,10 +109,7 @@ public class DoctorBadgeService {
         evaluateAlwaysAvailable(doctor);
         evaluateTopSpecialist(doctor);
         evaluateMedicalLegend(doctor);
-
-        log.info("Badge evaluation completed for doctor: {}", doctorId);
     }
-
 
     private void evaluateExceptionalCommunicator(User doctor) {
         DoctorBadgeStatistics stats = getOrCreateStatistics(doctor.getId());
@@ -297,14 +292,17 @@ public class DoctorBadgeService {
     }
 
     private void evaluateAlwaysAvailable(User doctor) {
+
         Optional<DoctorProfile> profileOpt = doctorProfileRepository.findByUserId(doctor.getId());
-        
+
         if (profileOpt.isEmpty()) {
+            log.warn("[ALWAYS_AVAILABLE] No doctor profile found for doctor: {}. Deactivating badge.", doctor.getId());
             deactivateBadge(doctor, BadgeType.ALWAYS_AVAILABLE);
             return;
         }
 
         String availabilityJson = profileOpt.get().getAvailabilitySchedule();
+
         boolean hasAvailability = availabilityJson != null && !availabilityJson.isEmpty();
 
         if (hasAvailability) {
@@ -312,6 +310,7 @@ public class DoctorBadgeService {
         } else {
             deactivateBadge(doctor, BadgeType.ALWAYS_AVAILABLE);
         }
+
     }
 
     private void evaluateTopSpecialist(User doctor) {
@@ -443,6 +442,7 @@ public class DoctorBadgeService {
     }
 
     private void activateBadge(User doctor, BadgeType badgeType) {
+
         Optional<DoctorBadge> existing = badgeRepository.findByDoctor_IdAndBadgeType(
                 doctor.getId(), badgeType);
 
@@ -454,7 +454,6 @@ public class DoctorBadgeService {
                 badge.setIsActive(true);
                 badge.setLastEvaluatedAt(now);
                 badgeRepository.save(badge);
-                log.info("Reactivated badge {} for doctor {}", badgeType, doctor.getId());
             } else {
                 badge.setLastEvaluatedAt(now);
                 badgeRepository.save(badge);
@@ -468,24 +467,25 @@ public class DoctorBadgeService {
                     .lastEvaluatedAt(now)
                     .build();
             badgeRepository.save(newBadge);
-            log.info("Awarded new badge {} to doctor {}", badgeType, doctor.getId());
         }
     }
 
     private void deactivateBadge(User doctor, BadgeType badgeType) {
+
         Optional<DoctorBadge> existing = badgeRepository.findByDoctor_IdAndBadgeType(
                 doctor.getId(), badgeType);
 
-        if (existing.isPresent() && existing.get().getIsActive()) {
+        if (existing.isPresent()) {
             DoctorBadge badge = existing.get();
-            badge.setIsActive(false);
-            badge.setLastEvaluatedAt(OffsetDateTime.now(ZoneOffset.UTC));
-            badgeRepository.save(badge);
-            log.info("Deactivated badge {} for doctor {}", badgeType, doctor.getId());
-        } else if (existing.isPresent()) {
-            DoctorBadge badge = existing.get();
-            badge.setLastEvaluatedAt(OffsetDateTime.now(ZoneOffset.UTC));
-            badgeRepository.save(badge);
+            if (existing.get().getIsActive()) {
+                badge.setIsActive(false);
+                badge.setLastEvaluatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+                badgeRepository.save(badge);
+            } else {
+                badge.setLastEvaluatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+                badgeRepository.save(badge);
+            }
+        } else {
         }
     }
 
@@ -503,7 +503,6 @@ public class DoctorBadgeService {
 
     @Transactional
     public void evaluateRatingRelatedBadges(UUID doctorId) {
-        log.info("Evaluating rating-related badges for doctor: {}", doctorId);
         
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -519,13 +518,11 @@ public class DoctorBadgeService {
     
     
 
-        log.info("Rating-related badge evaluation completed for doctor: {}", doctorId);
     }
 
 
     @Transactional
     public void evaluateDocumentationRelatedBadges(UUID doctorId) {
-        log.info("Evaluating documentation-related badges for doctor: {}", doctorId);
         
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -538,13 +535,11 @@ public class DoctorBadgeService {
         evaluateDetailedHistorian(doctor);
     
 
-        log.info("Documentation-related badge evaluation completed for doctor: {}", doctorId);
     }
 
 
     @Transactional
     public void evaluateConsistencyRelatedBadges(UUID doctorId) {
-        log.info("Evaluating consistency-related badges for doctor: {}", doctorId);
         
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -557,13 +552,11 @@ public class DoctorBadgeService {
         evaluateConsistentProfessional(doctor);
     
 
-        log.info("Consistency-related badge evaluation completed for doctor: {}", doctorId);
     }
 
 
     @Transactional
     public void evaluateResponseRelatedBadges(UUID doctorId) {
-        log.info("Evaluating response-related badges for doctor: {}", doctorId);
         
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -574,13 +567,11 @@ public class DoctorBadgeService {
 
         evaluateAgileResponder(doctor);
 
-        log.info("Response-related badge evaluation completed for doctor: {}", doctorId);
     }
 
 
     @Transactional
     public void evaluateTurnCompletionRelatedBadges(UUID doctorId) {
-        log.info("Evaluating turn completion badges for doctor: {}", doctorId);
         
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -593,6 +584,19 @@ public class DoctorBadgeService {
         evaluateTopSpecialist(doctor);
         evaluateMedicalLegend(doctor);
 
-        log.info("Turn completion badge evaluation completed for doctor: {}", doctorId);
+    }
+
+    @Transactional
+    public void evaluateAlwaysAvailableBadge(UUID doctorId) {
+        
+        User doctor = userRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+
+        if (!"DOCTOR".equals(doctor.getRole())) {
+            throw new RuntimeException("User is not a doctor");
+        }
+
+        evaluateAlwaysAvailable(doctor);
+
     }
 }

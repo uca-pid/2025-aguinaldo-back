@@ -8,6 +8,7 @@ import com.medibook.api.service.DoctorBadgeService;
 import com.medibook.api.service.PatientBadgeProgressService;
 import com.medibook.api.service.PatientBadgeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/badges")
 @RequiredArgsConstructor
+@Slf4j
 public class BadgeController {
 
     private final DoctorBadgeService doctorBadgeService;
@@ -70,8 +72,6 @@ public class BadgeController {
         return ResponseEntity.ok().build();
     }
 
-    // ========== PATIENT BADGES ENDPOINTS ==========
-
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PatientBadgesResponseDTO> getPatientBadges(@PathVariable UUID patientId) {
@@ -90,8 +90,15 @@ public class BadgeController {
     @GetMapping("/patient/{patientId}/progress")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<PatientBadgeProgressSummaryDTO>> getPatientBadgeProgress(@PathVariable UUID patientId) {
-        List<PatientBadgeProgressSummaryDTO> progress = patientBadgeProgressService.getBadgeProgress(patientId);
-        return ResponseEntity.ok(progress);
+
+        try {
+            List<PatientBadgeProgressSummaryDTO> progress = patientBadgeProgressService.getBadgeProgress(patientId);
+
+            return ResponseEntity.ok(progress);
+        } catch (Exception e) {
+            log.error("[BADGE_CONTROLLER] [GET_PATIENT_BADGE_PROGRESS] Error retrieving badge progress for patient {}: {}", patientId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/patient/my-progress")

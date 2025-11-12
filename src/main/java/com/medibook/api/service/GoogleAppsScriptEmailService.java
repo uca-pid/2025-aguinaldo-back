@@ -27,9 +27,7 @@ public class GoogleAppsScriptEmailService {
     private String secretToken;
 
     public EmailResponseDto sendEmail(EmailRequestDto emailRequest) {
-        try {
-            log.debug("Sending email via Google Apps Script to: {}", emailRequest.getTo());
-            
+        try {            
             Map<String, Object> requestData = new HashMap<>();
             requestData.put("token", secretToken);
             requestData.put("to", emailRequest.getTo());

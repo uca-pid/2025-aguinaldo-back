@@ -80,7 +80,6 @@ public class PatientBadgeService {
 
     @Transactional
     public void evaluateAllBadges(UUID patientId) {
-        log.info("Evaluating all badges for patient: {}", patientId);
 
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -101,7 +100,6 @@ public class PatientBadgeService {
         evaluateResponsibleEvaluator(patient);
         evaluateExcellenceModel(patient);
 
-        log.info("Badge evaluation completed for patient: {}", patientId);
     }
 
     private void evaluateMediBookWelcome(User patient) {
@@ -314,6 +312,7 @@ public class PatientBadgeService {
                             .orElseThrow(() -> new RuntimeException("Patient not found: " + patientId));
 
                     PatientBadgeStatistics stats = PatientBadgeStatistics.builder()
+                            .patientId(patientId)
                             .patient(patient)
                             .totalTurnsCompleted(0)
                             .totalTurnsCancelled(0)
@@ -329,6 +328,8 @@ public class PatientBadgeService {
                             .last10TurnsFilesUploadedCount(0)
                             .totalRatingsGiven(0)
                             .totalRatingsReceived(0)
+                            .avgRatingGiven(0.0)
+                            .avgRatingReceived(0.0)
                             .totalUniqueDoctors(0)
                             .turnsWithSameDoctorLast12Months(0)
                             .differentSpecialtiesLast12Months(0)
@@ -350,7 +351,6 @@ public class PatientBadgeService {
                 badge.setIsActive(true);
                 badge.setLastEvaluatedAt(now);
                 badgeRepository.save(badge);
-                log.info("Reactivated badge {} for patient {}", badgeType, patient.getId());
             } else {
                 badge.setLastEvaluatedAt(now);
                 badgeRepository.save(badge);
@@ -364,7 +364,6 @@ public class PatientBadgeService {
                     .lastEvaluatedAt(now)
                     .build();
             badgeRepository.save(newBadge);
-            log.info("Awarded new badge {} to patient {}", badgeType, patient.getId());
         }
     }
 
@@ -377,7 +376,6 @@ public class PatientBadgeService {
             badge.setIsActive(false);
             badge.setLastEvaluatedAt(OffsetDateTime.now(ZoneOffset.UTC));
             badgeRepository.save(badge);
-            log.info("Deactivated badge {} for patient {}", badgeType, patient.getId());
         } else if (existing.isPresent()) {
             PatientBadge badge = existing.get();
             badge.setLastEvaluatedAt(OffsetDateTime.now(ZoneOffset.UTC));
@@ -387,7 +385,6 @@ public class PatientBadgeService {
 
     @Transactional
     public void evaluateTurnRelatedBadges(UUID patientId) {
-        log.info("Evaluating turn-related badges for patient: {}", patientId);
 
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -402,12 +399,10 @@ public class PatientBadgeService {
         evaluateContinuousFollowup(patient);
         evaluateConstantPatient(patient);
 
-        log.info("Turn-related badge evaluation completed for patient: {}", patientId);
     }
 
     @Transactional
     public void evaluateRatingRelatedBadges(UUID patientId) {
-        log.info("Evaluating rating-related badges for patient: {}", patientId);
 
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -421,12 +416,10 @@ public class PatientBadgeService {
         evaluateExcellentCollaborator(patient);
         evaluateExcellenceModel(patient);
 
-        log.info("Rating-related badge evaluation completed for patient: {}", patientId);
     }
 
     @Transactional
     public void evaluateFileRelatedBadges(UUID patientId) {
-        log.info("Evaluating file-related badges for patient: {}", patientId);
 
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -437,12 +430,10 @@ public class PatientBadgeService {
 
         evaluateAlwaysPrepared(patient);
 
-        log.info("File-related badge evaluation completed for patient: {}", patientId);
     }
 
     @Transactional
     public void evaluateBookingRelatedBadges(UUID patientId) {
-        log.info("Evaluating booking-related badges for patient: {}", patientId);
 
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -453,7 +444,6 @@ public class PatientBadgeService {
 
         evaluateSmartPlanner(patient);
 
-        log.info("Booking-related badge evaluation completed for patient: {}", patientId);
     }
 
     private PatientBadgeDTO toBadgeDTO(PatientBadge badge) {

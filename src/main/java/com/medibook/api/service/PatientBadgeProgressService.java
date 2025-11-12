@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +29,6 @@ public class PatientBadgeProgressService {
 
     @Transactional(readOnly = true)
     public List<PatientBadgeProgressSummaryDTO> getBadgeProgress(UUID patientId) {
-        log.info("Fetching badge progress for patient: {}", patientId);
 
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -37,13 +37,16 @@ public class PatientBadgeProgressService {
             throw new RuntimeException("User is not a patient");
         }
 
+
         PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId)
                 .orElseGet(() -> createEmptyStatistics(patientId));
+
 
         List<PatientBadgeType> earnedBadges = badgeRepository.findByPatient_IdAndIsActiveTrue(patientId)
                 .stream()
                 .map(badge -> badge.getBadgeType())
                 .toList();
+
 
         List<PatientBadgeProgressSummaryDTO> progressList = new ArrayList<>();
 
@@ -146,7 +149,6 @@ public class PatientBadgeProgressService {
                 "Completa 25+ turnos con 4+ otros badges y 4.0+ rating"
         ));
 
-        log.info("Badge progress fetched successfully for patient: {}", patientId);
         return progressList;
     }
 
@@ -209,6 +211,7 @@ public class PatientBadgeProgressService {
                 .progressAlwaysPrepared(0.0)
                 .progressResponsibleEvaluator(0.0)
                 .progressExcellenceModel(0.0)
+                .lastUpdatedAt(OffsetDateTime.now())
                 .build();
     }
 }

@@ -39,7 +39,6 @@ public class PatientBadgeStatisticsUpdateService {
             updateDoctorRelationshipStats(patientId, doctorId);
             updateTimeBasedStats(patientId);
 
-            log.debug("Updated turn completion statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating turn completion statistics for patient {}", patientId, e);
         }
@@ -51,7 +50,6 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementTurnCancelled(patientId);
-            log.debug("Updated cancellation statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating cancellation statistics for patient {}", patientId, e);
         }
@@ -63,7 +61,6 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementTurnNoShow(patientId);
-            log.debug("Updated no-show statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating no-show statistics for patient {}", patientId, e);
         }
@@ -76,7 +73,6 @@ public class PatientBadgeStatisticsUpdateService {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementRatingGiven(patientId);
             updateAverageRatingGiven(patientId);
-            log.debug("Updated rating given statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating rating given statistics for patient {}", patientId, e);
         }
@@ -89,7 +85,6 @@ public class PatientBadgeStatisticsUpdateService {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementRatingReceived(patientId);
             updateAverageRatingReceived(patientId);
-            log.debug("Updated rating received statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating rating received statistics for patient {}", patientId, e);
         }
@@ -101,7 +96,6 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementFileUploaded(patientId);
-            log.debug("Updated file upload statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating file upload statistics for patient {}", patientId, e);
         }
@@ -113,7 +107,6 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementAdvanceBooking(patientId);
-            log.debug("Updated advance booking statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating advance booking statistics for patient {}", patientId, e);
         }
@@ -125,7 +118,6 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementPunctualRating(patientId);
-            log.debug("Updated punctuality rating statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating punctuality rating statistics for patient {}", patientId, e);
         }
@@ -137,7 +129,6 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementCollaborationRating(patientId);
-            log.debug("Updated collaboration rating statistics for patient {}", patientId);
         } catch (Exception e) {
             log.error("Error updating collaboration rating statistics for patient {}", patientId, e);
         }
@@ -149,7 +140,117 @@ public class PatientBadgeStatisticsUpdateService {
         try {
             ensureStatisticsExist(patientId);
             statisticsRepository.incrementFollowInstructionsRating(patientId);
-            log.debug("Updated follow instructions rating statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating follow instructions rating statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterTurnCompletedSync(UUID patientId, UUID doctorId) {
+        try {
+            ensureStatisticsExist(patientId);
+            PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElseThrow();
+            stats.setTotalTurnsCompleted(stats.getTotalTurnsCompleted() + 1);
+            stats.setTurnsLast12Months(stats.getTurnsLast12Months() + 1);
+            stats.setTurnsLast6Months(stats.getTurnsLast6Months() + 1);
+            stats.setTurnsLast90Days(stats.getTurnsLast90Days() + 1);
+            statisticsRepository.save(stats);
+
+            updateDoctorRelationshipStats(patientId, doctorId);
+            updateTimeBasedStats(patientId);
+
+        } catch (Exception e) {
+            log.error("Error updating turn completion statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterTurnCancelledSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementTurnCancelled(patientId);
+        } catch (Exception e) {
+            log.error("Error updating cancellation statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterTurnNoShowSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementTurnNoShow(patientId);
+        } catch (Exception e) {
+            log.error("Error updating no-show statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterRatingGivenSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementRatingGiven(patientId);
+            updateAverageRatingGiven(patientId);
+        } catch (Exception e) {
+            log.error("Error updating rating given statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterRatingReceivedSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementRatingReceived(patientId);
+            updateAverageRatingReceived(patientId);
+        } catch (Exception e) {
+            log.error("Error updating rating received statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterFileUploadedSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementFileUploaded(patientId);
+        } catch (Exception e) {
+            log.error("Error updating file upload statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterAdvanceBookingSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementAdvanceBooking(patientId);
+        } catch (Exception e) {
+            log.error("Error updating advance booking statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterPunctualityRatingSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementPunctualRating(patientId);
+        } catch (Exception e) {
+            log.error("Error updating punctuality rating statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterCollaborationRatingSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementCollaborationRating(patientId);
+        } catch (Exception e) {
+            log.error("Error updating collaboration rating statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateAfterFollowInstructionsRatingSync(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementFollowInstructionsRating(patientId);
         } catch (Exception e) {
             log.error("Error updating follow instructions rating statistics for patient {}", patientId, e);
         }
@@ -176,13 +277,14 @@ public class PatientBadgeStatisticsUpdateService {
                     .last10TurnsFilesUploadedCount(0)
                     .totalRatingsGiven(0)
                     .totalRatingsReceived(0)
+                    .avgRatingGiven(0.0)
+                    .avgRatingReceived(0.0)
                     .totalUniqueDoctors(0)
                     .turnsWithSameDoctorLast12Months(0)
                     .differentSpecialtiesLast12Months(0)
                     .build();
 
             statisticsRepository.save(stats);
-            log.info("Created new statistics record for patient {}", patientId);
         }
     }
 
@@ -195,7 +297,6 @@ public class PatientBadgeStatisticsUpdateService {
 
             if (previousTurnsWithDoctor == 1) {
                 stats.setTotalUniqueDoctors(stats.getTotalUniqueDoctors() + 1);
-                log.debug("New unique doctor for patient {}: total now {}", patientId, stats.getTotalUniqueDoctors());
             }
 
             @SuppressWarnings("unchecked")
@@ -485,5 +586,61 @@ public class PatientBadgeStatisticsUpdateService {
         double activityProgress = turnsLast90Days > 0 ? 100.0 : 0.0;
 
         return Math.min((badgeProgress + turnProgress + ratingProgress + activityProgress) / 4, 100.0);
+    }
+
+    @Transactional
+    public void updateProgressAfterTurnCompletionSync(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressMediBookWelcome(calculateMediBookWelcomeProgress(stats, earnedBadges));
+        stats.setProgressHealthGuardian(calculateHealthGuardianProgress(stats, earnedBadges));
+        stats.setProgressCommittedPatient(calculateCommittedPatientProgress(stats, earnedBadges));
+        stats.setProgressContinuousFollowup(calculateContinuousFollowupProgress(stats, earnedBadges));
+        stats.setProgressConstantPatient(calculateConstantPatientProgress(stats, earnedBadges));
+        stats.setProgressExcellenceModel(calculateExcellenceModelProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateProgressAfterRatingSync(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressExemplaryPunctuality(calculateExemplaryPunctualityProgress(stats, earnedBadges));
+        stats.setProgressExcellentCollaborator(calculateExcellentCollaboratorProgress(stats, earnedBadges));
+        stats.setProgressResponsibleEvaluator(calculateResponsibleEvaluatorProgress(stats, earnedBadges));
+        stats.setProgressExcellenceModel(calculateExcellenceModelProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateProgressAfterFileUploadSync(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressAlwaysPrepared(calculateAlwaysPreparedProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateProgressAfterBookingSync(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressSmartPlanner(calculateSmartPlannerProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
     }
 }

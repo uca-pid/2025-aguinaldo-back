@@ -18,178 +18,167 @@ public class PatientBadgeEvaluationTriggerService {
     private final PatientBadgeStatisticsUpdateService statisticsUpdateService;
     private final UserRepository userRepository;
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterTurnCompletion(UUID patientId, UUID doctorId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering turn completion badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterTurnCompleted(patientId, doctorId);
-            statisticsUpdateService.updateProgressAfterTurnCompletion(patientId);
+            statisticsUpdateService.updateAfterTurnCompletedSync(patientId, doctorId);
+            statisticsUpdateService.updateProgressAfterTurnCompletionSync(patientId);
             badgeService.evaluateTurnRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating turn completion badges for patient {} after turn completion: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating turn completion badges for patient {} after turn completion: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterTurnCancellation(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering turn cancellation badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterTurnCancelled(patientId);
-            statisticsUpdateService.updateProgressAfterTurnCompletion(patientId);
+            statisticsUpdateService.updateAfterTurnCancelledSync(patientId);
+            statisticsUpdateService.updateProgressAfterTurnCompletionSync(patientId);
             badgeService.evaluateTurnRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating turn cancellation badges for patient {} after cancellation: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating turn cancellation badges for patient {} after cancellation: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterTurnNoShow(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering turn no-show badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterTurnNoShow(patientId);
-            statisticsUpdateService.updateProgressAfterTurnCompletion(patientId);
+            statisticsUpdateService.updateAfterTurnNoShowSync(patientId);
+            statisticsUpdateService.updateProgressAfterTurnCompletionSync(patientId);
             badgeService.evaluateTurnRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating turn no-show badges for patient {} after no-show: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating turn no-show badges for patient {} after no-show: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterRatingGiven(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering rating-related badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterRatingGiven(patientId);
-            statisticsUpdateService.updateProgressAfterRating(patientId);
+            statisticsUpdateService.updateAfterRatingGivenSync(patientId);
+            statisticsUpdateService.updateProgressAfterRatingSync(patientId);
             badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating rating badges for patient {} after rating given: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating rating badges for patient {} after rating given: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterRatingReceived(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering rating received badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterRatingReceived(patientId);
-            statisticsUpdateService.updateProgressAfterRating(patientId);
+            statisticsUpdateService.updateAfterRatingReceivedSync(patientId);
+            statisticsUpdateService.updateProgressAfterRatingSync(patientId);
             badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating rating received badges for patient {} after rating received: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating rating received badges for patient {} after rating received: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterFileUploaded(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering file upload badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterFileUploaded(patientId);
-            statisticsUpdateService.updateProgressAfterFileUpload(patientId);
+            statisticsUpdateService.updateAfterFileUploadedSync(patientId);
+            statisticsUpdateService.updateProgressAfterFileUploadSync(patientId);
             badgeService.evaluateFileRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating file upload badges for patient {} after file upload: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating file upload badges for patient {} after file upload: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterAdvanceBooking(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering advance booking badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterAdvanceBooking(patientId);
-            statisticsUpdateService.updateProgressAfterBooking(patientId);
+            statisticsUpdateService.updateAfterAdvanceBookingSync(patientId);
+            statisticsUpdateService.updateProgressAfterBookingSync(patientId);
             badgeService.evaluateBookingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating advance booking badges for patient {} after booking: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating advance booking badges for patient {} after booking: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterPunctualityRating(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering punctuality rating badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterPunctualityRating(patientId);
-            statisticsUpdateService.updateProgressAfterRating(patientId);
+            statisticsUpdateService.updateAfterPunctualityRatingSync(patientId);
+            statisticsUpdateService.updateProgressAfterRatingSync(patientId);
             badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating punctuality rating badges for patient {} after rating: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating punctuality rating badges for patient {} after rating: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterCollaborationRating(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering collaboration rating badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterCollaborationRating(patientId);
-            statisticsUpdateService.updateProgressAfterRating(patientId);
+            statisticsUpdateService.updateAfterCollaborationRatingSync(patientId);
+            statisticsUpdateService.updateProgressAfterRatingSync(patientId);
             badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating collaboration rating badges for patient {} after rating: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating collaboration rating badges for patient {} after rating: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterFollowInstructionsRating(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering follow instructions rating badge evaluation for patient {}", patientId);
-            statisticsUpdateService.updateAfterFollowInstructionsRating(patientId);
-            statisticsUpdateService.updateProgressAfterRating(patientId);
+            statisticsUpdateService.updateAfterFollowInstructionsRatingSync(patientId);
+            statisticsUpdateService.updateProgressAfterRatingSync(patientId);
             badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating follow instructions rating badges for patient {} after rating: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating follow instructions rating badges for patient {} after rating: {}", patientId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAllBadges(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Triggering FULL badge evaluation for patient {} (all badges)", patientId);
             statisticsUpdateService.updateAllBadgeProgress(patientId);
             badgeService.evaluateAllBadges(patientId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating all badges for patient {}: {}", patientId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating all badges for patient {}: {}", patientId, e.getMessage(), e);
         }
     }
 

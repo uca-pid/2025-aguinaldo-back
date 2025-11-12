@@ -224,65 +224,72 @@
             expensive real-time calculations on each page load.
         </comment>
 
-        <!-- Health Commitment badge progress -->
+        <!-- Welcome badge progress -->
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_preventive_patient" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_medi_book_welcome" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Preventive care badge progress -->
+        <addColumn tableName="patient_badge_statistics">
+            <column name="progress_health_guardian" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Active commitment badge progress -->
+        <addColumn tableName="patient_badge_statistics">
+            <column name="progress_committed_patient" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_total_commitment" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_continuous_followup" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_therapeutic_continuity" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_constant_patient" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Clinical excellence badge progress -->
+        <addColumn tableName="patient_badge_statistics">
+            <column name="progress_exemplary_punctuality" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_constant_user" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-
-        <!-- Responsibility badge progress -->
-        <addColumn tableName="patient_badge_statistics">
-            <column name="progress_always_punctual" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_smart_planner" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_expert_planner" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_excellent_collaborator" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_model_collaborator" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-
-        <!-- Preparation badge progress -->
-        <addColumn tableName="patient_badge_statistics">
-            <column name="progress_prepared_patient" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_always_prepared" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_constructive_evaluator" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_responsible_evaluator" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
 
         <addColumn tableName="patient_badge_statistics">
-            <column name="progress_exemplary_patient" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
+            <column name="progress_excellence_model" type="DOUBLE PRECISION" defaultValueNumeric="0.0">
                 <constraints nullable="false"/>
             </column>
         </addColumn>
