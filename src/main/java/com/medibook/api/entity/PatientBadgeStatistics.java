@@ -96,45 +96,49 @@ public class PatientBadgeStatistics {
     private Integer differentSpecialtiesLast12Months = 0;
 
     // Progress fields for each badge
-    @Column(name = "progress_preventive_patient")
+    @Column(name = "progress_medi_book_welcome")
     @Builder.Default
-    private Double progressPreventivePatient = 0.0;
+    private Double progressMediBookWelcome = 0.0;
 
-    @Column(name = "progress_total_commitment")
+    @Column(name = "progress_health_guardian")
     @Builder.Default
-    private Double progressTotalCommitment = 0.0;
+    private Double progressHealthGuardian = 0.0;
 
-    @Column(name = "progress_therapeutic_continuity")
+    @Column(name = "progress_committed_patient")
     @Builder.Default
-    private Double progressTherapeuticContinuity = 0.0;
+    private Double progressCommittedPatient = 0.0;
 
-    @Column(name = "progress_constant_user")
+    @Column(name = "progress_continuous_followup")
     @Builder.Default
-    private Double progressConstantUser = 0.0;
+    private Double progressContinuousFollowup = 0.0;
 
-    @Column(name = "progress_always_punctual")
+    @Column(name = "progress_constant_patient")
     @Builder.Default
-    private Double progressAlwaysPunctual = 0.0;
+    private Double progressConstantPatient = 0.0;
 
-    @Column(name = "progress_expert_planner")
+    @Column(name = "progress_exemplary_punctuality")
     @Builder.Default
-    private Double progressExpertPlanner = 0.0;
+    private Double progressExemplaryPunctuality = 0.0;
 
-    @Column(name = "progress_model_collaborator")
+    @Column(name = "progress_smart_planner")
     @Builder.Default
-    private Double progressModelCollaborator = 0.0;
+    private Double progressSmartPlanner = 0.0;
 
-    @Column(name = "progress_prepared_patient")
+    @Column(name = "progress_excellent_collaborator")
     @Builder.Default
-    private Double progressPreparedPatient = 0.0;
+    private Double progressExcellentCollaborator = 0.0;
 
-    @Column(name = "progress_constructive_evaluator")
+    @Column(name = "progress_always_prepared")
     @Builder.Default
-    private Double progressConstructiveEvaluator = 0.0;
+    private Double progressAlwaysPrepared = 0.0;
 
-    @Column(name = "progress_exemplary_patient")
+    @Column(name = "progress_responsible_evaluator")
     @Builder.Default
-    private Double progressExemplaryPatient = 0.0;
+    private Double progressResponsibleEvaluator = 0.0;
+
+    @Column(name = "progress_excellence_model")
+    @Builder.Default
+    private Double progressExcellenceModel = 0.0;
 
     @Column(name = "last_updated_at", nullable = false)
     private OffsetDateTime lastUpdatedAt;

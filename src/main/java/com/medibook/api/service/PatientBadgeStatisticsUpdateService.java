@@ -310,11 +310,12 @@ public class PatientBadgeStatisticsUpdateService {
 
         List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
 
-        stats.setProgressPreventivePatient(calculatePreventivePatientProgress(stats, earnedBadges));
-        stats.setProgressTotalCommitment(calculateTotalCommitmentProgress(stats, earnedBadges));
-        stats.setProgressTherapeuticContinuity(calculateTherapeuticContinuityProgress(stats, earnedBadges));
-        stats.setProgressConstantUser(calculateConstantUserProgress(stats, earnedBadges));
-        stats.setProgressExemplaryPatient(calculateExemplaryPatientProgress(stats, earnedBadges));
+        stats.setProgressMediBookWelcome(calculateMediBookWelcomeProgress(stats, earnedBadges));
+        stats.setProgressHealthGuardian(calculateHealthGuardianProgress(stats, earnedBadges));
+        stats.setProgressCommittedPatient(calculateCommittedPatientProgress(stats, earnedBadges));
+        stats.setProgressContinuousFollowup(calculateContinuousFollowupProgress(stats, earnedBadges));
+        stats.setProgressConstantPatient(calculateConstantPatientProgress(stats, earnedBadges));
+        stats.setProgressExcellenceModel(calculateExcellenceModelProgress(stats, earnedBadges));
 
         statisticsRepository.save(stats);
     }
@@ -326,10 +327,10 @@ public class PatientBadgeStatisticsUpdateService {
 
         List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
 
-        stats.setProgressAlwaysPunctual(calculateAlwaysPunctualProgress(stats, earnedBadges));
-        stats.setProgressModelCollaborator(calculateModelCollaboratorProgress(stats, earnedBadges));
-        stats.setProgressConstructiveEvaluator(calculateConstructiveEvaluatorProgress(stats, earnedBadges));
-        stats.setProgressExemplaryPatient(calculateExemplaryPatientProgress(stats, earnedBadges));
+        stats.setProgressExemplaryPunctuality(calculateExemplaryPunctualityProgress(stats, earnedBadges));
+        stats.setProgressExcellentCollaborator(calculateExcellentCollaboratorProgress(stats, earnedBadges));
+        stats.setProgressResponsibleEvaluator(calculateResponsibleEvaluatorProgress(stats, earnedBadges));
+        stats.setProgressExcellenceModel(calculateExcellenceModelProgress(stats, earnedBadges));
 
         statisticsRepository.save(stats);
     }
@@ -341,7 +342,7 @@ public class PatientBadgeStatisticsUpdateService {
 
         List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
 
-        stats.setProgressPreparedPatient(calculatePreparedPatientProgress(stats, earnedBadges));
+        stats.setProgressAlwaysPrepared(calculateAlwaysPreparedProgress(stats, earnedBadges));
 
         statisticsRepository.save(stats);
     }
@@ -353,7 +354,7 @@ public class PatientBadgeStatisticsUpdateService {
 
         List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
 
-        stats.setProgressExpertPlanner(calculateExpertPlannerProgress(stats, earnedBadges));
+        stats.setProgressSmartPlanner(calculateSmartPlannerProgress(stats, earnedBadges));
 
         statisticsRepository.save(stats);
     }
@@ -365,16 +366,17 @@ public class PatientBadgeStatisticsUpdateService {
 
         List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
 
-        stats.setProgressPreventivePatient(calculatePreventivePatientProgress(stats, earnedBadges));
-        stats.setProgressTotalCommitment(calculateTotalCommitmentProgress(stats, earnedBadges));
-        stats.setProgressTherapeuticContinuity(calculateTherapeuticContinuityProgress(stats, earnedBadges));
-        stats.setProgressConstantUser(calculateConstantUserProgress(stats, earnedBadges));
-        stats.setProgressAlwaysPunctual(calculateAlwaysPunctualProgress(stats, earnedBadges));
-        stats.setProgressExpertPlanner(calculateExpertPlannerProgress(stats, earnedBadges));
-        stats.setProgressModelCollaborator(calculateModelCollaboratorProgress(stats, earnedBadges));
-        stats.setProgressPreparedPatient(calculatePreparedPatientProgress(stats, earnedBadges));
-        stats.setProgressConstructiveEvaluator(calculateConstructiveEvaluatorProgress(stats, earnedBadges));
-        stats.setProgressExemplaryPatient(calculateExemplaryPatientProgress(stats, earnedBadges));
+        stats.setProgressMediBookWelcome(calculateMediBookWelcomeProgress(stats, earnedBadges));
+        stats.setProgressHealthGuardian(calculateHealthGuardianProgress(stats, earnedBadges));
+        stats.setProgressCommittedPatient(calculateCommittedPatientProgress(stats, earnedBadges));
+        stats.setProgressContinuousFollowup(calculateContinuousFollowupProgress(stats, earnedBadges));
+        stats.setProgressConstantPatient(calculateConstantPatientProgress(stats, earnedBadges));
+        stats.setProgressExemplaryPunctuality(calculateExemplaryPunctualityProgress(stats, earnedBadges));
+        stats.setProgressSmartPlanner(calculateSmartPlannerProgress(stats, earnedBadges));
+        stats.setProgressExcellentCollaborator(calculateExcellentCollaboratorProgress(stats, earnedBadges));
+        stats.setProgressAlwaysPrepared(calculateAlwaysPreparedProgress(stats, earnedBadges));
+        stats.setProgressResponsibleEvaluator(calculateResponsibleEvaluatorProgress(stats, earnedBadges));
+        stats.setProgressExcellenceModel(calculateExcellenceModelProgress(stats, earnedBadges));
 
         statisticsRepository.save(stats);
     }
@@ -386,60 +388,62 @@ public class PatientBadgeStatisticsUpdateService {
                 .toList();
     }
 
-    private double calculatePreventivePatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.PREVENTIVE_PATIENT)) return 100.0;
+    private double calculateMediBookWelcomeProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.MEDIBOOK_WELCOME)) return 100.0;
 
-        int turnsLast12Months = stats.getTurnsLast12Months();
-        return Math.min(((double) turnsLast12Months / 2) * 100, 100.0);
+        int turnsCompleted = stats.getTotalTurnsCompleted();
+        return turnsCompleted >= 1 ? 100.0 : ((double) turnsCompleted / 1) * 100;
     }
 
-    private double calculateTotalCommitmentProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.TOTAL_COMMITMENT)) return 100.0;
+    private double calculateHealthGuardianProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.HEALTH_GUARDIAN)) return 100.0;
+
+        int turnsLast6Months = stats.getTurnsLast6Months();
+        return Math.min(((double) turnsLast6Months / 3) * 100, 100.0);
+    }
+
+    private double calculateCommittedPatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.COMMITTED_PATIENT)) return 100.0;
 
         Double attendanceRate = stats.getLast5TurnsAttendanceRate();
         return attendanceRate != null ? Math.min(attendanceRate * 100, 100.0) : 0.0;
     }
 
-    private double calculateTherapeuticContinuityProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.THERAPEUTIC_CONTINUITY)) return 100.0;
+    private double calculateContinuousFollowupProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.CONTINUOUS_FOLLOWUP)) return 100.0;
 
         int turnsWithSameDoctor = stats.getTurnsWithSameDoctorLast12Months();
-        int differentSpecialties = stats.getDifferentSpecialtiesLast12Months();
-
-        double doctorProgress = Math.min(((double) turnsWithSameDoctor / 2) * 100, 100);
-        double specialtyProgress = Math.min(((double) differentSpecialties / 2) * 100, 100);
-
-        return Math.min((doctorProgress + specialtyProgress) / 2, 100.0);
+        return Math.min(((double) turnsWithSameDoctor / 3) * 100, 100.0);
     }
 
-    private double calculateConstantUserProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.CONSTANT_USER)) return 100.0;
+    private double calculateConstantPatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.CONSTANT_PATIENT)) return 100.0;
 
         int totalTurns = stats.getTotalTurnsCompleted();
         int turnsLast6Months = stats.getTurnsLast6Months();
 
-        double totalProgress = Math.min(((double) totalTurns / 20) * 100, 100);
+        double totalProgress = Math.min(((double) totalTurns / 15) * 100, 100);
         double recentProgress = turnsLast6Months > 0 ? 100.0 : 0.0;
 
         return Math.min((totalProgress + recentProgress) / 2, 100.0);
     }
 
-    private double calculateAlwaysPunctualProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.ALWAYS_PUNCTUAL)) return 100.0;
+    private double calculateExemplaryPunctualityProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.EXEMPLARY_PUNCTUALITY)) return 100.0;
 
         int punctualCount = stats.getLast10TurnsPunctualCount();
-        return Math.min(((double) punctualCount / 9) * 100, 100.0);
+        return Math.min(((double) punctualCount / 8) * 100, 100.0);
     }
 
-    private double calculateExpertPlannerProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.EXPERT_PLANNER)) return 100.0;
+    private double calculateSmartPlannerProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.SMART_PLANNER)) return 100.0;
 
         int advanceBookings = stats.getLast5TurnsAdvanceBookingCount();
-        return Math.min(((double) advanceBookings / 4) * 100, 100.0);
+        return Math.min(((double) advanceBookings / 3.5) * 100, 100.0);
     }
 
-    private double calculateModelCollaboratorProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.MODEL_COLLABORATOR)) return 100.0;
+    private double calculateExcellentCollaboratorProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.EXCELLENT_COLLABORATOR)) return 100.0;
 
         int collaborationCount = stats.getLast15TurnsCollaborationCount();
         int followInstructionsCount = stats.getLast15TurnsFollowInstructionsCount();
@@ -450,33 +454,33 @@ public class PatientBadgeStatisticsUpdateService {
         return Math.min((collaborationProgress + followProgress) / 2, 100.0);
     }
 
-    private double calculatePreparedPatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.PREPARED_PATIENT)) return 100.0;
+    private double calculateAlwaysPreparedProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.ALWAYS_PREPARED)) return 100.0;
 
         int uploadedCount = stats.getLast10TurnsFilesUploadedCount();
-        return Math.min(((double) uploadedCount / 8) * 100, 100.0);
+        return Math.min(((double) uploadedCount / 7) * 100, 100.0);
     }
 
-    private double calculateConstructiveEvaluatorProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.CONSTRUCTIVE_EVALUATOR)) return 100.0;
+    private double calculateResponsibleEvaluatorProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.RESPONSIBLE_EVALUATOR)) return 100.0;
 
         int ratingsGiven = stats.getTotalRatingsGiven();
-        return Math.min(((double) ratingsGiven / 10) * 100, 100.0);
+        return Math.min(((double) ratingsGiven / 8) * 100, 100.0);
     }
 
-    private double calculateExemplaryPatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
-        if (earnedBadges.contains(PatientBadgeType.EXEMPLARY_PATIENT)) return 100.0;
+    private double calculateExcellenceModelProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.EXCELLENCE_MODEL)) return 100.0;
 
         long otherBadges = earnedBadges.stream()
-                .filter(badge -> badge != PatientBadgeType.EXEMPLARY_PATIENT)
+                .filter(badge -> badge != PatientBadgeType.EXCELLENCE_MODEL)
                 .count();
 
         int turnsCompleted = stats.getTotalTurnsCompleted();
         Double avgRatingReceived = stats.getAvgRatingReceived();
         int turnsLast90Days = stats.getTurnsLast90Days();
 
-        double badgeProgress = Math.min(((double) otherBadges / 6) * 100, 100);
-        double turnProgress = Math.min(((double) turnsCompleted / 50) * 100, 100);
+        double badgeProgress = Math.min(((double) otherBadges / 4) * 100, 100);
+        double turnProgress = Math.min(((double) turnsCompleted / 25) * 100, 100);
         double ratingProgress = avgRatingReceived != null && avgRatingReceived >= 4.0 ? 100.0 : 0.0;
         double activityProgress = turnsLast90Days > 0 ? 100.0 : 0.0;
 

@@ -48,93 +48,102 @@ public class PatientBadgeProgressService {
         List<PatientBadgeProgressSummaryDTO> progressList = new ArrayList<>();
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.PREVENTIVE_PATIENT,
-                "Paciente Preventivo",
-                PatientBadgeCategory.HEALTH_COMMITMENT,
-                stats.getProgressPreventivePatient(),
-                earnedBadges.contains(PatientBadgeType.PREVENTIVE_PATIENT),
-                "Completa 2+ turnos en los últimos 12 meses"
+                PatientBadgeType.MEDIBOOK_WELCOME,
+                "Bienvenido a MediBook",
+                PatientBadgeCategory.WELCOME,
+                stats.getProgressMediBookWelcome(),
+                earnedBadges.contains(PatientBadgeType.MEDIBOOK_WELCOME),
+                "Completa tu primer turno"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.TOTAL_COMMITMENT,
+                PatientBadgeType.HEALTH_GUARDIAN,
                 "Guardián de la Salud",
-                PatientBadgeCategory.HEALTH_COMMITMENT,
-                stats.getProgressTotalCommitment(),
-                earnedBadges.contains(PatientBadgeType.TOTAL_COMMITMENT),
-                "Completa 25+ turnos en total"
+                PatientBadgeCategory.PREVENTIVE_CARE,
+                stats.getProgressHealthGuardian(),
+                earnedBadges.contains(PatientBadgeType.HEALTH_GUARDIAN),
+                "Completa 3+ turnos en los últimos 6 meses"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.THERAPEUTIC_CONTINUITY,
-                "Campeón del Bienestar",
-                PatientBadgeCategory.HEALTH_COMMITMENT,
-                stats.getProgressTherapeuticContinuity(),
-                earnedBadges.contains(PatientBadgeType.THERAPEUTIC_CONTINUITY),
-                "Completa 50+ turnos en total"
+                PatientBadgeType.COMMITTED_PATIENT,
+                "Paciente Comprometido",
+                PatientBadgeCategory.ACTIVE_COMMITMENT,
+                stats.getProgressCommittedPatient(),
+                earnedBadges.contains(PatientBadgeType.COMMITTED_PATIENT),
+                "Completa 5 turnos consecutivos"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.CONSTANT_USER,
-                "Compromiso Total",
-                PatientBadgeCategory.HEALTH_COMMITMENT,
-                stats.getProgressConstantUser(),
-                earnedBadges.contains(PatientBadgeType.CONSTANT_USER),
-                "Completa 100+ turnos en total"
+                PatientBadgeType.CONTINUOUS_FOLLOWUP,
+                "Seguimiento Continuo",
+                PatientBadgeCategory.ACTIVE_COMMITMENT,
+                stats.getProgressContinuousFollowup(),
+                earnedBadges.contains(PatientBadgeType.CONTINUOUS_FOLLOWUP),
+                "Completa 3+ turnos con el mismo doctor"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.ALWAYS_PUNCTUAL,
-                "Asistente Consistente",
-                PatientBadgeCategory.RESPONSIBILITY,
-                stats.getProgressAlwaysPunctual(),
-                earnedBadges.contains(PatientBadgeType.ALWAYS_PUNCTUAL),
-                "Completa 10+ turnos sin cancelaciones"
+                PatientBadgeType.CONSTANT_PATIENT,
+                "Paciente Constante",
+                PatientBadgeCategory.ACTIVE_COMMITMENT,
+                stats.getProgressConstantPatient(),
+                earnedBadges.contains(PatientBadgeType.CONSTANT_PATIENT),
+                "Completa 15+ turnos en 12 meses con 75% asistencia"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.EXPERT_PLANNER,
-                "Paciente Confiable",
-                PatientBadgeCategory.RESPONSIBILITY,
-                stats.getProgressExpertPlanner(),
-                earnedBadges.contains(PatientBadgeType.EXPERT_PLANNER),
-                "Completa 20+ turnos sin no-shows"
+                PatientBadgeType.EXEMPLARY_PUNCTUALITY,
+                "Puntualidad Ejemplar",
+                PatientBadgeCategory.CLINICAL_EXCELLENCE,
+                stats.getProgressExemplaryPunctuality(),
+                earnedBadges.contains(PatientBadgeType.EXEMPLARY_PUNCTUALITY),
+                "Obtén 8+ calificaciones positivas de puntualidad"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.MODEL_COLLABORATOR,
-                "Estrella Puntual",
-                PatientBadgeCategory.RESPONSIBILITY,
-                stats.getProgressModelCollaborator(),
-                earnedBadges.contains(PatientBadgeType.MODEL_COLLABORATOR),
-                "Completa 15+ turnos sin no-shows"
+                PatientBadgeType.SMART_PLANNER,
+                "Planificador Inteligente",
+                PatientBadgeCategory.CLINICAL_EXCELLENCE,
+                stats.getProgressSmartPlanner(),
+                earnedBadges.contains(PatientBadgeType.SMART_PLANNER),
+                "Reserva 70% de turnos con anticipación"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.PREPARED_PATIENT,
-                "Paciente Preparado",
-                PatientBadgeCategory.PREPARATION,
-                stats.getProgressPreparedPatient(),
-                earnedBadges.contains(PatientBadgeType.PREPARED_PATIENT),
-                "Sube 8+ archivos en los últimos 10 turnos"
+                PatientBadgeType.EXCELLENT_COLLABORATOR,
+                "Colaborador Excelente",
+                PatientBadgeCategory.CLINICAL_EXCELLENCE,
+                stats.getProgressExcellentCollaborator(),
+                earnedBadges.contains(PatientBadgeType.EXCELLENT_COLLABORATOR),
+                "Obtén buenas calificaciones de colaboración"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.CONSTRUCTIVE_EVALUATOR,
-                "Planificador Anticipado",
-                PatientBadgeCategory.PREPARATION,
-                stats.getProgressConstructiveEvaluator(),
-                earnedBadges.contains(PatientBadgeType.CONSTRUCTIVE_EVALUATOR),
-                "Reserva 4+ turnos con anticipación en los últimos 5"
+                PatientBadgeType.ALWAYS_PREPARED,
+                "Siempre Preparado",
+                PatientBadgeCategory.CLINICAL_EXCELLENCE,
+                stats.getProgressAlwaysPrepared(),
+                earnedBadges.contains(PatientBadgeType.ALWAYS_PREPARED),
+                "Sube 70% de documentos requeridos"
         ));
 
         progressList.add(createProgressDTO(
-                PatientBadgeType.EXEMPLARY_PATIENT,
-                "Preparador Excelente",
-                PatientBadgeCategory.PREPARATION,
-                stats.getProgressExemplaryPatient(),
-                earnedBadges.contains(PatientBadgeType.EXEMPLARY_PATIENT),
-                "Sube 10+ archivos Y reserva 4+ turnos con anticipación"
+                PatientBadgeType.RESPONSIBLE_EVALUATOR,
+                "Evaluador Responsable",
+                PatientBadgeCategory.CLINICAL_EXCELLENCE,
+                stats.getProgressResponsibleEvaluator(),
+                earnedBadges.contains(PatientBadgeType.RESPONSIBLE_EVALUATOR),
+                "Proporciona evaluaciones constructivas"
+        ));
+
+        progressList.add(createProgressDTO(
+                PatientBadgeType.EXCELLENCE_MODEL,
+                "Modelo de Excelencia",
+                PatientBadgeCategory.CLINICAL_EXCELLENCE,
+                stats.getProgressExcellenceModel(),
+                earnedBadges.contains(PatientBadgeType.EXCELLENCE_MODEL),
+                "Completa 25+ turnos con 4+ otros badges y 4.0+ rating"
         ));
 
         log.info("Badge progress fetched successfully for patient: {}", patientId);
@@ -189,16 +198,17 @@ public class PatientBadgeProgressService {
                 .totalUniqueDoctors(0)
                 .turnsWithSameDoctorLast12Months(0)
                 .differentSpecialtiesLast12Months(0)
-                .progressPreventivePatient(0.0)
-                .progressTotalCommitment(0.0)
-                .progressTherapeuticContinuity(0.0)
-                .progressConstantUser(0.0)
-                .progressAlwaysPunctual(0.0)
-                .progressExpertPlanner(0.0)
-                .progressModelCollaborator(0.0)
-                .progressPreparedPatient(0.0)
-                .progressConstructiveEvaluator(0.0)
-                .progressExemplaryPatient(0.0)
+                .progressMediBookWelcome(0.0)
+                .progressHealthGuardian(0.0)
+                .progressCommittedPatient(0.0)
+                .progressContinuousFollowup(0.0)
+                .progressConstantPatient(0.0)
+                .progressExemplaryPunctuality(0.0)
+                .progressSmartPlanner(0.0)
+                .progressExcellentCollaborator(0.0)
+                .progressAlwaysPrepared(0.0)
+                .progressResponsibleEvaluator(0.0)
+                .progressExcellenceModel(0.0)
                 .build();
     }
 }

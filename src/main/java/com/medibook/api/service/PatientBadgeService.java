@@ -18,28 +18,29 @@ import java.util.stream.Collectors;
 public class PatientBadgeService {
 
 
-    private static final int PREVENTIVE_PATIENT_MIN_TURNS_12_MONTHS = 2;
-    private static final int CONSTANT_USER_MIN_TURNS_TOTAL = 20;
-    private static final double CONSTANT_USER_ATTENDANCE_RATE = 0.85;
-    private static final int THERAPEUTIC_CONTINUITY_MIN_TURNS_SAME_DOCTOR = 2;
-    private static final int THERAPEUTIC_CONTINUITY_MIN_SPECIALTIES = 2;
+    private static final int MEDIBOOK_WELCOME_MIN_TURNS = 1;
 
-    private static final int ALWAYS_PUNCTUAL_MIN_POSITIVE_RATINGS = 9;
-    private static final int ALWAYS_PUNCTUAL_MIN_TURNS = 10;
-    private static final double EXPERT_PLANNER_ADVANCE_RATE = 0.8;
-    private static final int EXPERT_PLANNER_MIN_ADVANCE_DAYS = 7;
-    private static final double MODEL_COLLABORATOR_COLLABORATION_RATE = 0.7;
-    private static final double MODEL_COLLABORATOR_FOLLOW_RATE = 0.7;
-    private static final int MODEL_COLLABORATOR_MIN_TURNS = 10;
+    private static final int HEALTH_GUARDIAN_MIN_TURNS_6_MONTHS = 3;
+    private static final int CONSTANT_PATIENT_MIN_TURNS_TOTAL = 15;
+    private static final double CONSTANT_PATIENT_ATTENDANCE_RATE = 0.75;
+    private static final int CONTINUOUS_FOLLOWUP_MIN_TURNS_SAME_DOCTOR = 3;
 
-    private static final double PREPARED_PATIENT_UPLOAD_RATE = 0.8;
-    private static final int CONSTRUCTIVE_EVALUATOR_MIN_RATINGS = 10;
-    private static final int CONSTRUCTIVE_EVALUATOR_MIN_SUBCATEGORIES = 2;
-    private static final double CONSTRUCTIVE_EVALUATOR_MIN_AVG_RATING = 3.0;
-    private static final double CONSTRUCTIVE_EVALUATOR_MAX_AVG_RATING = 5.0;
-    private static final int EXEMPLARY_PATIENT_MIN_OTHER_BADGES = 6;
-    private static final int EXEMPLARY_PATIENT_MIN_TURNS = 50;
-    private static final double EXEMPLARY_PATIENT_MIN_AVG_RATING_RECEIVED = 4.0;
+    private static final int EXEMPLARY_PUNCTUALITY_MIN_POSITIVE_RATINGS = 8;
+    private static final int EXEMPLARY_PUNCTUALITY_MIN_TURNS = 8;
+    private static final double SMART_PLANNER_ADVANCE_RATE = 0.7;
+    private static final int SMART_PLANNER_MIN_ADVANCE_DAYS = 3;
+    private static final double EXCELLENT_COLLABORATOR_COLLABORATION_RATE = 0.7;
+    private static final double EXCELLENT_COLLABORATOR_FOLLOW_RATE = 0.7;
+    private static final int EXCELLENT_COLLABORATOR_MIN_TURNS = 8;
+
+    private static final double ALWAYS_PREPARED_UPLOAD_RATE = 0.7;
+    private static final int RESPONSIBLE_EVALUATOR_MIN_RATINGS = 8;
+    private static final int RESPONSIBLE_EVALUATOR_MIN_SUBCATEGORIES = 2;
+    private static final double RESPONSIBLE_EVALUATOR_MIN_AVG_RATING = 3.0;
+    private static final double RESPONSIBLE_EVALUATOR_MAX_AVG_RATING = 5.0;
+    private static final int EXCELLENCE_MODEL_MIN_OTHER_BADGES = 4;
+    private static final int EXCELLENCE_MODEL_MIN_TURNS = 25;
+    private static final double EXCELLENCE_MODEL_MIN_AVG_RATING_RECEIVED = 4.0;
 
     private final PatientBadgeRepository badgeRepository;
     private final UserRepository userRepository;
@@ -70,9 +71,10 @@ public class PatientBadgeService {
                 .patientId(patientId)
                 .patientName(patient.getName() + " " + patient.getSurname())
                 .totalActiveBadges((int) activeBadges)
-                .healthCommitmentBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.HEALTH_COMMITMENT, new ArrayList<>()))
-                .responsibilityBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.RESPONSIBILITY, new ArrayList<>()))
-                .preparationBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.PREPARATION, new ArrayList<>()))
+                .welcomeBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.WELCOME, new ArrayList<>()))
+                .preventiveCareBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.PREVENTIVE_CARE, new ArrayList<>()))
+                .activeCommitmentBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.ACTIVE_COMMITMENT, new ArrayList<>()))
+                .clinicalExcellenceBadges(badgesByCategory.getOrDefault(PatientBadgeType.PatientBadgeCategory.CLINICAL_EXCELLENCE, new ArrayList<>()))
                 .build();
     }
 
@@ -87,95 +89,79 @@ public class PatientBadgeService {
             throw new RuntimeException("User is not a patient");
         }
 
-        evaluatePreventivePatient(patient);
-        evaluateTotalCommitment(patient);
-        evaluateTherapeuticContinuity(patient);
-        evaluateConstantUser(patient);
-        evaluateAlwaysPunctual(patient);
-        evaluateExpertPlanner(patient);
-        evaluateModelCollaborator(patient);
-        evaluatePreparedPatient(patient);
-        evaluateConstructiveEvaluator(patient);
-        evaluateExemplaryPatient(patient);
+        evaluateMediBookWelcome(patient);
+        evaluateHealthGuardian(patient);
+        evaluateCommittedPatient(patient);
+        evaluateContinuousFollowup(patient);
+        evaluateConstantPatient(patient);
+        evaluateExemplaryPunctuality(patient);
+        evaluateSmartPlanner(patient);
+        evaluateExcellentCollaborator(patient);
+        evaluateAlwaysPrepared(patient);
+        evaluateResponsibleEvaluator(patient);
+        evaluateExcellenceModel(patient);
 
         log.info("Badge evaluation completed for patient: {}", patientId);
     }
 
-    private void evaluatePreventivePatient(User patient) {
+    private void evaluateMediBookWelcome(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTurnsLast12Months() < PREVENTIVE_PATIENT_MIN_TURNS_12_MONTHS) {
-            deactivateBadge(patient, PatientBadgeType.PREVENTIVE_PATIENT);
-            return;
-        }
-
-        List<TurnAssigned> lastYearTurns = turnAssignedRepository
-                .findByPatient_IdAndStatusOrderByScheduledAtDesc(patient.getId(), "COMPLETED")
-                .stream()
-                .filter(t -> t.getScheduledAt().isAfter(OffsetDateTime.now(ZoneOffset.UTC).minusYears(1)))
-                .sorted((a, b) -> b.getScheduledAt().compareTo(a.getScheduledAt()))
-                .toList();
-
-        if (lastYearTurns.size() < PREVENTIVE_PATIENT_MIN_TURNS_12_MONTHS) {
-            deactivateBadge(patient, PatientBadgeType.PREVENTIVE_PATIENT);
-            return;
-        }
-
-        boolean hasRegularAttendance = checkRegularAttendance(lastYearTurns);
-
-        if (hasRegularAttendance) {
-            activateBadge(patient, PatientBadgeType.PREVENTIVE_PATIENT);
+        if (stats.getTotalTurnsCompleted() >= MEDIBOOK_WELCOME_MIN_TURNS) {
+            activateBadge(patient, PatientBadgeType.MEDIBOOK_WELCOME);
         } else {
-            deactivateBadge(patient, PatientBadgeType.PREVENTIVE_PATIENT);
+            deactivateBadge(patient, PatientBadgeType.MEDIBOOK_WELCOME);
         }
     }
 
-    private void evaluateTotalCommitment(User patient) {
+    private void evaluateHealthGuardian(User patient) {
+        PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
+
+        if (stats.getTurnsLast6Months() < HEALTH_GUARDIAN_MIN_TURNS_6_MONTHS) {
+            deactivateBadge(patient, PatientBadgeType.HEALTH_GUARDIAN);
+            return;
+        }
+
+        List<TurnAssigned> last6MonthsTurns = turnAssignedRepository
+                .findByPatient_IdAndStatusOrderByScheduledAtDesc(patient.getId(), "COMPLETED")
+                .stream()
+                .filter(t -> t.getScheduledAt().isAfter(OffsetDateTime.now(ZoneOffset.UTC).minusMonths(6)))
+                .toList();
+
+        if (last6MonthsTurns.size() >= HEALTH_GUARDIAN_MIN_TURNS_6_MONTHS) {
+            activateBadge(patient, PatientBadgeType.HEALTH_GUARDIAN);
+        } else {
+            deactivateBadge(patient, PatientBadgeType.HEALTH_GUARDIAN);
+        }
+    }
+
+    private void evaluateCommittedPatient(User patient) {
         List<TurnAssigned> last5Turns = turnAssignedRepository
                 .findByPatient_IdAndStatusOrderByScheduledAtDesc(patient.getId(), "COMPLETED")
                 .stream().limit(5).toList();
 
-        if (last5Turns.size() < 5) {
-            deactivateBadge(patient, PatientBadgeType.TOTAL_COMMITMENT);
-            return;
-        }
-
-        boolean perfectAttendance = last5Turns.stream()
-                .allMatch(turn -> "COMPLETED".equals(turn.getStatus()));
-
-        boolean noLastMinuteCancellations = checkNoLastMinuteCancellations(last5Turns);
-
-        if (perfectAttendance && noLastMinuteCancellations) {
-            activateBadge(patient, PatientBadgeType.TOTAL_COMMITMENT);
+        if (last5Turns.size() >= 5) {
+            activateBadge(patient, PatientBadgeType.COMMITTED_PATIENT);
         } else {
-            deactivateBadge(patient, PatientBadgeType.TOTAL_COMMITMENT);
+            deactivateBadge(patient, PatientBadgeType.COMMITTED_PATIENT);
         }
     }
 
-    private void evaluateTherapeuticContinuity(User patient) {
+    private void evaluateContinuousFollowup(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTurnsLast12Months() < THERAPEUTIC_CONTINUITY_MIN_TURNS_SAME_DOCTOR) {
-            deactivateBadge(patient, PatientBadgeType.THERAPEUTIC_CONTINUITY);
-            return;
-        }
-
-        boolean hasTurnsWithSameDoctor = stats.getTurnsWithSameDoctorLast12Months() >= THERAPEUTIC_CONTINUITY_MIN_TURNS_SAME_DOCTOR;
-
-        boolean hasMultipleSpecialties = stats.getDifferentSpecialtiesLast12Months() >= THERAPEUTIC_CONTINUITY_MIN_SPECIALTIES;
-
-        if (hasTurnsWithSameDoctor && hasMultipleSpecialties) {
-            activateBadge(patient, PatientBadgeType.THERAPEUTIC_CONTINUITY);
+        if (stats.getTurnsWithSameDoctorLast12Months() >= CONTINUOUS_FOLLOWUP_MIN_TURNS_SAME_DOCTOR) {
+            activateBadge(patient, PatientBadgeType.CONTINUOUS_FOLLOWUP);
         } else {
-            deactivateBadge(patient, PatientBadgeType.THERAPEUTIC_CONTINUITY);
+            deactivateBadge(patient, PatientBadgeType.CONTINUOUS_FOLLOWUP);
         }
     }
 
-    private void evaluateConstantUser(User patient) {
+    private void evaluateConstantPatient(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTotalTurnsCompleted() < CONSTANT_USER_MIN_TURNS_TOTAL) {
-            deactivateBadge(patient, PatientBadgeType.CONSTANT_USER);
+        if (stats.getTotalTurnsCompleted() < CONSTANT_PATIENT_MIN_TURNS_TOTAL) {
+            deactivateBadge(patient, PatientBadgeType.CONSTANT_PATIENT);
             return;
         }
 
@@ -184,57 +170,57 @@ public class PatientBadgeService {
         int totalTurns = stats.getTotalTurnsCompleted() + stats.getTotalTurnsCancelled() + stats.getTotalTurnsNoShow();
         double attendanceRate = totalTurns > 0 ? (double) stats.getTotalTurnsCompleted() / totalTurns : 0.0;
 
-        boolean goodAttendanceRate = attendanceRate >= CONSTANT_USER_ATTENDANCE_RATE;
+        boolean goodAttendanceRate = attendanceRate >= CONSTANT_PATIENT_ATTENDANCE_RATE;
 
         if (activeRecently && goodAttendanceRate) {
-            activateBadge(patient, PatientBadgeType.CONSTANT_USER);
+            activateBadge(patient, PatientBadgeType.CONSTANT_PATIENT);
         } else {
-            deactivateBadge(patient, PatientBadgeType.CONSTANT_USER);
+            deactivateBadge(patient, PatientBadgeType.CONSTANT_PATIENT);
         }
     }
 
-    private void evaluateAlwaysPunctual(User patient) {
+    private void evaluateExemplaryPunctuality(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTotalTurnsCompleted() < ALWAYS_PUNCTUAL_MIN_TURNS) {
-            deactivateBadge(patient, PatientBadgeType.ALWAYS_PUNCTUAL);
+        if (stats.getTotalTurnsCompleted() < EXEMPLARY_PUNCTUALITY_MIN_TURNS) {
+            deactivateBadge(patient, PatientBadgeType.EXEMPLARY_PUNCTUALITY);
             return;
         }
 
-        boolean hasRequiredPunctualRatings = stats.getLast10TurnsPunctualCount() >= ALWAYS_PUNCTUAL_MIN_POSITIVE_RATINGS;
+        boolean hasRequiredPunctualRatings = stats.getLast10TurnsPunctualCount() >= EXEMPLARY_PUNCTUALITY_MIN_POSITIVE_RATINGS;
 
         if (hasRequiredPunctualRatings) {
-            activateBadge(patient, PatientBadgeType.ALWAYS_PUNCTUAL);
+            activateBadge(patient, PatientBadgeType.EXEMPLARY_PUNCTUALITY);
         } else {
-            deactivateBadge(patient, PatientBadgeType.ALWAYS_PUNCTUAL);
+            deactivateBadge(patient, PatientBadgeType.EXEMPLARY_PUNCTUALITY);
         }
     }
 
-    private void evaluateExpertPlanner(User patient) {
+    private void evaluateSmartPlanner(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
         if (stats.getTotalTurnsCompleted() < 5) {
-            deactivateBadge(patient, PatientBadgeType.EXPERT_PLANNER);
+            deactivateBadge(patient, PatientBadgeType.SMART_PLANNER);
             return;
         }
 
         double advanceBookingRate = stats.getTotalTurnsCompleted() > 0 ?
                 (double) stats.getLast5TurnsAdvanceBookingCount() / Math.min(stats.getTotalTurnsCompleted(), 5) : 0.0;
 
-        boolean meetsAdvanceBookingRequirement = advanceBookingRate >= EXPERT_PLANNER_ADVANCE_RATE;
+        boolean meetsAdvanceBookingRequirement = advanceBookingRate >= SMART_PLANNER_ADVANCE_RATE;
 
         if (meetsAdvanceBookingRequirement) {
-            activateBadge(patient, PatientBadgeType.EXPERT_PLANNER);
+            activateBadge(patient, PatientBadgeType.SMART_PLANNER);
         } else {
-            deactivateBadge(patient, PatientBadgeType.EXPERT_PLANNER);
+            deactivateBadge(patient, PatientBadgeType.SMART_PLANNER);
         }
     }
 
-    private void evaluateModelCollaborator(User patient) {
+    private void evaluateExcellentCollaborator(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTotalTurnsCompleted() < MODEL_COLLABORATOR_MIN_TURNS) {
-            deactivateBadge(patient, PatientBadgeType.MODEL_COLLABORATOR);
+        if (stats.getTotalTurnsCompleted() < EXCELLENT_COLLABORATOR_MIN_TURNS) {
+            deactivateBadge(patient, PatientBadgeType.EXCELLENT_COLLABORATOR);
             return;
         }
 
@@ -242,100 +228,84 @@ public class PatientBadgeService {
         double collaborationRate = totalRatedTurns > 0 ? (double) stats.getLast15TurnsCollaborationCount() / totalRatedTurns : 0.0;
         double followInstructionsRate = totalRatedTurns > 0 ? (double) stats.getLast15TurnsFollowInstructionsCount() / totalRatedTurns : 0.0;
 
-        boolean meetsCollaborationRequirement = collaborationRate >= MODEL_COLLABORATOR_COLLABORATION_RATE;
-        boolean meetsFollowInstructionsRequirement = followInstructionsRate >= MODEL_COLLABORATOR_FOLLOW_RATE;
+        boolean meetsCollaborationRequirement = collaborationRate >= EXCELLENT_COLLABORATOR_COLLABORATION_RATE;
+        boolean meetsFollowInstructionsRequirement = followInstructionsRate >= EXCELLENT_COLLABORATOR_FOLLOW_RATE;
 
         if (meetsCollaborationRequirement && meetsFollowInstructionsRequirement) {
-            activateBadge(patient, PatientBadgeType.MODEL_COLLABORATOR);
+            activateBadge(patient, PatientBadgeType.EXCELLENT_COLLABORATOR);
         } else {
-            deactivateBadge(patient, PatientBadgeType.MODEL_COLLABORATOR);
+            deactivateBadge(patient, PatientBadgeType.EXCELLENT_COLLABORATOR);
         }
     }
 
-    private void evaluatePreparedPatient(User patient) {
+    private void evaluateAlwaysPrepared(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTotalTurnsCompleted() < 10) {
-            deactivateBadge(patient, PatientBadgeType.PREPARED_PATIENT);
+        if (stats.getTotalTurnsCompleted() < 7) {
+            deactivateBadge(patient, PatientBadgeType.ALWAYS_PREPARED);
             return;
         }
 
-        int last10Turns = Math.min(stats.getTotalTurnsCompleted(), 10);
-        double uploadRate = last10Turns > 0 ? (double) stats.getLast10TurnsFilesUploadedCount() / last10Turns : 0.0;
+        int last7Turns = Math.min(stats.getTotalTurnsCompleted(), 7);
+        double uploadRate = last7Turns > 0 ? (double) stats.getLast10TurnsFilesUploadedCount() / last7Turns : 0.0;
 
-        boolean meetsUploadRequirement = uploadRate >= PREPARED_PATIENT_UPLOAD_RATE;
+        boolean meetsUploadRequirement = uploadRate >= ALWAYS_PREPARED_UPLOAD_RATE;
 
         if (meetsUploadRequirement) {
-            activateBadge(patient, PatientBadgeType.PREPARED_PATIENT);
+            activateBadge(patient, PatientBadgeType.ALWAYS_PREPARED);
         } else {
-            deactivateBadge(patient, PatientBadgeType.PREPARED_PATIENT);
+            deactivateBadge(patient, PatientBadgeType.ALWAYS_PREPARED);
         }
     }
 
-    private void evaluateConstructiveEvaluator(User patient) {
+    private void evaluateResponsibleEvaluator(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTotalRatingsGiven() < CONSTRUCTIVE_EVALUATOR_MIN_RATINGS) {
-            deactivateBadge(patient, PatientBadgeType.CONSTRUCTIVE_EVALUATOR);
+        if (stats.getTotalRatingsGiven() < RESPONSIBLE_EVALUATOR_MIN_RATINGS) {
+            deactivateBadge(patient, PatientBadgeType.RESPONSIBLE_EVALUATOR);
             return;
         }
 
         Double avgRating = stats.getAvgRatingGiven();
         boolean hasConstructiveRatingRange = avgRating != null &&
-                avgRating >= CONSTRUCTIVE_EVALUATOR_MIN_AVG_RATING &&
-                avgRating <= CONSTRUCTIVE_EVALUATOR_MAX_AVG_RATING;
+                avgRating >= RESPONSIBLE_EVALUATOR_MIN_AVG_RATING &&
+                avgRating <= RESPONSIBLE_EVALUATOR_MAX_AVG_RATING;
 
 
         if (hasConstructiveRatingRange) {
-            activateBadge(patient, PatientBadgeType.CONSTRUCTIVE_EVALUATOR);
+            activateBadge(patient, PatientBadgeType.RESPONSIBLE_EVALUATOR);
         } else {
-            deactivateBadge(patient, PatientBadgeType.CONSTRUCTIVE_EVALUATOR);
+            deactivateBadge(patient, PatientBadgeType.RESPONSIBLE_EVALUATOR);
         }
     }
 
-    private void evaluateExemplaryPatient(User patient) {
+    private void evaluateExcellenceModel(User patient) {
         PatientBadgeStatistics stats = getOrCreateStatistics(patient.getId());
 
-        if (stats.getTotalTurnsCompleted() < EXEMPLARY_PATIENT_MIN_TURNS) {
-            deactivateBadge(patient, PatientBadgeType.EXEMPLARY_PATIENT);
+        if (stats.getTotalTurnsCompleted() < EXCELLENCE_MODEL_MIN_TURNS) {
+            deactivateBadge(patient, PatientBadgeType.EXCELLENCE_MODEL);
             return;
         }
 
         Double avgRatingReceived = stats.getAvgRatingReceived();
         boolean hasGoodRatingReceived = avgRatingReceived != null &&
-                avgRatingReceived >= EXEMPLARY_PATIENT_MIN_AVG_RATING_RECEIVED;
+                avgRatingReceived >= EXCELLENCE_MODEL_MIN_AVG_RATING_RECEIVED;
 
         boolean activeRecently = stats.getTurnsLast90Days() > 0;
 
         long otherActiveBadges = badgeRepository.countActiveBadgesByPatientIdExcludingType(
-                patient.getId(), PatientBadgeType.EXEMPLARY_PATIENT);
+                patient.getId(), PatientBadgeType.EXCELLENCE_MODEL);
 
-        boolean hasRequiredOtherBadges = otherActiveBadges >= EXEMPLARY_PATIENT_MIN_OTHER_BADGES;
+        boolean hasRequiredOtherBadges = otherActiveBadges >= EXCELLENCE_MODEL_MIN_OTHER_BADGES;
 
         if (hasGoodRatingReceived && activeRecently && hasRequiredOtherBadges) {
-            activateBadge(patient, PatientBadgeType.EXEMPLARY_PATIENT);
+            activateBadge(patient, PatientBadgeType.EXCELLENCE_MODEL);
         } else {
-            deactivateBadge(patient, PatientBadgeType.EXEMPLARY_PATIENT);
+            deactivateBadge(patient, PatientBadgeType.EXCELLENCE_MODEL);
         }
     }
 
-    private boolean checkRegularAttendance(List<TurnAssigned> turns) {
-        if (turns.size() < PREVENTIVE_PATIENT_MIN_TURNS_12_MONTHS) return false;
 
-        turns.sort((a, b) -> a.getScheduledAt().compareTo(b.getScheduledAt()));
-
-        OffsetDateTime firstTurn = turns.get(0).getScheduledAt();
-        OffsetDateTime lastTurn = turns.get(turns.size() - 1).getScheduledAt();
-
-        long monthsBetween = java.time.temporal.ChronoUnit.MONTHS.between(firstTurn, lastTurn);
-        int requiredPeriods = (int) Math.ceil(monthsBetween / 6.0);
-
-        return turns.size() >= requiredPeriods;
-    }
-
-    private boolean checkNoLastMinuteCancellations(List<TurnAssigned> turns) {
-        return true;
-    }
 
     private PatientBadgeStatistics getOrCreateStatistics(UUID patientId) {
         return statisticsRepository.findByPatientId(patientId)

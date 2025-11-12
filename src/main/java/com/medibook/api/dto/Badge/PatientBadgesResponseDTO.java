@@ -16,7 +16,8 @@ public class PatientBadgesResponseDTO {
     private UUID patientId;
     private String patientName;
     private Integer totalActiveBadges;
-    private List<PatientBadgeDTO> healthCommitmentBadges;
-    private List<PatientBadgeDTO> responsibilityBadges;
-    private List<PatientBadgeDTO> preparationBadges;
+    private List<PatientBadgeDTO> welcomeBadges;
+    private List<PatientBadgeDTO> preventiveCareBadges;
+    private List<PatientBadgeDTO> activeCommitmentBadges;
+    private List<PatientBadgeDTO> clinicalExcellenceBadges;
 }
