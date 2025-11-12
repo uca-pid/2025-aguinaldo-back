@@ -56,7 +56,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterTurnCompleted(patientId, doctorId);
         verify(statisticsUpdateService).updateProgressAfterTurnCompletion(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateTurnRelatedBadges(patientId);
     }
 
     @Test
@@ -111,7 +111,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterTurnCancelled(patientId);
         verify(statisticsUpdateService).updateProgressAfterTurnCompletion(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateTurnRelatedBadges(patientId);
     }
 
     @Test
@@ -123,7 +123,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterTurnNoShow(patientId);
         verify(statisticsUpdateService).updateProgressAfterTurnCompletion(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateTurnRelatedBadges(patientId);
     }
 
     @Test
@@ -135,7 +135,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterRatingGiven(patientId);
         verify(statisticsUpdateService).updateProgressAfterRating(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateRatingRelatedBadges(patientId);
     }
 
     @Test
@@ -147,7 +147,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterRatingReceived(patientId);
         verify(statisticsUpdateService).updateProgressAfterRating(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateRatingRelatedBadges(patientId);
     }
 
     @Test
@@ -159,7 +159,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterFileUploaded(patientId);
         verify(statisticsUpdateService).updateProgressAfterFileUpload(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateFileRelatedBadges(patientId);
     }
 
     @Test
@@ -171,7 +171,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterAdvanceBooking(patientId);
         verify(statisticsUpdateService).updateProgressAfterBooking(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateBookingRelatedBadges(patientId);
     }
 
     @Test
@@ -183,7 +183,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterPunctualityRating(patientId);
         verify(statisticsUpdateService).updateProgressAfterRating(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateRatingRelatedBadges(patientId);
     }
 
     @Test
@@ -195,7 +195,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterCollaborationRating(patientId);
         verify(statisticsUpdateService).updateProgressAfterRating(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateRatingRelatedBadges(patientId);
     }
 
     @Test
@@ -207,7 +207,7 @@ class PatientBadgeEvaluationTriggerServiceTest {
         verify(userRepository).findById(patientId);
         verify(statisticsUpdateService).updateAfterFollowInstructionsRating(patientId);
         verify(statisticsUpdateService).updateProgressAfterRating(patientId);
-        verify(badgeService).evaluateAllBadges(patientId);
+        verify(badgeService).evaluateRatingRelatedBadges(patientId);
     }
 
     @Test

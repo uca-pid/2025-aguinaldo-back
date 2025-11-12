@@ -385,6 +385,77 @@ public class PatientBadgeService {
         }
     }
 
+    @Transactional
+    public void evaluateTurnRelatedBadges(UUID patientId) {
+        log.info("Evaluating turn-related badges for patient: {}", patientId);
+
+        User patient = userRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!"PATIENT".equals(patient.getRole())) {
+            throw new RuntimeException("User is not a patient");
+        }
+
+        evaluateMediBookWelcome(patient);
+        evaluateHealthGuardian(patient);
+        evaluateCommittedPatient(patient);
+        evaluateContinuousFollowup(patient);
+        evaluateConstantPatient(patient);
+
+        log.info("Turn-related badge evaluation completed for patient: {}", patientId);
+    }
+
+    @Transactional
+    public void evaluateRatingRelatedBadges(UUID patientId) {
+        log.info("Evaluating rating-related badges for patient: {}", patientId);
+
+        User patient = userRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!"PATIENT".equals(patient.getRole())) {
+            throw new RuntimeException("User is not a patient");
+        }
+
+        evaluateExemplaryPunctuality(patient);
+        evaluateResponsibleEvaluator(patient);
+        evaluateExcellentCollaborator(patient);
+        evaluateExcellenceModel(patient);
+
+        log.info("Rating-related badge evaluation completed for patient: {}", patientId);
+    }
+
+    @Transactional
+    public void evaluateFileRelatedBadges(UUID patientId) {
+        log.info("Evaluating file-related badges for patient: {}", patientId);
+
+        User patient = userRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!"PATIENT".equals(patient.getRole())) {
+            throw new RuntimeException("User is not a patient");
+        }
+
+        evaluateAlwaysPrepared(patient);
+
+        log.info("File-related badge evaluation completed for patient: {}", patientId);
+    }
+
+    @Transactional
+    public void evaluateBookingRelatedBadges(UUID patientId) {
+        log.info("Evaluating booking-related badges for patient: {}", patientId);
+
+        User patient = userRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!"PATIENT".equals(patient.getRole())) {
+            throw new RuntimeException("User is not a patient");
+        }
+
+        evaluateSmartPlanner(patient);
+
+        log.info("Booking-related badge evaluation completed for patient: {}", patientId);
+    }
+
     private PatientBadgeDTO toBadgeDTO(PatientBadge badge) {
         return PatientBadgeDTO.builder()
                 .badgeType(badge.getBadgeType())

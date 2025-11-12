@@ -207,12 +207,11 @@
         </createIndex>
 
         <!-- File uploads indexes for patient file tracking -->
-        <createIndex indexName="idx_file_uploads_patient_created" tableName="file_uploads">
-            <column name="patient_id"/>
-            <column name="created_at" descending="true"/>
+        <createIndex indexName="idx_turn_files_uploaded_at" tableName="turn_files">
+            <column name="uploaded_at" descending="true"/>
         </createIndex>
 
-        <createIndex indexName="idx_file_uploads_turn" tableName="file_uploads">
+        <createIndex indexName="idx_turn_files_turn" tableName="turn_files">
             <column name="turn_id"/>
         </createIndex>
     </changeSet>

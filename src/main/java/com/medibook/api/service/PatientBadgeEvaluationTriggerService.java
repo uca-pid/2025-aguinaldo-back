@@ -25,7 +25,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering turn completion badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterTurnCompleted(patientId, doctorId);
             statisticsUpdateService.updateProgressAfterTurnCompletion(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateTurnRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -38,15 +38,15 @@ public class PatientBadgeEvaluationTriggerService {
     public void evaluateAfterTurnCancellation(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering consistency-related badge evaluation for patient {}", patientId);
+            log.info("Updating statistics and triggering turn cancellation badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterTurnCancelled(patientId);
             statisticsUpdateService.updateProgressAfterTurnCompletion(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateTurnRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating consistency badges for patient {} after cancellation: {}", patientId, e.getMessage());
+            log.error("Error evaluating turn cancellation badges for patient {} after cancellation: {}", patientId, e.getMessage());
         }
     }
 
@@ -54,15 +54,15 @@ public class PatientBadgeEvaluationTriggerService {
     public void evaluateAfterTurnNoShow(UUID patientId) {
         try {
             validatePatientRole(patientId);
-            log.info("Updating statistics and triggering no-show badge evaluation for patient {}", patientId);
+            log.info("Updating statistics and triggering turn no-show badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterTurnNoShow(patientId);
             statisticsUpdateService.updateProgressAfterTurnCompletion(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateTurnRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating no-show badges for patient {} after no-show: {}", patientId, e.getMessage());
+            log.error("Error evaluating turn no-show badges for patient {} after no-show: {}", patientId, e.getMessage());
         }
     }
 
@@ -73,7 +73,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering rating-related badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterRatingGiven(patientId);
             statisticsUpdateService.updateProgressAfterRating(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -89,7 +89,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering rating received badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterRatingReceived(patientId);
             statisticsUpdateService.updateProgressAfterRating(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -105,7 +105,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering file upload badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterFileUploaded(patientId);
             statisticsUpdateService.updateProgressAfterFileUpload(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateFileRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -121,7 +121,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering advance booking badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterAdvanceBooking(patientId);
             statisticsUpdateService.updateProgressAfterBooking(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateBookingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -137,7 +137,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering punctuality rating badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterPunctualityRating(patientId);
             statisticsUpdateService.updateProgressAfterRating(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -153,7 +153,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering collaboration rating badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterCollaborationRating(patientId);
             statisticsUpdateService.updateProgressAfterRating(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
@@ -169,7 +169,7 @@ public class PatientBadgeEvaluationTriggerService {
             log.info("Updating statistics and triggering follow instructions rating badge evaluation for patient {}", patientId);
             statisticsUpdateService.updateAfterFollowInstructionsRating(patientId);
             statisticsUpdateService.updateProgressAfterRating(patientId);
-            badgeService.evaluateAllBadges(patientId);
+            badgeService.evaluateRatingRelatedBadges(patientId);
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid patient role for badge evaluation: {}", e.getMessage());
