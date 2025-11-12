@@ -212,10 +212,8 @@ public class DoctorBadgeStatisticsUpdateService {
             
             if (previousTurns == 1) {
                 stats.setTotalUniquePatients(stats.getTotalUniquePatients() + 1);
-                         doctorId, stats.getTotalUniquePatients());
             } else if (previousTurns == 2) {
                 stats.setReturningPatientsCount(stats.getReturningPatientsCount() + 1);
-                         doctorId, stats.getReturningPatientsCount());
             }
             
             statisticsRepository.save(stats);

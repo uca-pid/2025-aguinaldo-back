@@ -312,7 +312,6 @@ public class PatientBadgeService {
                             .orElseThrow(() -> new RuntimeException("Patient not found: " + patientId));
 
                     PatientBadgeStatistics stats = PatientBadgeStatistics.builder()
-                            .patientId(patientId)
                             .patient(patient)
                             .totalTurnsCompleted(0)
                             .totalTurnsCancelled(0)
@@ -328,8 +327,6 @@ public class PatientBadgeService {
                             .last10TurnsFilesUploadedCount(0)
                             .totalRatingsGiven(0)
                             .totalRatingsReceived(0)
-                            .avgRatingGiven(0.0)
-                            .avgRatingReceived(0.0)
                             .totalUniqueDoctors(0)
                             .turnsWithSameDoctorLast12Months(0)
                             .differentSpecialtiesLast12Months(0)

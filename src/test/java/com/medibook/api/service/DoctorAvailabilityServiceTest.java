@@ -30,6 +30,9 @@ class DoctorAvailabilityServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private BadgeEvaluationTriggerService badgeEvaluationTriggerService;
+
     @InjectMocks
     private DoctorAvailabilityService doctorAvailabilityService;
 
