@@ -1,0 +1,485 @@
+package com.medibook.api.service;
+import com.medibook.api.entity.PatientBadgeStatistics;
+import com.medibook.api.entity.PatientBadgeType;
+import com.medibook.api.entity.TurnAssigned;
+import com.medibook.api.entity.User;
+import com.medibook.api.repository.PatientBadgeRepository;
+import com.medibook.api.repository.PatientBadgeStatisticsRepository;
+import com.medibook.api.repository.TurnAssignedRepository;
+import com.medibook.api.repository.RatingRepository;
+import com.medibook.api.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PatientBadgeStatisticsUpdateService {
+
+    private final PatientBadgeStatisticsRepository statisticsRepository;
+    private final UserRepository userRepository;
+    private final TurnAssignedRepository turnAssignedRepository;
+    private final RatingRepository ratingRepository;
+    private final PatientBadgeRepository badgeRepository;
+
+    @Async
+    @Transactional
+    public void updateAfterTurnCompleted(UUID patientId, UUID doctorId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementTurnCompleted(patientId);
+
+            updateDoctorRelationshipStats(patientId, doctorId);
+            updateTimeBasedStats(patientId);
+
+            log.debug("Updated turn completion statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating turn completion statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterTurnCancelled(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementTurnCancelled(patientId);
+            log.debug("Updated cancellation statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating cancellation statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterTurnNoShow(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementTurnNoShow(patientId);
+            log.debug("Updated no-show statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating no-show statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterRatingGiven(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementRatingGiven(patientId);
+            updateAverageRatingGiven(patientId);
+            log.debug("Updated rating given statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating rating given statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterRatingReceived(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementRatingReceived(patientId);
+            updateAverageRatingReceived(patientId);
+            log.debug("Updated rating received statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating rating received statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterFileUploaded(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementFileUploaded(patientId);
+            log.debug("Updated file upload statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating file upload statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterAdvanceBooking(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementAdvanceBooking(patientId);
+            log.debug("Updated advance booking statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating advance booking statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterPunctualityRating(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementPunctualRating(patientId);
+            log.debug("Updated punctuality rating statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating punctuality rating statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterCollaborationRating(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementCollaborationRating(patientId);
+            log.debug("Updated collaboration rating statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating collaboration rating statistics for patient {}", patientId, e);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void updateAfterFollowInstructionsRating(UUID patientId) {
+        try {
+            ensureStatisticsExist(patientId);
+            statisticsRepository.incrementFollowInstructionsRating(patientId);
+            log.debug("Updated follow instructions rating statistics for patient {}", patientId);
+        } catch (Exception e) {
+            log.error("Error updating follow instructions rating statistics for patient {}", patientId, e);
+        }
+    }
+
+    private void ensureStatisticsExist(UUID patientId) {
+        if (statisticsRepository.findByPatientId(patientId).isEmpty()) {
+            User patient = userRepository.findById(patientId)
+                    .orElseThrow(() -> new IllegalArgumentException("Patient not found: " + patientId));
+
+            PatientBadgeStatistics stats = PatientBadgeStatistics.builder()
+                    .patient(patient)
+                    .totalTurnsCompleted(0)
+                    .totalTurnsCancelled(0)
+                    .totalTurnsNoShow(0)
+                    .turnsLast12Months(0)
+                    .turnsLast6Months(0)
+                    .turnsLast90Days(0)
+                    .last5TurnsAttendanceRate(0.0)
+                    .last10TurnsPunctualCount(0)
+                    .last5TurnsAdvanceBookingCount(0)
+                    .last15TurnsCollaborationCount(0)
+                    .last15TurnsFollowInstructionsCount(0)
+                    .last10TurnsFilesUploadedCount(0)
+                    .totalRatingsGiven(0)
+                    .totalRatingsReceived(0)
+                    .totalUniqueDoctors(0)
+                    .turnsWithSameDoctorLast12Months(0)
+                    .differentSpecialtiesLast12Months(0)
+                    .build();
+
+            statisticsRepository.save(stats);
+            log.info("Created new statistics record for patient {}", patientId);
+        }
+    }
+
+    private void updateDoctorRelationshipStats(UUID patientId, UUID doctorId) {
+        try {
+            PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElseThrow();
+
+            long previousTurnsWithDoctor = turnAssignedRepository.countByDoctorIdAndPatientIdAndStatus(
+                    doctorId, patientId, "COMPLETED");
+
+            if (previousTurnsWithDoctor == 1) {
+                stats.setTotalUniqueDoctors(stats.getTotalUniqueDoctors() + 1);
+                log.debug("New unique doctor for patient {}: total now {}", patientId, stats.getTotalUniqueDoctors());
+            }
+
+            @SuppressWarnings("unchecked")
+            List<TurnAssigned> turnsWithDoctor = turnAssignedRepository.findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, "COMPLETED")
+                    .stream()
+                    .filter(t -> t.getDoctor().getId().equals(doctorId) && t.getScheduledAt().isAfter(OffsetDateTime.now(ZoneOffset.UTC).minusYears(1)))
+                    .toList();
+
+            stats.setTurnsWithSameDoctorLast12Months(turnsWithDoctor.size());
+
+            statisticsRepository.save(stats);
+        } catch (Exception e) {
+            log.error("Error updating doctor relationship stats for patient {}", patientId, e);
+        }
+    }
+
+    private void updateTimeBasedStats(UUID patientId) {
+        try {
+            PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElseThrow();
+            OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+            long turnsLast12Months = turnAssignedRepository
+                    .findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, "COMPLETED")
+                    .stream()
+                    .filter(t -> t.getScheduledAt().isAfter(now.minusYears(1)))
+                    .count();
+
+            long turnsLast6Months = turnAssignedRepository
+                    .findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, "COMPLETED")
+                    .stream()
+                    .filter(t -> t.getScheduledAt().isAfter(now.minusMonths(6)))
+                    .count();
+
+            long turnsLast90Days = turnAssignedRepository
+                    .findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, "COMPLETED")
+                    .stream()
+                    .filter(t -> t.getScheduledAt().isAfter(now.minusDays(90)))
+                    .count();
+
+            stats.setTurnsLast12Months((int) turnsLast12Months);
+            stats.setTurnsLast6Months((int) turnsLast6Months);
+            stats.setTurnsLast90Days((int) turnsLast90Days);
+
+            long differentSpecialties = turnAssignedRepository
+                    .findByPatient_IdAndStatusOrderByScheduledAtDesc(patientId, "COMPLETED")
+                    .stream()
+                    .filter(t -> t.getScheduledAt().isAfter(now.minusYears(1)))
+                    .map(turn -> turn.getDoctor().getDoctorProfile() != null ?
+                            turn.getDoctor().getDoctorProfile().getSpecialty() : null)
+                    .filter(specialty -> specialty != null)
+                    .distinct()
+                    .count();
+
+            stats.setDifferentSpecialtiesLast12Months((int) differentSpecialties);
+
+            statisticsRepository.save(stats);
+        } catch (Exception e) {
+            log.error("Error updating time-based stats for patient {}", patientId, e);
+        }
+    }
+
+    private void updateAverageRatingGiven(UUID patientId) {
+        try {
+            List<com.medibook.api.entity.Rating> allRatings = ratingRepository.findAllOrderByCreatedAtDesc();
+            List<com.medibook.api.entity.Rating> ratingsGiven = allRatings.stream()
+                    .filter(r -> r.getRater() != null && r.getRater().getId().equals(patientId))
+                    .toList();
+
+            if (!ratingsGiven.isEmpty()) {
+                double avgRating = ratingsGiven.stream()
+                        .mapToInt(com.medibook.api.entity.Rating::getScore)
+                        .average()
+                        .orElse(0.0);
+
+                PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElseThrow();
+                stats.setAvgRatingGiven(avgRating);
+                stats.setTotalRatingsGiven(ratingsGiven.size());
+                statisticsRepository.save(stats);
+            }
+        } catch (Exception e) {
+            log.error("Error updating average rating given for patient {}", patientId, e);
+        }
+    }
+
+    private void updateAverageRatingReceived(UUID patientId) {
+        try {
+            List<com.medibook.api.entity.Rating> allRatings = ratingRepository.findAllOrderByCreatedAtDesc();
+            List<com.medibook.api.entity.Rating> ratingsReceived = allRatings.stream()
+                    .filter(r -> r.getRated() != null && r.getRated().getId().equals(patientId))
+                    .toList();
+
+            if (!ratingsReceived.isEmpty()) {
+                double avgRating = ratingsReceived.stream()
+                        .mapToInt(com.medibook.api.entity.Rating::getScore)
+                        .average()
+                        .orElse(0.0);
+
+                PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElseThrow();
+                stats.setAvgRatingReceived(avgRating);
+                stats.setTotalRatingsReceived(ratingsReceived.size());
+                statisticsRepository.save(stats);
+            }
+        } catch (Exception e) {
+            log.error("Error updating average rating received for patient {}", patientId, e);
+        }
+    }
+
+    @Transactional
+    public void updateProgressAfterTurnCompletion(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressPreventivePatient(calculatePreventivePatientProgress(stats, earnedBadges));
+        stats.setProgressTotalCommitment(calculateTotalCommitmentProgress(stats, earnedBadges));
+        stats.setProgressTherapeuticContinuity(calculateTherapeuticContinuityProgress(stats, earnedBadges));
+        stats.setProgressConstantUser(calculateConstantUserProgress(stats, earnedBadges));
+        stats.setProgressExemplaryPatient(calculateExemplaryPatientProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateProgressAfterRating(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressAlwaysPunctual(calculateAlwaysPunctualProgress(stats, earnedBadges));
+        stats.setProgressModelCollaborator(calculateModelCollaboratorProgress(stats, earnedBadges));
+        stats.setProgressConstructiveEvaluator(calculateConstructiveEvaluatorProgress(stats, earnedBadges));
+        stats.setProgressExemplaryPatient(calculateExemplaryPatientProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateProgressAfterFileUpload(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressPreparedPatient(calculatePreparedPatientProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateProgressAfterBooking(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressExpertPlanner(calculateExpertPlannerProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    @Transactional
+    public void updateAllBadgeProgress(UUID patientId) {
+        PatientBadgeStatistics stats = statisticsRepository.findByPatientId(patientId).orElse(null);
+        if (stats == null) return;
+
+        List<PatientBadgeType> earnedBadges = getEarnedBadges(patientId);
+
+        stats.setProgressPreventivePatient(calculatePreventivePatientProgress(stats, earnedBadges));
+        stats.setProgressTotalCommitment(calculateTotalCommitmentProgress(stats, earnedBadges));
+        stats.setProgressTherapeuticContinuity(calculateTherapeuticContinuityProgress(stats, earnedBadges));
+        stats.setProgressConstantUser(calculateConstantUserProgress(stats, earnedBadges));
+        stats.setProgressAlwaysPunctual(calculateAlwaysPunctualProgress(stats, earnedBadges));
+        stats.setProgressExpertPlanner(calculateExpertPlannerProgress(stats, earnedBadges));
+        stats.setProgressModelCollaborator(calculateModelCollaboratorProgress(stats, earnedBadges));
+        stats.setProgressPreparedPatient(calculatePreparedPatientProgress(stats, earnedBadges));
+        stats.setProgressConstructiveEvaluator(calculateConstructiveEvaluatorProgress(stats, earnedBadges));
+        stats.setProgressExemplaryPatient(calculateExemplaryPatientProgress(stats, earnedBadges));
+
+        statisticsRepository.save(stats);
+    }
+
+    private List<PatientBadgeType> getEarnedBadges(UUID patientId) {
+        return badgeRepository.findByPatient_IdAndIsActiveTrue(patientId)
+                .stream()
+                .map(badge -> badge.getBadgeType())
+                .toList();
+    }
+
+    private double calculatePreventivePatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.PREVENTIVE_PATIENT)) return 100.0;
+
+        int turnsLast12Months = stats.getTurnsLast12Months();
+        return Math.min(((double) turnsLast12Months / 2) * 100, 100.0);
+    }
+
+    private double calculateTotalCommitmentProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.TOTAL_COMMITMENT)) return 100.0;
+
+        Double attendanceRate = stats.getLast5TurnsAttendanceRate();
+        return attendanceRate != null ? Math.min(attendanceRate * 100, 100.0) : 0.0;
+    }
+
+    private double calculateTherapeuticContinuityProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.THERAPEUTIC_CONTINUITY)) return 100.0;
+
+        int turnsWithSameDoctor = stats.getTurnsWithSameDoctorLast12Months();
+        int differentSpecialties = stats.getDifferentSpecialtiesLast12Months();
+
+        double doctorProgress = Math.min(((double) turnsWithSameDoctor / 2) * 100, 100);
+        double specialtyProgress = Math.min(((double) differentSpecialties / 2) * 100, 100);
+
+        return Math.min((doctorProgress + specialtyProgress) / 2, 100.0);
+    }
+
+    private double calculateConstantUserProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.CONSTANT_USER)) return 100.0;
+
+        int totalTurns = stats.getTotalTurnsCompleted();
+        int turnsLast6Months = stats.getTurnsLast6Months();
+
+        double totalProgress = Math.min(((double) totalTurns / 20) * 100, 100);
+        double recentProgress = turnsLast6Months > 0 ? 100.0 : 0.0;
+
+        return Math.min((totalProgress + recentProgress) / 2, 100.0);
+    }
+
+    private double calculateAlwaysPunctualProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.ALWAYS_PUNCTUAL)) return 100.0;
+
+        int punctualCount = stats.getLast10TurnsPunctualCount();
+        return Math.min(((double) punctualCount / 9) * 100, 100.0);
+    }
+
+    private double calculateExpertPlannerProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.EXPERT_PLANNER)) return 100.0;
+
+        int advanceBookings = stats.getLast5TurnsAdvanceBookingCount();
+        return Math.min(((double) advanceBookings / 4) * 100, 100.0);
+    }
+
+    private double calculateModelCollaboratorProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.MODEL_COLLABORATOR)) return 100.0;
+
+        int collaborationCount = stats.getLast15TurnsCollaborationCount();
+        int followInstructionsCount = stats.getLast15TurnsFollowInstructionsCount();
+
+        double collaborationProgress = Math.min(((double) collaborationCount / 10.5) * 100, 100);
+        double followProgress = Math.min(((double) followInstructionsCount / 10.5) * 100, 100);
+
+        return Math.min((collaborationProgress + followProgress) / 2, 100.0);
+    }
+
+    private double calculatePreparedPatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.PREPARED_PATIENT)) return 100.0;
+
+        int uploadedCount = stats.getLast10TurnsFilesUploadedCount();
+        return Math.min(((double) uploadedCount / 8) * 100, 100.0);
+    }
+
+    private double calculateConstructiveEvaluatorProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.CONSTRUCTIVE_EVALUATOR)) return 100.0;
+
+        int ratingsGiven = stats.getTotalRatingsGiven();
+        return Math.min(((double) ratingsGiven / 10) * 100, 100.0);
+    }
+
+    private double calculateExemplaryPatientProgress(PatientBadgeStatistics stats, List<PatientBadgeType> earnedBadges) {
+        if (earnedBadges.contains(PatientBadgeType.EXEMPLARY_PATIENT)) return 100.0;
+
+        long otherBadges = earnedBadges.stream()
+                .filter(badge -> badge != PatientBadgeType.EXEMPLARY_PATIENT)
+                .count();
+
+        int turnsCompleted = stats.getTotalTurnsCompleted();
+        Double avgRatingReceived = stats.getAvgRatingReceived();
+        int turnsLast90Days = stats.getTurnsLast90Days();
+
+        double badgeProgress = Math.min(((double) otherBadges / 6) * 100, 100);
+        double turnProgress = Math.min(((double) turnsCompleted / 50) * 100, 100);
+        double ratingProgress = avgRatingReceived != null && avgRatingReceived >= 4.0 ? 100.0 : 0.0;
+        double activityProgress = turnsLast90Days > 0 ? 100.0 : 0.0;
+
+        return Math.min((badgeProgress + turnProgress + ratingProgress + activityProgress) / 4, 100.0);
+    }
+}

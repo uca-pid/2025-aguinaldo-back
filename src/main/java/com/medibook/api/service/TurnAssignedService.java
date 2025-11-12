@@ -36,6 +36,7 @@ public class TurnAssignedService {
     private final EmailService emailService;
     private final TurnFileService turnFileService;
     private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
+    private final PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
@@ -224,6 +225,9 @@ public class TurnAssignedService {
         if (turn.getDoctor() != null) {
             badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getDoctor().getId());
         }
+        if (turn.getPatient() != null) {
+            patientBadgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getPatient().getId());
+        }
         
         try {
             if (turnFileService.fileExistsForTurn(turnId)) {
@@ -331,6 +335,10 @@ public class TurnAssignedService {
             badgeEvaluationTrigger.evaluateAfterTurnCompletion(
                 turn.getDoctor().getId(), 
                 turn.getPatient().getId()
+            );
+            patientBadgeEvaluationTrigger.evaluateAfterTurnCompletion(
+                turn.getPatient().getId(),
+                turn.getDoctor().getId()
             );
         }
 
@@ -473,6 +481,12 @@ public class TurnAssignedService {
             Integer punctualityScore = extractPunctualityScore(score, normalizedSubcategory);
             
             badgeEvaluationTrigger.evaluateAfterRating(ratedUser.getId(), communicationScore, empathyScore, punctualityScore);
+        } else if ("PATIENT".equals(ratedUser.getRole())) {
+            patientBadgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
+        }
+
+        if ("PATIENT".equals(rater.getRole())) {
+            patientBadgeEvaluationTrigger.evaluateAfterRatingGiven(rater.getId());
         }
 
         return saved;
