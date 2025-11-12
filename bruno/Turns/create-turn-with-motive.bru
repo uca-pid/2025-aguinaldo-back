@@ -1,0 +1,37 @@
+meta {
+  name: Create Turn With Motive
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/turns
+  body: json
+  auth: bearer
+}
+
+headers {
+  Authorization: "Bearer {{patientToken}}"
+}
+
+body:json {
+  {
+    "doctorId": "{{doctorId}}",
+    "patientId": "{{patientId}}",
+    "scheduledAt": "{{scheduledAt}}",
+    "motive": "Consulta por dolor de cabeza"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.motive: eq "Consulta por dolor de cabeza"
+}
+
+tests {
+  test("Should create a turn with motive", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().motive).to.equal("Consulta por dolor de cabeza");
+  });
+}

@@ -32,4 +32,7 @@ public class TurnAssigned {
 
     @Column(name = "status", nullable = false)
     private String status; // Ej: SCHEDULED, COMPLETED, CANCELED, NO_SHOW
+    
+    @Column(name = "motive", columnDefinition = "text")
+    private String motive;
 }

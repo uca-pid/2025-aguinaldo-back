@@ -22,6 +22,7 @@ public class TurnAssignedMapper {
     public TurnAssigned toEntity(TurnCreateRequestDTO dto, User doctor) {
         return TurnAssigned.builder()
                 .doctor(doctor)
+                .motive(dto.getMotive())
                 .scheduledAt(dto.getScheduledAt())
                 .status("AVAILABLE")
                 .build();
@@ -58,6 +59,7 @@ public class TurnAssignedMapper {
                 .patientName(turn.getPatient() != null ? turn.getPatient().getName() + " " + turn.getPatient().getSurname() : null)
                 .patientScore(turn.getPatient() != null ? turn.getPatient().getScore() : null)
                 .scheduledAt(turn.getScheduledAt())
+                .motive(turn.getMotive())
                 .status(turn.getStatus())
                 .needsPatientRating(needsPatientRating)
                 .needsDoctorRating(needsDoctorRating)

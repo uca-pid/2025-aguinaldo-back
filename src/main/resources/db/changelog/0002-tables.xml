@@ -87,6 +87,9 @@
             <column name="scheduled_at" type="timestamptz">
                 <constraints nullable="false"/>
             </column>
+            <column name="motive" type="text">
+                <constraints nullable="true"/>
+            </column>
             <column name="status" type="text" defaultValue="SCHEDULED">
                 <constraints nullable="false"/>
             </column>
