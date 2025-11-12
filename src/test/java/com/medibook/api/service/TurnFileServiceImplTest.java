@@ -39,6 +39,9 @@ class TurnFileServiceImplTest {
     private NotificationService notificationService;
 
     @Mock
+    private PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
+
+    @Mock
     private MultipartFile file;
 
     @InjectMocks

@@ -59,6 +59,9 @@ class TurnAssignedServiceTest {
     @Mock
     private com.medibook.api.service.BadgeEvaluationTriggerService badgeEvaluationTrigger;
 
+    @Mock
+    private com.medibook.api.service.PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
+
     @InjectMocks
     private TurnAssignedService turnAssignedService;
 

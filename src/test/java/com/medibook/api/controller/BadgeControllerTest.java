@@ -143,7 +143,7 @@ class BadgeControllerTest {
 
     @Test
     void getMyBadgeProgress_AsDoctor_Success() throws Exception {
-        mockMvc.perform(get("/api/badges/my-progress")
+        mockMvc.perform(get("/api/badges/doctor/my-progress")
                 .header("Authorization", "Bearer " + doctorToken)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -152,10 +152,11 @@ class BadgeControllerTest {
 
     @Test
     void getMyBadgeProgress_AsPatient_Forbidden() throws Exception {
-        mockMvc.perform(get("/api/badges/my-progress")
+        mockMvc.perform(get("/api/badges/patient/my-progress")
                 .header("Authorization", "Bearer " + patientToken)
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test
@@ -192,7 +193,7 @@ class BadgeControllerTest {
 
     @Test
     void evaluateMyBadges_AsDoctor_Success() throws Exception {
-        mockMvc.perform(post("/api/badges/evaluate")
+        mockMvc.perform(post("/api/badges/doctor/evaluate")
                 .header("Authorization", "Bearer " + doctorToken)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -200,10 +201,10 @@ class BadgeControllerTest {
 
     @Test
     void evaluateMyBadges_AsPatient_Forbidden() throws Exception {
-        mockMvc.perform(post("/api/badges/evaluate")
+        mockMvc.perform(post("/api/badges/patient/evaluate")
                 .header("Authorization", "Bearer " + patientToken)
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     private User createTestPatient() {
