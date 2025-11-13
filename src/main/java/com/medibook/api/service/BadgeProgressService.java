@@ -26,7 +26,6 @@ public class BadgeProgressService {
 
     @Transactional(readOnly = true)
     public List<BadgeProgressSummaryDTO> getBadgeProgress(UUID doctorId) {
-        log.info("Fetching badge progress for doctor: {}", doctorId);
 
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -153,7 +152,6 @@ public class BadgeProgressService {
                 "Disponibilidad en 4+ días/semana por 60+ días consecutivos"
         ));
 
-        log.info("Badge progress fetched successfully for doctor: {}", doctorId);
         return progressList;
     }
 

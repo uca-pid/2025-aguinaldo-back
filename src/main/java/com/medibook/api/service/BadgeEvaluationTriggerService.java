@@ -18,98 +18,132 @@ public class BadgeEvaluationTriggerService {
     private final DoctorBadgeStatisticsUpdateService statisticsUpdateService;
     private final UserRepository userRepository;
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterRating(UUID doctorId, Integer communicationScore, Integer empathyScore, Integer punctualityScore) {
         try {
-            validateDoctorRole(doctorId);            
-            log.info("Updating statistics and triggering rating-related badge evaluation for doctor {}", doctorId);
-            statisticsUpdateService.updateAfterRatingAdded(doctorId, communicationScore, empathyScore, punctualityScore);
-            statisticsUpdateService.updateProgressAfterRating(doctorId);            
+            validateDoctorRole(doctorId);
+            
+            statisticsUpdateService.updateAfterRatingAddedSync(doctorId, communicationScore, empathyScore, punctualityScore);
+            statisticsUpdateService.updateProgressAfterRatingSync(doctorId);
+            
             badgeService.evaluateRatingRelatedBadges(doctorId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid doctor role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating rating-related badges for doctor {} after rating: {}", doctorId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating rating-related badges for doctor {} after rating: {}", doctorId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterTurnCompletion(UUID doctorId, UUID patientId) {
         try {
-            validateDoctorRole(doctorId);            
-            log.info("Updating statistics and triggering turn completion badge evaluation for doctor {}", doctorId);
-            statisticsUpdateService.updateAfterTurnCompleted(doctorId, patientId);
-            statisticsUpdateService.updateProgressAfterTurnCompletion(doctorId);
+            validateDoctorRole(doctorId);
+            
+            statisticsUpdateService.updateAfterTurnCompletedSync(doctorId, patientId);
+            statisticsUpdateService.updateProgressAfterTurnCompletionSync(doctorId);
+            
             badgeService.evaluateTurnCompletionRelatedBadges(doctorId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid doctor role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating turn completion badges for doctor {} after turn completion: {}", doctorId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating turn completion badges for doctor {} after turn completion: {}", doctorId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterMedicalHistoryDocumented(UUID doctorId, String content) {
         try {
-            validateDoctorRole(doctorId);            
-            log.info("Updating statistics and triggering documentation-related badge evaluation for doctor {}", doctorId);            
-            statisticsUpdateService.updateAfterMedicalHistoryDocumented(doctorId, content);            
-            statisticsUpdateService.updateProgressAfterMedicalHistory(doctorId);            
+            validateDoctorRole(doctorId);
+            
+            statisticsUpdateService.updateAfterMedicalHistoryDocumentedSync(doctorId, content);
+            statisticsUpdateService.updateProgressAfterMedicalHistorySync(doctorId);
+            
             badgeService.evaluateDocumentationRelatedBadges(doctorId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid doctor role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating documentation badges for doctor {} after medical history: {}", doctorId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating documentation badges for doctor {} after medical history: {}", doctorId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterModifyRequestHandled(UUID doctorId) {
         try {
-            validateDoctorRole(doctorId);            
-            log.info("Updating statistics and triggering response-related badge evaluation for doctor {}", doctorId);            
-            statisticsUpdateService.updateAfterModifyRequestHandled(doctorId);            
-            statisticsUpdateService.updateProgressAfterModifyRequest(doctorId);            
+            validateDoctorRole(doctorId);
+            
+            statisticsUpdateService.updateAfterModifyRequestHandledSync(doctorId);
+            statisticsUpdateService.updateProgressAfterModifyRequestSync(doctorId);
+            
             badgeService.evaluateResponseRelatedBadges(doctorId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid doctor role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating response badges for doctor {} after modify request: {}", doctorId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating response badges for doctor {} after modify request: {}", doctorId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterTurnCancellation(UUID doctorId) {
         try {
-            validateDoctorRole(doctorId);            
-            log.info("Updating statistics and triggering consistency-related badge evaluation for doctor {}", doctorId);            
-            statisticsUpdateService.updateAfterTurnCancelled(doctorId);            
-            statisticsUpdateService.updateProgressAfterCancellation(doctorId);            
+            validateDoctorRole(doctorId);
+            
+            statisticsUpdateService.updateAfterTurnCancelledSync(doctorId);
+            statisticsUpdateService.updateProgressAfterCancellationSync(doctorId);
+            
             badgeService.evaluateConsistencyRelatedBadges(doctorId);
 
         } catch (IllegalArgumentException e) {
-            log.error("Invalid doctor role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating consistency badges for doctor {} after cancellation: {}", doctorId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating consistency badges for doctor {} after cancellation: {}", doctorId, e.getMessage(), e);
         }
     }
 
-    @Async
+    @Async("badgeEvaluationTaskExecutor")
+    public void evaluateAfterTurnNoShow(UUID doctorId) {
+        try {
+            validateDoctorRole(doctorId);
+            
+            statisticsUpdateService.updateAfterTurnNoShowSync(doctorId);
+            statisticsUpdateService.updateProgressAfterCancellationSync(doctorId);
+            
+            badgeService.evaluateConsistencyRelatedBadges(doctorId);
+
+        } catch (IllegalArgumentException e) {
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("[TRIGGER] Unexpected error evaluating consistency badges for doctor {} after no-show: {}", doctorId, e.getMessage(), e);
+        }
+    }
+
+    @Async("badgeEvaluationTaskExecutor")
+    public void evaluateAfterAvailabilityConfigured(UUID doctorId) {
+        try {
+            validateDoctorRole(doctorId);
+            badgeService.evaluateAlwaysAvailableBadge(doctorId);
+
+        } catch (IllegalArgumentException e) {
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("[TRIGGER] Unexpected error evaluating ALWAYS_AVAILABLE badge for doctor {} after availability configuration: {}", doctorId, e.getMessage(), e);
+        }
+    }
+
+    @Async("badgeEvaluationTaskExecutor")
     public void evaluateAllBadges(UUID doctorId) {
         try {
             validateDoctorRole(doctorId);            
-            log.info("Triggering FULL badge evaluation for doctor {} (all badges)", doctorId);            
             statisticsUpdateService.updateAllBadgeProgress(doctorId);
             badgeService.evaluateAllBadges(doctorId);
             
         } catch (IllegalArgumentException e) {
-            log.error("Invalid doctor role for badge evaluation: {}", e.getMessage());
+            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Error evaluating all badges for doctor {}: {}", doctorId, e.getMessage());
+            log.error("[TRIGGER] Unexpected error evaluating all badges for doctor {}: {}", doctorId, e.getMessage(), e);
         }
     }
     

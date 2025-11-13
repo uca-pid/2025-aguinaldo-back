@@ -54,9 +54,8 @@ public class DoctorBadgeStatisticsUpdateService {
     private final RatingRepository ratingRepository;
     private final DoctorBadgeRepository badgeRepository;
     
-    @Async
     @Transactional
-    public void updateAfterRatingAdded(UUID doctorId, Integer communicationScore, Integer empathyScore, Integer punctualityScore) {
+    public void updateAfterRatingAddedSync(UUID doctorId, Integer communicationScore, Integer empathyScore, Integer punctualityScore) {
         try {
             ensureStatisticsExist(doctorId);
             
@@ -71,42 +70,46 @@ public class DoctorBadgeStatisticsUpdateService {
                 recalculateLast50Ratings(doctorId);
             }
             
-            log.debug("Updated rating statistics for doctor {}", doctorId);
         } catch (Exception e) {
             log.error("Error updating rating statistics for doctor {}", doctorId, e);
         }
     }
     
-    @Async
     @Transactional
-    public void updateAfterTurnCompleted(UUID doctorId, UUID patientId) {
+    public void updateAfterTurnCompletedSync(UUID doctorId, UUID patientId) {
         try {
             ensureStatisticsExist(doctorId);
             statisticsRepository.incrementTurnCompleted(doctorId);
             
             updatePatientRelationshipStats(doctorId, patientId);
             
-            log.debug("Updated turn completion statistics for doctor {}", doctorId);
         } catch (Exception e) {
             log.error("Error updating turn completion statistics for doctor {}", doctorId, e);
         }
     }
     
-    @Async
     @Transactional
-    public void updateAfterTurnCancelled(UUID doctorId) {
+    public void updateAfterTurnCancelledSync(UUID doctorId) {
         try {
             ensureStatisticsExist(doctorId);
             statisticsRepository.incrementTurnCancelled(doctorId);
-            log.debug("Updated cancellation statistics for doctor {}", doctorId);
         } catch (Exception e) {
             log.error("Error updating cancellation statistics for doctor {}", doctorId, e);
         }
     }
-    
-    @Async
+
     @Transactional
-    public void updateAfterMedicalHistoryDocumented(UUID doctorId, String content) {
+    public void updateAfterTurnNoShowSync(UUID doctorId) {
+        try {
+            ensureStatisticsExist(doctorId);
+            statisticsRepository.incrementTurnNoShow(doctorId);
+        } catch (Exception e) {
+            log.error("Error updating no-show statistics for doctor {}", doctorId, e);
+        }
+    }
+    
+    @Transactional
+    public void updateAfterMedicalHistoryDocumentedSync(UUID doctorId, String content) {
         try {
             ensureStatisticsExist(doctorId);
             statisticsRepository.incrementDocumentation(doctorId);
@@ -114,19 +117,16 @@ public class DoctorBadgeStatisticsUpdateService {
             int wordCount = content != null ? content.split("\\s+").length : 0;
             updateWordCountStatistics(doctorId, wordCount);
             
-            log.debug("Updated documentation statistics for doctor {}", doctorId);
         } catch (Exception e) {
             log.error("Error updating documentation statistics for doctor {}", doctorId, e);
         }
     }
     
-    @Async
     @Transactional
-    public void updateAfterModifyRequestHandled(UUID doctorId) {
+    public void updateAfterModifyRequestHandledSync(UUID doctorId) {
         try {
             ensureStatisticsExist(doctorId);
             statisticsRepository.incrementRequestHandled(doctorId);
-            log.debug("Updated request handling statistics for doctor {}", doctorId);
         } catch (Exception e) {
             log.error("Error updating request handling statistics for doctor {}", doctorId, e);
         }
@@ -212,12 +212,8 @@ public class DoctorBadgeStatisticsUpdateService {
             
             if (previousTurns == 1) {
                 stats.setTotalUniquePatients(stats.getTotalUniquePatients() + 1);
-                log.debug("New unique patient for doctor {}: total now {}", 
-                         doctorId, stats.getTotalUniquePatients());
             } else if (previousTurns == 2) {
                 stats.setReturningPatientsCount(stats.getReturningPatientsCount() + 1);
-                log.debug("Returning patient for doctor {}: total now {}", 
-                         doctorId, stats.getReturningPatientsCount());
             }
             
             statisticsRepository.save(stats);
@@ -262,7 +258,7 @@ public class DoctorBadgeStatisticsUpdateService {
     }
     
     @Transactional
-    public void updateProgressAfterRating(UUID doctorId) {
+    public void updateProgressAfterRatingSync(UUID doctorId) {
         DoctorBadgeStatistics stats = statisticsRepository.findByDoctorId(doctorId).orElse(null);
         if (stats == null) return;
         
@@ -279,7 +275,7 @@ public class DoctorBadgeStatisticsUpdateService {
     }
     
     @Transactional
-    public void updateProgressAfterTurnCompletion(UUID doctorId) {
+    public void updateProgressAfterTurnCompletionSync(UUID doctorId) {
         DoctorBadgeStatistics stats = statisticsRepository.findByDoctorId(doctorId).orElse(null);
         if (stats == null) return;
         
@@ -293,7 +289,7 @@ public class DoctorBadgeStatisticsUpdateService {
     }
 
     @Transactional
-    public void updateProgressAfterMedicalHistory(UUID doctorId) {
+    public void updateProgressAfterMedicalHistorySync(UUID doctorId) {
         DoctorBadgeStatistics stats = statisticsRepository.findByDoctorId(doctorId).orElse(null);
         if (stats == null) return;
         
@@ -307,7 +303,7 @@ public class DoctorBadgeStatisticsUpdateService {
     }
     
     @Transactional
-    public void updateProgressAfterModifyRequest(UUID doctorId) {
+    public void updateProgressAfterModifyRequestSync(UUID doctorId) {
         DoctorBadgeStatistics stats = statisticsRepository.findByDoctorId(doctorId).orElse(null);
         if (stats == null) return;
         
@@ -319,7 +315,7 @@ public class DoctorBadgeStatisticsUpdateService {
     }
     
     @Transactional
-    public void updateProgressAfterCancellation(UUID doctorId) {
+    public void updateProgressAfterCancellationSync(UUID doctorId) {
         DoctorBadgeStatistics stats = statisticsRepository.findByDoctorId(doctorId).orElse(null);
         if (stats == null) return;
         

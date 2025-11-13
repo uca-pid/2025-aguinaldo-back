@@ -88,7 +88,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterRatingAdded_ValidScores_UpdatesCommunicationEmpathyPunctuality() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 3);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 3);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, true, true, false);
         verify(statisticsRepository, times(2)).findByDoctorId(doctorId);
@@ -98,7 +98,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterRatingAdded_NullScores_DoesNotUpdateCounters() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterRatingAdded(doctorId, null, null, null);
+        updateService.updateAfterRatingAddedSync(doctorId, null, null, null);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, false, false, false);
         verify(statisticsRepository, times(2)).findByDoctorId(doctorId);
@@ -108,7 +108,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterRatingAdded_LowScores_DoesNotIncrementCounters() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterRatingAdded(doctorId, 2, 3, 1);
+        updateService.updateAfterRatingAddedSync(doctorId, 2, 3, 1);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, false, false, false);
         verify(statisticsRepository, times(2)).findByDoctorId(doctorId);
@@ -119,7 +119,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 4);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 4);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, true, true, true);
         verify(statisticsRepository, times(2)).findByDoctorId(doctorId);
@@ -154,7 +154,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
                 .thenReturn(Optional.of(stats))
                 .thenReturn(Optional.of(statsAfterIncrement));
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 4);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 4);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, true, true, true);
     }
@@ -165,7 +165,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(turnAssignedRepository.countByDoctorIdAndPatientIdAndStatus(doctorId, patientId, "COMPLETED"))
                 .thenReturn(1L);
 
-        updateService.updateAfterTurnCompleted(doctorId, patientId);
+        updateService.updateAfterTurnCompletedSync(doctorId, patientId);
 
         verify(statisticsRepository).incrementTurnCompleted(doctorId);
         verify(turnAssignedRepository).countByDoctorIdAndPatientIdAndStatus(doctorId, patientId, "COMPLETED");
@@ -184,7 +184,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(turnAssignedRepository.countByDoctorIdAndPatientIdAndStatus(doctorId, patientId, "COMPLETED"))
                 .thenReturn(2L);
 
-        updateService.updateAfterTurnCompleted(doctorId, patientId);
+        updateService.updateAfterTurnCompletedSync(doctorId, patientId);
 
         verify(statisticsRepository).incrementTurnCompleted(doctorId);
         verify(turnAssignedRepository).countByDoctorIdAndPatientIdAndStatus(doctorId, patientId, "COMPLETED");
@@ -201,7 +201,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterTurnCancelled_IncrementsCancellationCount() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterTurnCancelled(doctorId);
+        updateService.updateAfterTurnCancelledSync(doctorId);
 
         verify(statisticsRepository).incrementTurnCancelled(doctorId);
     }
@@ -233,7 +233,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
                 .thenReturn(Optional.of(stats))
                 .thenReturn(Optional.of(statsAfterIncrement));
 
-        updateService.updateAfterMedicalHistoryDocumented(doctorId, content);
+        updateService.updateAfterMedicalHistoryDocumentedSync(doctorId, content);
 
         verify(statisticsRepository).incrementDocumentation(doctorId);
 
@@ -249,7 +249,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterMedicalHistoryDocumented_NullContent_HandlesGracefully() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterMedicalHistoryDocumented(doctorId, null);
+        updateService.updateAfterMedicalHistoryDocumentedSync(doctorId, null);
 
         verify(statisticsRepository).incrementDocumentation(doctorId);
 
@@ -264,7 +264,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterModifyRequestHandled_IncrementsRequestCount() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterModifyRequestHandled(doctorId);
+        updateService.updateAfterModifyRequestHandledSync(doctorId);
 
         verify(statisticsRepository).incrementRequestHandled(doctorId);
     }
@@ -275,7 +275,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId))
                 .thenReturn(Arrays.asList());
 
-        updateService.updateProgressAfterRating(doctorId);
+        updateService.updateProgressAfterRatingSync(doctorId);
 
         ArgumentCaptor<DoctorBadgeStatistics> captor = ArgumentCaptor.forClass(DoctorBadgeStatistics.class);
         verify(statisticsRepository).save(captor.capture());
@@ -293,7 +293,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId))
                 .thenReturn(Arrays.asList());
 
-        updateService.updateProgressAfterTurnCompletion(doctorId);
+        updateService.updateProgressAfterTurnCompletionSync(doctorId);
 
         ArgumentCaptor<DoctorBadgeStatistics> captor = ArgumentCaptor.forClass(DoctorBadgeStatistics.class);
         verify(statisticsRepository).save(captor.capture());
@@ -310,7 +310,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId))
                 .thenReturn(Arrays.asList());
 
-        updateService.updateProgressAfterMedicalHistory(doctorId);
+        updateService.updateProgressAfterMedicalHistorySync(doctorId);
 
         ArgumentCaptor<DoctorBadgeStatistics> captor = ArgumentCaptor.forClass(DoctorBadgeStatistics.class);
         verify(statisticsRepository).save(captor.capture());
@@ -327,7 +327,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId))
                 .thenReturn(Arrays.asList());
 
-        updateService.updateProgressAfterModifyRequest(doctorId);
+        updateService.updateProgressAfterModifyRequestSync(doctorId);
 
         ArgumentCaptor<DoctorBadgeStatistics> captor = ArgumentCaptor.forClass(DoctorBadgeStatistics.class);
         verify(statisticsRepository).save(captor.capture());
@@ -342,7 +342,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId))
                 .thenReturn(Arrays.asList());
 
-        updateService.updateProgressAfterCancellation(doctorId);
+        updateService.updateProgressAfterCancellationSync(doctorId);
 
         ArgumentCaptor<DoctorBadgeStatistics> captor = ArgumentCaptor.forClass(DoctorBadgeStatistics.class);
         verify(statisticsRepository).save(captor.capture());
@@ -395,7 +395,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
         when(userRepository.findById(doctorId)).thenReturn(Optional.empty());
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 4);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 4);
 
         verify(statisticsRepository).findByDoctorId(doctorId);
         verify(userRepository).findById(doctorId);
@@ -408,7 +408,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         doThrow(new RuntimeException("Database error")).when(statisticsRepository)
             .incrementRatingCounters(any(), anyBoolean(), anyBoolean(), anyBoolean());
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 4);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 4);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, true, true, true);
     }
@@ -418,7 +418,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
         doThrow(new RuntimeException("Database error")).when(statisticsRepository).incrementTurnCompleted(doctorId);
 
-        updateService.updateAfterTurnCompleted(doctorId, patientId);
+        updateService.updateAfterTurnCompletedSync(doctorId, patientId);
 
         verify(statisticsRepository).incrementTurnCompleted(doctorId);
     }
@@ -428,7 +428,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
         doThrow(new RuntimeException("Database error")).when(statisticsRepository).incrementTurnCancelled(doctorId);
 
-        updateService.updateAfterTurnCancelled(doctorId);
+        updateService.updateAfterTurnCancelledSync(doctorId);
 
         verify(statisticsRepository).incrementTurnCancelled(doctorId);
     }
@@ -438,7 +438,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
         doThrow(new RuntimeException("Database error")).when(statisticsRepository).incrementDocumentation(doctorId);
 
-        updateService.updateAfterMedicalHistoryDocumented(doctorId, "Test content");
+        updateService.updateAfterMedicalHistoryDocumentedSync(doctorId, "Test content");
 
         verify(statisticsRepository).incrementDocumentation(doctorId);
     }
@@ -448,7 +448,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
         doThrow(new RuntimeException("Database error")).when(statisticsRepository).incrementRequestHandled(doctorId);
 
-        updateService.updateAfterModifyRequestHandled(doctorId);
+        updateService.updateAfterModifyRequestHandledSync(doctorId);
 
         verify(statisticsRepository).incrementRequestHandled(doctorId);
     }
@@ -578,7 +578,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateProgressAfterRating_NoStatsFound_DoesNothing() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
 
-        updateService.updateProgressAfterRating(doctorId);
+        updateService.updateProgressAfterRatingSync(doctorId);
 
         verify(statisticsRepository).findByDoctorId(doctorId);
         verifyNoMoreInteractions(statisticsRepository);
@@ -589,7 +589,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateProgressAfterTurnCompletion_NoStatsFound_DoesNothing() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
 
-        updateService.updateProgressAfterTurnCompletion(doctorId);
+        updateService.updateProgressAfterTurnCompletionSync(doctorId);
 
         verify(statisticsRepository).findByDoctorId(doctorId);
         verifyNoMoreInteractions(statisticsRepository);
@@ -600,7 +600,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateProgressAfterMedicalHistory_NoStatsFound_DoesNothing() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
 
-        updateService.updateProgressAfterMedicalHistory(doctorId);
+        updateService.updateProgressAfterMedicalHistorySync(doctorId);
 
         verify(statisticsRepository).findByDoctorId(doctorId);
         verifyNoMoreInteractions(statisticsRepository);
@@ -611,7 +611,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateProgressAfterModifyRequest_NoStatsFound_DoesNothing() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
 
-        updateService.updateProgressAfterModifyRequest(doctorId);
+        updateService.updateProgressAfterModifyRequestSync(doctorId);
 
         verify(statisticsRepository).findByDoctorId(doctorId);
         verifyNoMoreInteractions(statisticsRepository);
@@ -622,7 +622,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateProgressAfterCancellation_NoStatsFound_DoesNothing() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.empty());
 
-        updateService.updateProgressAfterCancellation(doctorId);
+        updateService.updateProgressAfterCancellationSync(doctorId);
 
         verify(statisticsRepository).findByDoctorId(doctorId);
         verifyNoMoreInteractions(statisticsRepository);
@@ -1008,7 +1008,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
                 .thenReturn(Optional.of(stats))
                 .thenReturn(Optional.of(statsAfterIncrement));
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 4);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 4);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, true, true, true);
         verify(ratingRepository).findTop50ByRatedIdOrderByCreatedAtDesc(doctorId);
@@ -1049,7 +1049,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
                 .thenReturn(Optional.of(stats))
                 .thenReturn(Optional.of(statsAfterIncrement));
 
-        updateService.updateAfterRatingAdded(doctorId, 4, 5, 4);
+        updateService.updateAfterRatingAddedSync(doctorId, 4, 5, 4);
 
         verify(statisticsRepository).incrementRatingCounters(doctorId, true, true, true);
         verify(ratingRepository).findTop50ByRatedIdOrderByCreatedAtDesc(doctorId);
@@ -1063,7 +1063,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
 
         doThrow(new RuntimeException("Database error")).when(statisticsRepository).save(any());
 
-        updateService.updateAfterTurnCompleted(doctorId, patientId);
+        updateService.updateAfterTurnCompletedSync(doctorId, patientId);
 
         verify(statisticsRepository).incrementTurnCompleted(doctorId);
         verify(turnAssignedRepository).countByDoctorIdAndPatientIdAndStatus(doctorId, patientId, "COMPLETED");
@@ -1073,7 +1073,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
     void updateAfterMedicalHistoryDocumented_EmptyContent_UpdatesWithZeroWords() {
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterMedicalHistoryDocumented(doctorId, null);
+        updateService.updateAfterMedicalHistoryDocumentedSync(doctorId, null);
 
         verify(statisticsRepository).incrementDocumentation(doctorId);
 
@@ -1092,7 +1092,7 @@ class DoctorBadgeStatisticsUpdateServiceTest {
 
         when(statisticsRepository.findByDoctorId(doctorId)).thenReturn(Optional.of(stats));
 
-        updateService.updateAfterMedicalHistoryDocumented(doctorId, longContent);
+        updateService.updateAfterMedicalHistoryDocumentedSync(doctorId, longContent);
 
         verify(statisticsRepository).incrementDocumentation(doctorId);
 
