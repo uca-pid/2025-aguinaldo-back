@@ -71,7 +71,8 @@ public class TurnAssignedService {
         TurnAssigned turn = TurnAssigned.builder()
                 .doctor(doctor)
                 .patient(patient)
-                .scheduledAt(dto.getScheduledAt())
+            .scheduledAt(dto.getScheduledAt())
+            .motive(dto.getMotive())
                 .status("SCHEDULED")
                 .build();
 

@@ -376,4 +376,18 @@ class TurnAssignedRepositoryTest {
             turnAssignedRepository.saveAndFlush(turn);
         });
     }
+
+    @Test
+    void saveTurnWithMotive_Success() {
+        TurnAssigned turn = createTurnAssigned(doctorUser, patientUser,
+            OffsetDateTime.now().plusDays(7), "SCHEDULED");
+        turn.setMotive("Consulta por dolor de cabeza");
+
+        TurnAssigned saved = turnAssignedRepository.saveAndFlush(turn);
+        entityManager.clear();
+
+        TurnAssigned found = turnAssignedRepository.findById(saved.getId()).orElse(null);
+        assertNotNull(found);
+        assertEquals("Consulta por dolor de cabeza", found.getMotive());
+    }
 }
