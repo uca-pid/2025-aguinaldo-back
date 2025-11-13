@@ -277,6 +277,8 @@ public class PatientBadgeStatisticsUpdateService {
                     .last10TurnsFilesUploadedCount(0)
                     .totalRatingsGiven(0)
                     .totalRatingsReceived(0)
+                    .avgRatingGiven(0.0)
+                    .avgRatingReceived(0.0)
                     .totalUniqueDoctors(0)
                     .turnsWithSameDoctorLast12Months(0)
                     .differentSpecialtiesLast12Months(0)

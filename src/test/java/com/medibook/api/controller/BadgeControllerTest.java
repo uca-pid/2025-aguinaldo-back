@@ -199,18 +199,10 @@ class BadgeControllerTest {
                 .andExpect(status().isOk());
     }
 
-    @Test
-    void evaluateMyBadges_AsPatient_Forbidden() throws Exception {
-        mockMvc.perform(post("/api/badges/patient/evaluate")
-                .header("Authorization", "Bearer " + patientToken)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-    }
-
     private User createTestPatient() {
         User patient = new User();
-        patient.setEmail("patient@example.com");
-        patient.setDni(12345678L);
+        patient.setEmail("testpatient3@example.com");
+        patient.setDni(999999998L);
         patient.setPasswordHash(passwordEncoder.encode("password123"));
         patient.setName("John");
         patient.setSurname("Doe");

@@ -314,8 +314,8 @@ class PatientBadgeServiceTest {
         assertEquals(0, result.getLast10TurnsFilesUploadedCount());
         assertEquals(0, result.getTotalRatingsGiven());
         assertEquals(0, result.getTotalRatingsReceived());
-        assertNull(result.getAvgRatingGiven());
-        assertNull(result.getAvgRatingReceived());
+        assertEquals(0.0, result.getAvgRatingGiven());
+        assertEquals(0.0, result.getAvgRatingReceived());
         assertEquals(0, result.getTotalUniqueDoctors());
         assertEquals(0, result.getTurnsWithSameDoctorLast12Months());
         assertEquals(0, result.getDifferentSpecialtiesLast12Months());
