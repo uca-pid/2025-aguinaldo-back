@@ -3,8 +3,6 @@ package com.medibook.api.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.medibook.api.dto.Badge.BadgeProgressSummaryDTO;
 import com.medibook.api.entity.Badge;
-import com.medibook.api.entity.BadgeType;
-import com.medibook.api.entity.BadgeType.BadgeCategory;
 import com.medibook.api.entity.BadgeStatistics;
 import com.medibook.api.entity.User;
 import com.medibook.api.repository.BadgeRepository;

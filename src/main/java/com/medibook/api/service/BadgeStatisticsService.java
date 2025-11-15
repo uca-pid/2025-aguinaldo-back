@@ -5,27 +5,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.medibook.api.entity.BadgeStatistics;
-import com.medibook.api.entity.User;
 import com.medibook.api.repository.BadgeStatisticsRepository;
-import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused")
 public class BadgeStatisticsService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final BadgeStatisticsRepository statisticsRepository;
-    private final UserRepository userRepository;
 
     @Async
     @Transactional

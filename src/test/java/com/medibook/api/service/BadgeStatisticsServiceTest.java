@@ -1,7 +1,6 @@
 package com.medibook.api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.medibook.api.entity.BadgeStatistics;
 import com.medibook.api.entity.User;
 import com.medibook.api.repository.BadgeStatisticsRepository;
