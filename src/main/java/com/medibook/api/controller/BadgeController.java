@@ -3,7 +3,6 @@ package com.medibook.api.controller;
 import com.medibook.api.dto.Badge.BadgeProgressSummaryDTO;
 import com.medibook.api.dto.Badge.BadgesResponseDTO;
 import com.medibook.api.service.BadgeService;
-import com.medibook.api.service.BadgeStatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,6 @@ import java.util.UUID;
 public class BadgeController {
 
     private final BadgeService badgeService;
-    private final BadgeStatisticsService badgeStatisticsService;
 
     @GetMapping("/{userId}")
     @PreAuthorize("isAuthenticated()")

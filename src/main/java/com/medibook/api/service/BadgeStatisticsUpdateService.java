@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused")
 public class BadgeStatisticsUpdateService {
 
     private final BadgeStatisticsRepository statisticsRepository;

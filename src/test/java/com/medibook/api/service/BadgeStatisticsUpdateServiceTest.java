@@ -14,7 +14,6 @@ import com.medibook.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -57,8 +56,6 @@ class BadgeStatisticsUpdateServiceTest {
         user.setId(userId);
         user.setName("Test User");
         user.setRole("PATIENT");
-        Rating rating = new Rating();
-        TurnAssigned turnAssigned = new TurnAssigned();
         objectMapper = new ObjectMapper();
         lenient().when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(user));
         badgeStatisticsUpdateService = new BadgeStatisticsUpdateService(statisticsRepository, userRepository, ratingRepository, turnAssignedRepository);

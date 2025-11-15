@@ -6,7 +6,6 @@ import com.medibook.api.dto.Badge.BadgeDTO;
 import com.medibook.api.entity.BadgeType.BadgeCategory;
 import com.medibook.api.entity.User;
 import com.medibook.api.service.BadgeService;
-import com.medibook.api.service.BadgeStatisticsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,9 +30,7 @@ class BadgeControllerTest {
     @Mock
     private BadgeService badgeService;
 
-    @Mock
-    private BadgeStatisticsService badgeStatisticsService;
-
+    
     @Mock
     private Authentication authentication;
 
@@ -96,11 +93,12 @@ class BadgeControllerTest {
 
         ResponseEntity<BadgesResponseDTO> response = badgeController.getUserBadges(userId);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertNotNull(response.getBody());
-        assertEquals(userId, response.getBody().getUserId());
-        assertEquals("Test User", response.getBody().getUserName());
-        assertEquals(2, response.getBody().getTotalActiveBadges());
+        assertEquals(200, response.getStatusCode().value());
+        BadgesResponseDTO body = response.getBody();
+        assertNotNull(body);
+        assertEquals(userId, body.getUserId());
+        assertEquals("Test User", body.getUserName());
+        assertEquals(2, body.getTotalActiveBadges());
 
         verify(badgeService).getUserBadges(userId);
     }
@@ -112,9 +110,10 @@ class BadgeControllerTest {
 
         ResponseEntity<BadgesResponseDTO> response = badgeController.getMyBadges(authentication);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertNotNull(response.getBody());
-        assertEquals(userId, response.getBody().getUserId());
+        assertEquals(200, response.getStatusCode().value());
+        BadgesResponseDTO body2 = response.getBody();
+        assertNotNull(body2);
+        assertEquals(userId, body2.getUserId());
 
         verify(authentication).getPrincipal();
         verify(badgeService).getUserBadges(userId);
@@ -126,10 +125,11 @@ class BadgeControllerTest {
 
         ResponseEntity<List<BadgeProgressSummaryDTO>> response = badgeController.getUserBadgeProgress(userId);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertNotNull(response.getBody());
-        assertFalse(response.getBody().isEmpty());
-        assertEquals("PATIENT_MEDIBOOK_WELCOME", response.getBody().get(0).getBadgeType());
+        assertEquals(200, response.getStatusCode().value());
+        List<BadgeProgressSummaryDTO> bodyList = response.getBody();
+        assertNotNull(bodyList);
+        assertFalse(bodyList.isEmpty());
+        assertEquals("PATIENT_MEDIBOOK_WELCOME", bodyList.get(0).getBadgeType());
 
         verify(badgeService).getUserBadgeProgress(userId);
     }
@@ -141,9 +141,10 @@ class BadgeControllerTest {
 
         ResponseEntity<List<BadgeProgressSummaryDTO>> response = badgeController.getMyBadgeProgress(authentication);
 
-        assertEquals(200, response.getStatusCodeValue());
-        assertNotNull(response.getBody());
-        assertFalse(response.getBody().isEmpty());
+        assertEquals(200, response.getStatusCode().value());
+        List<BadgeProgressSummaryDTO> bodyList2 = response.getBody();
+        assertNotNull(bodyList2);
+        assertFalse(bodyList2.isEmpty());
 
         verify(authentication).getPrincipal();
         verify(badgeService).getUserBadgeProgress(userId);
@@ -155,7 +156,7 @@ class BadgeControllerTest {
 
         ResponseEntity<Void> response = badgeController.evaluateUserBadges(userId);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         assertNull(response.getBody());
 
         verify(badgeService).evaluateAllBadges(userId);
@@ -168,7 +169,7 @@ class BadgeControllerTest {
 
         ResponseEntity<Void> response = badgeController.evaluateMyBadges(authentication);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         assertNull(response.getBody());
 
         verify(authentication).getPrincipal();

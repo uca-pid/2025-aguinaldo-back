@@ -37,6 +37,7 @@ public class TurnAssignedService {
     private final EmailService emailService;
     private final TurnFileService turnFileService;
     private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
+    private final MedicalCheckApiService medicalCheckApiService;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
@@ -338,6 +339,18 @@ public class TurnAssignedService {
 
         turn.setStatus("COMPLETED");
         TurnAssigned saved = turnRepo.save(turn);
+
+        // Check if this is a health certificate turn and process external API call
+        if ("HEALTH CERTIFICATE".equalsIgnoreCase(turn.getMotive()) && turn.getPatient() != null) {
+            try {
+                String patientEmail = turn.getPatient().getEmail();
+                log.info("Processing health certificate completion for patient: {}", patientEmail);
+                medicalCheckApiService.processMedicalCheckCompletion(patientEmail);
+            } catch (Exception e) {
+                log.error("Error processing medical check API call for turn: {}", turnId, e);
+                // Don't fail the turn completion if external API fails
+            }
+        }
 
         if (turn.getDoctor() != null && turn.getPatient() != null) {
             badgeEvaluationTrigger.evaluateAfterTurnCompletion(
