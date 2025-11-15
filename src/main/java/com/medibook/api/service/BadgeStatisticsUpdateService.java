@@ -139,6 +139,11 @@ public class BadgeStatisticsUpdateService {
         updateAfterTurnCompletedSync(userId);
 
         try {
+            User user = userRepository.findById(userId).orElseThrow();
+            if (!"DOCTOR".equals(user.getRole())) {
+                return; // Only doctors have unique patients served
+            }
+
             ensureStatisticsExist(userId);
             BadgeStatistics stats = statisticsRepository.findByUserId(userId).orElseThrow();
 
@@ -629,13 +634,11 @@ public class BadgeStatisticsUpdateService {
     }
 
     private void ensureStatisticsExist(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         if (statisticsRepository.findByUserId(userId).isEmpty()) {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-
             try {
                 BadgeStatistics stats = BadgeStatistics.builder()
-                        .user(user)
+                        .userId(userId)
                         .statistics(objectMapper.readTree("{}"))
                         .progress(objectMapper.readTree("{}"))
                         .build();
@@ -644,6 +647,7 @@ public class BadgeStatisticsUpdateService {
                 log.info("Created new statistics record for user {}", userId);
             } catch (JsonProcessingException e) {
                 log.error("Error creating statistics for user {}: {}", userId, e.getMessage());
+                throw new RuntimeException("Failed to create statistics for user " + userId, e);
             }
         }
     }

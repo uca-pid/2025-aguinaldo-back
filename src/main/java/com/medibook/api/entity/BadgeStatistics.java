@@ -21,11 +21,6 @@ public class BadgeStatistics {
     @Column(name = "user_id")
     private UUID userId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "user_id")
-    private User user;
-
     @Type(JsonBinaryType.class)
     @Column(name = "statistics", columnDefinition = "jsonb", nullable = false)
     private JsonNode statistics;
@@ -36,6 +31,10 @@ public class BadgeStatistics {
 
     @Column(name = "last_updated_at", nullable = false)
     private OffsetDateTime lastUpdatedAt;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     @PrePersist
     @PreUpdate

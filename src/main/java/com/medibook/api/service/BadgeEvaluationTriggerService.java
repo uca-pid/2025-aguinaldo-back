@@ -4,6 +4,7 @@ import com.medibook.api.entity.User;
 import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -159,34 +160,72 @@ public class BadgeEvaluationTriggerService {
 
     @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterRatingGiven(UUID userId) {
-        try {
-            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-            
-            if (!"PATIENT".equals(user.getRole())) {
-                log.warn("Attempted badge evaluation for non-patient user: {} (role: {})", userId, user.getRole());
+        int maxRetries = 3;
+        int attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+                
+                if (!"PATIENT".equals(user.getRole())) {
+                    log.warn("Attempted badge evaluation for non-patient user: {} (role: {})", userId, user.getRole());
+                    return;
+                }
+                
+                statisticsUpdateService.updateAfterRatingGivenSync(userId);
+                statisticsUpdateService.updateProgressAfterRatingSync(userId);
+                badgeService.evaluateRatingRelatedBadges(userId);
+                return; // Success, exit
+            } catch (ObjectOptimisticLockingFailureException e) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    log.error("[TRIGGER] Failed to evaluate rating given badges for user {} after {} attempts due to optimistic locking: {}", userId, maxRetries, e.getMessage());
+                } else {
+                    log.warn("[TRIGGER] Optimistic locking failure for user {} on attempt {}, retrying...", userId, attempt);
+                    try {
+                        Thread.sleep(100 * attempt); // Exponential backoff
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        log.error("[TRIGGER] Interrupted while retrying for user {}", userId);
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[TRIGGER] Unexpected error evaluating rating given badges for user {} after rating given: {}", userId, e.getMessage(), e);
                 return;
             }
-            
-            statisticsUpdateService.updateAfterRatingGivenSync(userId);
-            statisticsUpdateService.updateProgressAfterRatingSync(userId);
-            badgeService.evaluateRatingRelatedBadges(userId);
-
-        } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating rating given badges for user {} after rating given: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterRatingReceived(UUID userId) {
-        try {
-            userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-            
-            statisticsUpdateService.updateAfterRatingReceivedSync(userId);
-            statisticsUpdateService.updateProgressAfterRatingSync(userId);
-            badgeService.evaluateRatingRelatedBadges(userId);
-
-        } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating rating received badges for user {} after rating received: {}", userId, e.getMessage(), e);
+        int maxRetries = 3;
+        int attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+                
+                statisticsUpdateService.updateAfterRatingReceivedSync(userId);
+                statisticsUpdateService.updateProgressAfterRatingSync(userId);
+                badgeService.evaluateRatingRelatedBadges(userId);
+                return; // Success, exit
+            } catch (ObjectOptimisticLockingFailureException e) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    log.error("[TRIGGER] Failed to evaluate rating received badges for user {} after {} attempts due to optimistic locking: {}", userId, maxRetries, e.getMessage());
+                } else {
+                    log.warn("[TRIGGER] Optimistic locking failure for user {} on attempt {}, retrying...", userId, attempt);
+                    try {
+                        Thread.sleep(100 * attempt); // Exponential backoff
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        log.error("[TRIGGER] Interrupted while retrying for user {}", userId);
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[TRIGGER] Unexpected error evaluating rating received badges for user {} after rating received: {}", userId, e.getMessage(), e);
+                return;
+            }
         }
     }
 

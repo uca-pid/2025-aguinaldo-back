@@ -60,17 +60,16 @@ public class BadgeStatisticsService {
 
     private BadgeStatistics getOrCreateStatistics(UUID userId) {
         return statisticsRepository.findByUserId(userId).orElseGet(() -> {
-            User user = userRepository.findById(userId).orElseThrow();
             try {
                 BadgeStatistics stats = BadgeStatistics.builder()
-                        .user(user)
+                        .userId(userId)
                         .statistics(objectMapper.readTree("{}"))
                         .progress(objectMapper.readTree("{}"))
                         .build();
                 return statisticsRepository.save(stats);
             } catch (JsonProcessingException e) {
-                log.error("Error creating statistics for user {}", userId, e);
-                return null;
+                log.error("Error creating statistics for user {}: {}", userId, e.getMessage());
+                throw new RuntimeException("Failed to create statistics for user " + userId, e);
             }
         });
     }

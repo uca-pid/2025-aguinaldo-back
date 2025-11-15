@@ -95,7 +95,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterRatingSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -130,7 +130,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterTurnCompletionSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -165,7 +165,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterMedicalHistorySync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -219,7 +219,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterModifyRequestSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -254,7 +254,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAllBadgeProgress(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository, times(2)).findById(userId);
+        verify(userRepository, times(3)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -289,7 +289,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAfterRatingGivenSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -307,7 +307,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAfterFileUploadedSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -342,7 +342,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAfterRatingReceivedSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -361,7 +361,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAfterRatingGivenSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(ratingRepository).findByRaterId(userId);
         verify(statisticsRepository).save(existingStats);
     }
@@ -382,7 +382,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAllBadgeProgress(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository, times(2)).findById(userId);
+        verify(userRepository, times(3)).findById(userId);
         verify(turnAssignedRepository).findByPatient_IdAndStatus(userId, "COMPLETED");
         verify(statisticsRepository).save(existingStats);
     }
@@ -596,8 +596,8 @@ class BadgeStatisticsUpdateServiceTest {
 
         badgeStatisticsUpdateService.updateAfterTurnCompletedSync(userId, patientId);
 
-        verify(statisticsRepository, times(4)).findByUserId(userId); 
-        verify(statisticsRepository, times(2)).save(existingStats);
+        verify(statisticsRepository, times(2)).findByUserId(userId); 
+        verify(statisticsRepository, times(1)).save(existingStats);
     }
 
     @Test
@@ -629,7 +629,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateAllBadgeProgress(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository, times(2)).findById(userId);
+        verify(userRepository, times(3)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -838,7 +838,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterRatingSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -866,7 +866,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterRatingSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -894,7 +894,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterRatingSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -918,7 +918,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterTurnCompletionSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -942,7 +942,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterTurnCompletionSync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -966,7 +966,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterMedicalHistorySync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 
@@ -990,7 +990,7 @@ class BadgeStatisticsUpdateServiceTest {
         badgeStatisticsUpdateService.updateProgressAfterMedicalHistorySync(userId);
 
         verify(statisticsRepository, times(2)).findByUserId(userId);
-        verify(userRepository).findById(userId);
+        verify(userRepository, times(2)).findById(userId);
         verify(statisticsRepository).save(existingStats);
     }
 

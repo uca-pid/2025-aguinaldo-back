@@ -70,10 +70,9 @@ class BadgeStatisticsServiceTest {
     @Test
     void updateAfterTurnCompleted_NoExistingStats_CreatesNewStats() {
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         BadgeStatistics newStats = BadgeStatistics.builder()
-                .user(user)
+                .userId(userId)
                 .statistics(objectMapper.createObjectNode())
                 .progress(objectMapper.createObjectNode())
                 .build();
@@ -84,7 +83,6 @@ class BadgeStatisticsServiceTest {
 
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
             verify(statisticsRepository).findByUserId(userId);
-            verify(userRepository).findById(userId);
             verify(statisticsRepository, times(2)).save(any(BadgeStatistics.class));
         });
     }

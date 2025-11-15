@@ -499,7 +499,6 @@ public class TurnAssignedService {
             badgeEvaluationTrigger.evaluateAfterRating(ratedUser.getId(), communicationScore, empathyScore, punctualityScore);
         } else if ("PATIENT".equals(ratedUser.getRole())) {
             badgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
-            badgeEvaluationTrigger.evaluateAfterTurnCompletion(ratedUser.getId(), rater.getId());
         }
 
         if ("PATIENT".equals(rater.getRole())) {
@@ -511,8 +510,8 @@ public class TurnAssignedService {
     
     private Integer extractCommunicationScore(Integer score, String subcategories) {
         if (subcategories == null || score == null) return null;
-        String lower = subcategories.toLowerCase();
-        if (lower.contains("explica") || lower.contains("escucha") || lower.contains("claramente")) {
+        // Labels exactas de RatingSubcategory relacionadas con comunicación
+        if (subcategories.contains("Explica claramente") || subcategories.contains("Escucha al paciente")) {
             return score;
         }
         return null;
@@ -520,8 +519,8 @@ public class TurnAssignedService {
     
     private Integer extractEmpathyScore(Integer score, String subcategories) {
         if (subcategories == null || score == null) return null;
-        String lower = subcategories.toLowerCase();
-        if (lower.contains("empatía") || lower.contains("empat") || lower.contains("confianza") || lower.contains("atención")) {
+        // Labels exactas de RatingSubcategory relacionadas con empatía
+        if (subcategories.contains("Demuestra empatía") || subcategories.contains("Genera confianza") || subcategories.contains("Excelente atención")) {
             return score;
         }
         return null;
@@ -529,8 +528,8 @@ public class TurnAssignedService {
     
     private Integer extractPunctualityScore(Integer score, String subcategories) {
         if (subcategories == null || score == null) return null;
-        String lower = subcategories.toLowerCase();
-        if (lower.contains("horarios") || lower.contains("respeta horarios") || lower.contains("tiempo de espera")) {
+        // Labels exactas de RatingSubcategory relacionadas con puntualidad
+        if (subcategories.contains("Respeta horarios") || subcategories.contains("Tiempo de espera aceptable")) {
             return score;
         }
         return null;

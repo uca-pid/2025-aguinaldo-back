@@ -10,6 +10,7 @@ import com.medibook.api.entity.BadgeType.BadgeCategory;
 import com.medibook.api.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +45,7 @@ public class BadgeService {
     private static final int EMPATHETIC_DOCTOR_THRESHOLD = 25;
     private static final int PUNCTUALITY_PROFESSIONAL_THRESHOLD = 20;
     private static final double PUNCTUALITY_CANCELLATION_MAX = 0.15;
-    private static final double SUSTAINED_EXCELLENCE_AVG_RATING = 4.0;
+    private static final double SUSTAINED_EXCELLENCE_AVG_RATING = 4.7;
     private static final int SUSTAINED_EXCELLENCE_MIN_RATINGS = 100;
     private static final double SUSTAINED_EXCELLENCE_LOW_SCORE_MAX = 0.1;
     private static final int COMPLETE_DOCUMENTER_THRESHOLD = 35;
@@ -270,7 +271,9 @@ public class BadgeService {
             JsonNode statistics = stats.getStatistics();
 
             int totalTurnsCompleted = statistics.path("total_turns_completed").asInt(0);
+            log.debug("Evaluating COMMITTED_PATIENT for patient {}: totalTurnsCompleted={}", patientId, totalTurnsCompleted);
             double progress = totalTurnsCompleted >= 5 ? 100.0 : ((double) totalTurnsCompleted / 5) * 100;
+            log.debug("Calculated progress for COMMITTED_PATIENT: {}%", progress);
 
             updateProgress(patientId, "PATIENT_COMMITTED_PATIENT", progress);
 
@@ -556,7 +559,7 @@ public class BadgeService {
             int lowRatingCount = statistics.path("total_low_rating_count").asInt(0);
 
             double progress = 0.0;
-            if (avgRating != null && totalRatings >= SUSTAINED_EXCELLENCE_MIN_RATINGS && lowRatingCount <= SUSTAINED_EXCELLENCE_LOW_SCORE_MAX * totalRatings) {
+            if (avgRating != null && totalRatings >= SUSTAINED_EXCELLENCE_MIN_RATINGS) {
                 progress = avgRating >= SUSTAINED_EXCELLENCE_AVG_RATING ? 100.0 : 0.0;
             }
 
@@ -674,16 +677,15 @@ public class BadgeService {
             int returningPatientsCount = statistics.path("returning_patients_count").asInt(0);
 
             boolean hasEnoughPatients = totalUniquePatients >= RELATIONSHIP_BUILDER_MIN_PATIENTS;
-            boolean hasReturningPatients = returningPatientsCount >= RELATIONSHIP_BUILDER_RETURNING_MIN;
 
             double progress = 0.0;
-            if (hasEnoughPatients && hasReturningPatients) {
+            if (hasEnoughPatients) {
                 progress = 100.0;
             }
 
             updateProgress(doctorId, "DOCTOR_RELATIONSHIP_BUILDER", progress);
 
-            if (hasEnoughPatients && hasReturningPatients) {
+            if (hasEnoughPatients) {
                 activateBadge(doctorId, "DOCTOR_RELATIONSHIP_BUILDER");
             } else {
                 deactivateBadge(doctorId, "DOCTOR_RELATIONSHIP_BUILDER");
@@ -729,27 +731,25 @@ public class BadgeService {
         log.debug("Starting evaluation of ALWAYS_AVAILABLE for doctor: {}", doctorId);
 
         try {
-            BadgeStatistics stats = getOrCreateStatistics(doctorId);
-            JsonNode statistics = stats.getStatistics();
+            Optional<DoctorProfile> profileOpt = doctorProfileRepository.findByUserId(doctorId);
+            int availableDays = 0;
 
-            int totalTurnsCompleted = statistics.path("total_turns_completed").asInt(0);
-
-            if (totalTurnsCompleted < 50) {
-                deactivateBadge(doctorId, "DOCTOR_ALWAYS_AVAILABLE");
-                updateProgress(doctorId, "DOCTOR_ALWAYS_AVAILABLE", ((double) totalTurnsCompleted / 50) * 100);
-                return;
+            if (profileOpt.isPresent() && profileOpt.get().getAvailabilitySchedule() != null && !profileOpt.get().getAvailabilitySchedule().isEmpty()) {
+                JsonNode schedule = parseJson(profileOpt.get().getAvailabilitySchedule());
+                if (schedule.isArray()) {
+                    for (JsonNode dayEntry : schedule) {
+                        if (dayEntry.has("enabled") && dayEntry.get("enabled").asBoolean()) {
+                            availableDays++;
+                        }
+                    }
+                }
             }
 
-            Optional<DoctorProfile> profileOpt = doctorProfileRepository.findByUserId(doctorId);
-            boolean hasAvailability = profileOpt.isPresent() &&
-                    profileOpt.get().getAvailabilitySchedule() != null &&
-                    !profileOpt.get().getAvailabilitySchedule().isEmpty();
-
-            double progress = hasAvailability ? 100.0 : 50.0;
+            double progress = Math.min((double) availableDays / 4 * 100, 100.0);
 
             updateProgress(doctorId, "DOCTOR_ALWAYS_AVAILABLE", progress);
 
-            if (hasAvailability) {
+            if (availableDays >= 4) {
                 activateBadge(doctorId, "DOCTOR_ALWAYS_AVAILABLE");
             } else {
                 deactivateBadge(doctorId, "DOCTOR_ALWAYS_AVAILABLE");
@@ -771,8 +771,7 @@ public class BadgeService {
 
             double progress = 0.0;
             if (turnsCompleted >= TOP_SPECIALIST_MIN_TURNS &&
-                avgRating != null && avgRating >= 4.2 &&
-                percentile != null && percentile >= TOP_SPECIALIST_PERCENTILE) {
+                avgRating != null && avgRating >= 4.2) {
                 progress = 100.0;
             }
 
@@ -799,7 +798,7 @@ public class BadgeService {
             long otherBadges = badgeRepository.countActiveBadgesByUserIdExcludingType(doctorId, "DOCTOR_MEDICAL_LEGEND");
 
             double progress = 0.0;
-            if (turnsCompleted >= MEDICAL_LEGEND_MIN_TURNS && avgRating != null && avgRating >= MEDICAL_LEGEND_AVG_RATING && otherBadges >= MEDICAL_LEGEND_MIN_OTHER_BADGES) {
+            if (turnsCompleted >= MEDICAL_LEGEND_MIN_TURNS && otherBadges >= MEDICAL_LEGEND_MIN_OTHER_BADGES) {
                 progress = 100.0;
             }
 
@@ -817,27 +816,15 @@ public class BadgeService {
 
     BadgeStatistics getOrCreateStatistics(UUID userId) {
         log.debug("Getting or creating statistics for userId: {}", userId);
-        Optional<BadgeStatistics> existing = statisticsRepository.findByUserId(userId);
-        if (existing.isPresent()) {
-            log.debug("Found existing statistics for userId: {}", userId);
-            return existing.get();
-        }
-
-        log.debug("Creating new statistics for userId: {}", userId);
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(userId)
-                .statistics(objectMapper.createObjectNode())
-                .progress(objectMapper.createObjectNode())
-                .build();
-        try {
-            BadgeStatistics saved = statisticsRepository.save(stats);
-            log.debug("Successfully created statistics for userId: {}", userId);
-            return saved;
-        } catch (Exception e) {
-            log.error("Error saving statistics for userId: {}, checking if already exists", userId, e);
-            return statisticsRepository.findByUserId(userId).orElseThrow(() ->
-                new RuntimeException("Failed to create statistics for user " + userId, e));
-        }
+        return statisticsRepository.findByUserId(userId).orElseGet(() -> {
+            log.debug("Creating new statistics for userId: {}", userId);
+            BadgeStatistics stats = BadgeStatistics.builder()
+                    .userId(userId)
+                    .statistics(objectMapper.createObjectNode())
+                    .progress(objectMapper.createObjectNode())
+                    .build();
+            return statisticsRepository.save(stats);
+        });
     }
 
     private void updateProgress(UUID userId, String badgeType, double progress) {

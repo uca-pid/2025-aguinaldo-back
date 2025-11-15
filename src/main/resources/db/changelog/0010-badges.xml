@@ -254,4 +254,20 @@
         </sql>
     </changeSet>
 
+    <!-- Add version column for optimistic locking to badge_statistics table -->
+    <changeSet id="0010-08-add-version-badge-statistics" author="OptimisticLocking">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="badge_statistics"/>
+            <not>
+                <columnExists tableName="badge_statistics" columnName="version"/>
+            </not>
+        </preConditions>
+
+        <addColumn tableName="badge_statistics">
+            <column name="version" type="bigint" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

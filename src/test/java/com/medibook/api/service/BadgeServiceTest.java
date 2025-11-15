@@ -436,7 +436,7 @@ class BadgeServiceTest {
     @Test
     void evaluateSustainedExcellence_HighRatingAndSufficientCount_ActivatesBadge() {
         ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_avg_rating", 4.5);
+        statisticsJson.put("total_avg_rating", 4.7);
         statisticsJson.put("total_ratings_received", 150);
         statisticsJson.put("total_low_rating_count", 5);
         
@@ -485,19 +485,16 @@ class BadgeServiceTest {
     }
 
     @Test
-    void evaluateAlwaysAvailable_SufficientTurnsAndAvailability_ActivatesBadge() {
-        ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_turns_completed", 60);
-        
+    void evaluateAlwaysAvailable_SufficientAvailability_ActivatesBadge() {
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(userId)
-                .statistics(statisticsJson)
+                .statistics(objectMapper.createObjectNode())
                 .progress(objectMapper.createObjectNode())
                 .build();
         
         DoctorProfile profile = new DoctorProfile();
         profile.setId(userId);
-        profile.setAvailabilitySchedule("{\"monday\": \"09:00-17:00\"}");
+        profile.setAvailabilitySchedule("[{\"day\": \"MONDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}, {\"day\": \"TUESDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}, {\"day\": \"WEDNESDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}, {\"day\": \"THURSDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}]");
         
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
@@ -1413,22 +1410,25 @@ class BadgeServiceTest {
 
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(doctorId)
-                .statistics(objectMapper.createObjectNode().put("total_turns_completed", 60))
+                .statistics(objectMapper.createObjectNode())
                 .progress(objectMapper.createObjectNode())
                 .build();
 
         DoctorProfile profile = new DoctorProfile();
         profile.setId(doctorId);
-        profile.setAvailabilitySchedule("{\"monday\": \"9-17\"}");
+        profile.setAvailabilitySchedule("[{\"day\": \"MONDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}, {\"day\": \"TUESDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}, {\"day\": \"WEDNESDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}, {\"day\": \"THURSDAY\", \"ranges\": [{\"end\": \"18:00\", \"start\": \"09:00\"}], \"enabled\": true}]");
 
         when(statisticsRepository.findByUserId(doctorId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(doctorProfileRepository.findByUserId(doctorId)).thenReturn(Optional.of(profile));
+        when(badgeRepository.findByUser_IdAndBadgeType(doctorId, "DOCTOR_ALWAYS_AVAILABLE")).thenReturn(Optional.empty());
+        when(badgeRepository.save(any(Badge.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         badgeService.evaluateAllBadges(doctorId);
 
         verify(badgeRepository, atLeastOnce()).findByUser_IdAndBadgeType(doctorId, "DOCTOR_ALWAYS_AVAILABLE");
+        verify(badgeRepository, atLeastOnce()).save(any(Badge.class));
     }
 
     @Test
@@ -1639,6 +1639,13 @@ class BadgeServiceTest {
         patient.setRole("PATIENT");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(patient));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateTurnCompletionRelatedBadges(userId);
 
@@ -1827,7 +1834,7 @@ class BadgeServiceTest {
                 .userId(userId)
                 .statistics(objectMapper.createObjectNode()
                         .put("total_ratings_received", 120)
-                        .put("total_avg_rating", 4.5)
+                        .put("total_avg_rating", 4.7)
                         .put("total_low_rating_count", 5))
                 .progress(objectMapper.createObjectNode())
                 .build();
@@ -2003,6 +2010,13 @@ class BadgeServiceTest {
         doctor.setRole("DOCTOR");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateTurnRelatedBadges(userId);
 
@@ -2016,6 +2030,13 @@ class BadgeServiceTest {
         doctor.setRole("DOCTOR");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateRatingRelatedBadges(userId);
 
@@ -2029,6 +2050,13 @@ class BadgeServiceTest {
         doctor.setRole("DOCTOR");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateDocumentationRelatedBadges(userId);
 
@@ -2062,6 +2090,13 @@ class BadgeServiceTest {
         patient.setRole("PATIENT");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(patient));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateFileRelatedBadges(userId);
 
@@ -2075,6 +2110,13 @@ class BadgeServiceTest {
         patient.setRole("PATIENT");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(patient));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateBookingRelatedBadges(userId);
 
@@ -2088,6 +2130,13 @@ class BadgeServiceTest {
         doctor.setRole("DOCTOR");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
+        when(statisticsRepository.findByUserId(any(UUID.class))).thenReturn(Optional.empty());
+        BadgeStatistics mockStats = mock(BadgeStatistics.class);
+        when(mockStats.getStatistics()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getProgress()).thenReturn(objectMapper.createObjectNode());
+        when(mockStats.getUserId()).thenReturn(userId);
+        when(mockStats.getVersion()).thenReturn(0L);
+        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(mockStats);
 
         badgeService.evaluateResponseRelatedBadges(userId);
 
