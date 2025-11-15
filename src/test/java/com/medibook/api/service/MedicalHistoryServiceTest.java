@@ -33,6 +33,9 @@ class MedicalHistoryServiceTest {
     @Mock
     private TurnAssignedRepository turnAssignedRepository;
 
+    @Mock
+    private BadgeEvaluationTriggerService badgeEvaluationTrigger;
+
     @InjectMocks
     private MedicalHistoryService medicalHistoryService;
 

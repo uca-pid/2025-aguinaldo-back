@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,6 +36,8 @@ public class TurnAssignedService {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final TurnFileService turnFileService;
+    private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
+    private final MedicalCheckApiService medicalCheckApiService;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
@@ -70,7 +73,8 @@ public class TurnAssignedService {
         TurnAssigned turn = TurnAssigned.builder()
                 .doctor(doctor)
                 .patient(patient)
-                .scheduledAt(dto.getScheduledAt())
+            .scheduledAt(dto.getScheduledAt())
+            .motive(dto.getMotive())
                 .status("SCHEDULED")
                 .build();
 
@@ -123,7 +127,6 @@ public class TurnAssignedService {
             log.warn("Error encolando emails de confirmación de cita: {}", e.getMessage());
         }
 
-        // Create notification for the doctor
         try {
             String dateFormatted = DateTimeUtils.formatDate(saved.getScheduledAt());
             String timeFormatted = DateTimeUtils.formatTime(saved.getScheduledAt());
@@ -141,7 +144,6 @@ public class TurnAssignedService {
                     saved.getDoctor().getId(), patient.getId());
         } catch (Exception e) {
             log.error("Error creating notification for turn creation: {}", e.getMessage());
-            // Don't fail the creation if notification fails
         }
         
         return mapper.toDTO(saved);
@@ -160,8 +162,15 @@ public class TurnAssignedService {
 
         turn.setPatient(patient);
         turn.setStatus("RESERVED");
+        TurnAssigned saved = turnRepo.save(turn);
 
-        return turnRepo.save(turn);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        long daysDifference = java.time.Duration.between(now, turn.getScheduledAt()).toDays();
+        if (daysDifference >= 3) {
+            badgeEvaluationTrigger.evaluateAfterAdvanceBooking(patientId);
+        }
+
+        return saved;
     }
     
     public List<TurnResponseDTO> getTurnsByDoctor(UUID doctorId) {
@@ -222,6 +231,12 @@ public class TurnAssignedService {
         turn.setStatus("CANCELED");
         TurnAssigned saved = turnRepo.save(turn);
 
+        if (turn.getDoctor() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getDoctor().getId());
+        }
+        if (turn.getPatient() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getPatient().getId());
+        }
         
         try {
             if (turnFileService.fileExistsForTurn(turnId)) {
@@ -325,6 +340,29 @@ public class TurnAssignedService {
         turn.setStatus("COMPLETED");
         TurnAssigned saved = turnRepo.save(turn);
 
+        // Check if this is a health certificate turn and process external API call
+        if ("HEALTH CERTIFICATE".equalsIgnoreCase(turn.getMotive()) && turn.getPatient() != null) {
+            try {
+                String patientEmail = turn.getPatient().getEmail();
+                log.info("Processing health certificate completion for patient: {}", patientEmail);
+                medicalCheckApiService.processMedicalCheckCompletion(patientEmail);
+            } catch (Exception e) {
+                log.error("Error processing medical check API call for turn: {}", turnId, e);
+                // Don't fail the turn completion if external API fails
+            }
+        }
+
+        if (turn.getDoctor() != null && turn.getPatient() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnCompletion(
+                turn.getDoctor().getId(), 
+                turn.getPatient().getId()
+            );
+            badgeEvaluationTrigger.evaluateAfterTurnCompletion(
+                turn.getPatient().getId(),
+                turn.getDoctor().getId()
+            );
+        }
+
         return mapper.toDTO(saved);
     }
 
@@ -343,6 +381,14 @@ public class TurnAssignedService {
         turn.setStatus("NO_SHOW");
         TurnAssigned saved = turnRepo.save(turn);
 
+        if (turn.getDoctor() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnNoShow(turn.getDoctor().getId());
+        }
+
+        if (turn.getPatient() != null) {
+            badgeEvaluationTrigger.evaluateAfterTurnNoShow(turn.getPatient().getId());
+        }
+
         return mapper.toDTO(saved);
     }
 
@@ -354,7 +400,6 @@ public class TurnAssignedService {
         TurnAssigned turn = turnRepo.findById(turnId)
                 .orElseThrow(() -> new RuntimeException("Turn not found"));
 
-        // Check if turn is not canceled and has passed
         if ("CANCELED".equals(turn.getStatus()) || "CANCELLED".equals(turn.getStatus())) {
             throw new RuntimeException("Cannot rate canceled turns");
         }
@@ -459,6 +504,47 @@ public class TurnAssignedService {
             log.warn("Failed to update average score for user {}: {}", ratedUser.getId(), e.getMessage());
         }
 
+        if ("DOCTOR".equals(ratedUser.getRole())) {
+            Integer communicationScore = extractCommunicationScore(score, normalizedSubcategory);
+            Integer empathyScore = extractEmpathyScore(score, normalizedSubcategory);
+            Integer punctualityScore = extractPunctualityScore(score, normalizedSubcategory);
+            
+            badgeEvaluationTrigger.evaluateAfterRating(ratedUser.getId(), communicationScore, empathyScore, punctualityScore);
+        } else if ("PATIENT".equals(ratedUser.getRole())) {
+            badgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
+        }
+
+        if ("PATIENT".equals(rater.getRole())) {
+            badgeEvaluationTrigger.evaluateAfterRatingGiven(rater.getId());
+        }
+
         return saved;
+    }
+    
+    private Integer extractCommunicationScore(Integer score, String subcategories) {
+        if (subcategories == null || score == null) return null;
+        // Labels exactas de RatingSubcategory relacionadas con comunicación
+        if (subcategories.contains("Explica claramente") || subcategories.contains("Escucha al paciente")) {
+            return score;
+        }
+        return null;
+    }
+    
+    private Integer extractEmpathyScore(Integer score, String subcategories) {
+        if (subcategories == null || score == null) return null;
+        // Labels exactas de RatingSubcategory relacionadas con empatía
+        if (subcategories.contains("Demuestra empatía") || subcategories.contains("Genera confianza") || subcategories.contains("Excelente atención")) {
+            return score;
+        }
+        return null;
+    }
+    
+    private Integer extractPunctualityScore(Integer score, String subcategories) {
+        if (subcategories == null || score == null) return null;
+        // Labels exactas de RatingSubcategory relacionadas con puntualidad
+        if (subcategories.contains("Respeta horarios") || subcategories.contains("Tiempo de espera aceptable")) {
+            return score;
+        }
+        return null;
     }
 }

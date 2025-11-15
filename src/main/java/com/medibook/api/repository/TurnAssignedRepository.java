@@ -28,4 +28,8 @@ public interface TurnAssignedRepository extends JpaRepository<TurnAssigned, UUID
     List<User> findDistinctPatientsByDoctorId(@Param("doctorId") UUID doctorId);
     
     boolean existsByDoctor_IdAndPatient_Id(UUID doctorId, UUID patientId);
+    
+    List<TurnAssigned> findByPatient_IdAndStatusAndScheduledAtAfter(UUID patientId, String status, OffsetDateTime scheduledAt);
+    
+    List<TurnAssigned> findByPatient_IdAndStatus(UUID patientId, String status);
 }

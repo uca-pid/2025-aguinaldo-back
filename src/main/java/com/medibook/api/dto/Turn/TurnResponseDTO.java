@@ -20,6 +20,7 @@ public class TurnResponseDTO {
     private String status;
     private Boolean needsPatientRating;
     private Boolean needsDoctorRating;
+    private String motive;
     private String fileUrl;
     private String fileName;
     private Instant uploadedAt;

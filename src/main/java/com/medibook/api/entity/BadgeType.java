@@ -1,0 +1,37 @@
+package com.medibook.api.entity;
+
+public enum BadgeType {   
+    EXCEPTIONAL_COMMUNICATOR,
+    EMPATHETIC_DOCTOR,
+    PUNCTUALITY_PROFESSIONAL,
+    SUSTAINED_EXCELLENCE,
+    COMPLETE_DOCUMENTER,
+    DETAILED_HISTORIAN,
+    AGILE_RESPONDER,
+    RELATIONSHIP_BUILDER,
+    CONSISTENT_PROFESSIONAL,
+    ALWAYS_AVAILABLE,
+    TOP_SPECIALIST,
+    MEDICAL_LEGEND;
+
+    public BadgeCategory getCategory() {
+        return switch (this) {
+            case EXCEPTIONAL_COMMUNICATOR, EMPATHETIC_DOCTOR, 
+                 PUNCTUALITY_PROFESSIONAL, SUSTAINED_EXCELLENCE -> BadgeCategory.QUALITY_OF_CARE;
+            case COMPLETE_DOCUMENTER, DETAILED_HISTORIAN, 
+                 AGILE_RESPONDER, RELATIONSHIP_BUILDER -> BadgeCategory.PROFESSIONALISM;
+            case CONSISTENT_PROFESSIONAL, ALWAYS_AVAILABLE, 
+                 TOP_SPECIALIST, MEDICAL_LEGEND -> BadgeCategory.CONSISTENCY;
+        };
+    }
+    
+    public enum BadgeCategory {
+        WELCOME,
+        PREVENTIVE_CARE,
+        ACTIVE_COMMITMENT,
+        CLINICAL_EXCELLENCE,
+        QUALITY_OF_CARE,
+        PROFESSIONALISM,
+        CONSISTENCY
+    }
+}

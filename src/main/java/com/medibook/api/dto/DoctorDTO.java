@@ -1,7 +1,10 @@
 package com.medibook.api.dto;
 
+import com.medibook.api.dto.Badge.BadgeDTO;
 import lombok.Builder;
 import lombok.Data;
+
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -15,4 +18,6 @@ public class DoctorDTO {
     private String specialty;
     private int slotDurationMin;
     private Double score;
+    private List<BadgeDTO> activeBadges;
+    private Integer totalActiveBadges;
 }

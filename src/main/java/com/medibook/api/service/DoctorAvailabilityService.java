@@ -27,6 +27,7 @@ public class DoctorAvailabilityService {
 
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final BadgeEvaluationTriggerService badgeEvaluationTriggerService;
 
     @Transactional
     public void saveAvailability(UUID doctorId, DoctorAvailabilityRequestDTO request) {
@@ -48,6 +49,8 @@ public class DoctorAvailabilityService {
         }
 
         userRepository.save(doctor);
+        
+        badgeEvaluationTriggerService.evaluateAfterAvailabilityConfigured(doctorId);
     }
 
     @Transactional(readOnly = true)

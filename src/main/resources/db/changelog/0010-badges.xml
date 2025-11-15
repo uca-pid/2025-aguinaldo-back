@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- UNIFIED BADGES TABLE - Replaces patient_badges and doctor_badges -->
+    <changeSet id="0010-01-unified-badges" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="badges"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="badges">
+            <column name="id" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="badge_type" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="earned_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_evaluated_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Foreign key to users table -->
+        <addForeignKeyConstraint
+            baseTableName="badges"
+            baseColumnNames="user_id"
+            constraintName="fk_badges_user"
+            referencedTableName="users"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <!-- Unique constraint: One user can have each badge type only once -->
+        <addUniqueConstraint
+            tableName="badges"
+            columnNames="user_id,badge_type"
+            constraintName="uc_user_badge_type"/>
+
+        <!-- Indexes for better query performance -->
+        <createIndex indexName="idx_badges_user_id" tableName="badges">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_badges_badge_type" tableName="badges">
+            <column name="badge_type"/>
+        </createIndex>
+
+        <createIndex indexName="idx_badges_is_active" tableName="badges">
+            <column name="is_active"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- UNIFIED BADGE STATISTICS TABLE - Replaces patient_badge_statistics and doctor_badge_statistics -->
+    <changeSet id="0010-02-unified-badge-statistics" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="badge_statistics"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="badge_statistics">
+            <column name="user_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Statistics as JSONB for flexibility -->
+            <column name="statistics" type="jsonb" defaultValue="{}">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Progress as JSONB for all badge types -->
+            <column name="progress" type="jsonb" defaultValue="{}">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Last update timestamp -->
+            <column name="last_updated_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Foreign key to users table -->
+        <addForeignKeyConstraint
+            baseTableName="badge_statistics"
+            baseColumnNames="user_id"
+            constraintName="fk_badge_statistics_user"
+            referencedTableName="users"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <!-- Index for efficient updates -->
+        <createIndex indexName="idx_badge_statistics_updated" tableName="badge_statistics">
+            <column name="last_updated_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Migrate existing patient badges to unified table -->
+    <changeSet id="0010-03-migrate-patient-badges" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="patient_badges"/>
+            <tableExists tableName="badges"/>
+        </preConditions>
+
+        <sql>
+            INSERT INTO badges (id, user_id, badge_type, earned_at, is_active, last_evaluated_at)
+            SELECT id, patient_id, 'PATIENT_' || badge_type, earned_at, is_active, last_evaluated_at
+            FROM patient_badges;
+        </sql>
+    </changeSet>
+
+    <!-- Migrate existing doctor badges to unified table -->
+    <changeSet id="0010-04-migrate-doctor-badges" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="doctor_badges"/>
+            <tableExists tableName="badges"/>
+        </preConditions>
+
+        <sql>
+            INSERT INTO badges (id, user_id, badge_type, earned_at, is_active, last_evaluated_at)
+            SELECT id, doctor_id, 'DOCTOR_' || badge_type, earned_at, is_active, last_evaluated_at
+            FROM doctor_badges;
+        </sql>
+    </changeSet>
+
+    <!-- Migrate patient statistics and progress to unified table -->
+    <changeSet id="0010-05-migrate-patient-statistics" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="patient_badge_statistics"/>
+            <tableExists tableName="badge_statistics"/>
+        </preConditions>
+
+        <sql>
+            INSERT INTO badge_statistics (user_id, statistics, progress, last_updated_at)
+            SELECT
+                patient_id,
+                jsonb_build_object(
+                    'total_turns_completed', total_turns_completed,
+                    'total_turns_cancelled', total_turns_cancelled,
+                    'total_turns_no_show', total_turns_no_show,
+                    'turns_last_12_months', turns_last_12_months,
+                    'turns_last_6_months', turns_last_6_months,
+                    'turns_last_90_days', turns_last_90_days,
+                    'last_5_turns_attendance_rate', last_5_turns_attendance_rate,
+                    'last_10_turns_punctual_count', last_10_turns_punctual_count,
+                    'last_5_turns_advance_booking_count', last_5_turns_advance_booking_count,
+                    'last_15_turns_collaboration_count', last_15_turns_collaboration_count,
+                    'last_15_turns_follow_instructions_count', last_15_turns_follow_instructions_count,
+                    'last_10_turns_files_uploaded_count', last_10_turns_files_uploaded_count,
+                    'total_ratings_given', total_ratings_given,
+                    'total_ratings_received', total_ratings_received,
+                    'avg_rating_given', avg_rating_given,
+                    'avg_rating_received', avg_rating_received,
+                    'total_unique_doctors', total_unique_doctors,
+                    'turns_with_same_doctor_last_12_months', turns_with_same_doctor_last_12_months,
+                    'different_specialties_last_12_months', different_specialties_last_12_months
+                ),
+                jsonb_build_object(
+                    'MEDIBOOK_WELCOME', progress_medi_book_welcome,
+                    'HEALTH_GUARDIAN', progress_health_guardian,
+                    'COMMITTED_PATIENT', progress_committed_patient,
+                    'CONTINUOUS_FOLLOWUP', progress_continuous_followup,
+                    'CONSTANT_PATIENT', progress_constant_patient,
+                    'EXEMPLARY_PUNCTUALITY', progress_exemplary_punctuality,
+                    'SMART_PLANNER', progress_smart_planner,
+                    'EXCELLENT_COLLABORATOR', progress_excellent_collaborator,
+                    'ALWAYS_PREPARED', progress_always_prepared,
+                    'RESPONSIBLE_EVALUATOR', progress_responsible_evaluator,
+                    'EXCELLENCE_MODEL', progress_excellence_model
+                ),
+                last_updated_at
+            FROM patient_badge_statistics;
+        </sql>
+    </changeSet>
+
+    <!-- Migrate doctor statistics and progress to unified table -->
+    <changeSet id="0010-06-migrate-doctor-statistics" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="doctor_badge_statistics"/>
+            <tableExists tableName="badge_statistics"/>
+        </preConditions>
+
+        <sql>
+            INSERT INTO badge_statistics (user_id, statistics, progress, last_updated_at)
+            SELECT
+                doctor_id,
+                jsonb_build_object(
+                    'total_ratings_received', total_ratings_received,
+                    'last_50_communication_count', last_50_communication_count,
+                    'last_50_empathy_count', last_50_empathy_count,
+                    'last_50_punctuality_count', last_50_punctuality_count,
+                    'last_100_avg_rating', last_100_avg_rating,
+                    'last_100_low_rating_count', last_100_low_rating_count,
+                    'total_turns_completed', total_turns_completed,
+                    'total_turns_cancelled', total_turns_cancelled,
+                    'total_turns_no_show', total_turns_no_show,
+                    'turns_last_90_days', turns_last_90_days,
+                    'cancellations_last_90_days', cancellations_last_90_days,
+                    'no_shows_last_90_days', no_shows_last_90_days,
+                    'last_50_documented_count', last_50_documented_count,
+                    'last_30_documented_count', last_30_documented_count,
+                    'last_30_total_words', last_30_total_words,
+                    'last_30_avg_words_per_entry', last_30_avg_words_per_entry,
+                    'total_unique_patients', total_unique_patients,
+                    'returning_patients_count', returning_patients_count,
+                    'last_10_requests_handled', last_10_requests_handled,
+                    'specialty_rank_percentile', specialty_rank_percentile
+                ),
+                jsonb_build_object(
+                    'EXCEPTIONAL_COMMUNICATOR', progress_excellence_in_care,
+                    'EMPATHETIC_DOCTOR', progress_empathy_champion,
+                    'PUNCTUALITY_PROFESSIONAL', progress_clear_communicator,
+                    'SUSTAINED_EXCELLENCE', progress_detailed_diagnostician,
+                    'COMPLETE_DOCUMENTER', progress_timely_professional,
+                    'DETAILED_HISTORIAN', progress_reliable_expert,
+                    'AGILE_RESPONDER', progress_flexible_caregiver,
+                    'RELATIONSHIP_BUILDER', progress_agile_responder,
+                    'CONSISTENT_PROFESSIONAL', progress_relationship_builder,
+                    'ALWAYS_AVAILABLE', progress_top_specialist,
+                    'TOP_SPECIALIST', progress_medical_legend,
+                    'MEDICAL_LEGEND', progress_all_star_doctor
+                ),
+                last_updated_at
+            FROM doctor_badge_statistics;
+        </sql>
+    </changeSet>
+
+    <!-- Initialize statistics for existing users without stats -->
+    <changeSet id="0010-07-initialize-missing-statistics" author="MediBook_Unification">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="badge_statistics"/>
+            <tableExists tableName="users"/>
+        </preConditions>
+
+        <sql>
+            INSERT INTO badge_statistics (user_id, statistics, progress, last_updated_at)
+            SELECT id, '{}'::jsonb, '{}'::jsonb, now()
+            FROM users
+            WHERE role IN ('PATIENT', 'DOCTOR')
+            ON CONFLICT (user_id) DO NOTHING;
+        </sql>
+    </changeSet>
+
+    <!-- Add version column for optimistic locking to badge_statistics table -->
+    <changeSet id="0010-08-add-version-badge-statistics" author="OptimisticLocking">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="badge_statistics"/>
+            <not>
+                <columnExists tableName="badge_statistics" columnName="version"/>
+            </not>
+        </preConditions>
+
+        <addColumn tableName="badge_statistics">
+            <column name="version" type="bigint" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

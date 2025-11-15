@@ -23,6 +23,7 @@ public class TurnFileServiceImpl implements TurnFileService {
     private final SupabaseStorageService supabaseStorageService;
     private final TurnAssignedRepository turnAssignedRepository;
     private final NotificationService notificationService;
+    private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
     
     private static final String BUCKET_NAME = "archivosTurnos";
 
@@ -49,7 +50,6 @@ public class TurnFileServiceImpl implements TurnFileService {
                     turnFileRepository.save(turnFile);
                     log.info("File upload completed successfully for turnId: {}", turnId);
                     
-                    // Create notification for the doctor
                     try {
                         Optional<TurnAssigned> turnOpt = turnAssignedRepository.findById(turnId);
                         if (turnOpt.isPresent()) {
@@ -70,11 +70,12 @@ public class TurnFileServiceImpl implements TurnFileService {
                                 
                                 log.info("Notification created for doctor {} about file upload by patient {}", 
                                         turn.getDoctor().getId(), turn.getPatient().getId());
+
+                                badgeEvaluationTrigger.evaluateAfterFileUploaded(turn.getPatient().getId());
                             }
                         }
                     } catch (Exception e) {
                         log.error("Error creating notification for file upload: {}", e.getMessage());
-                        // Don't fail the upload if notification fails
                     }
                     
                     return "{\"url\":\"" + publicUrl + "\", \"fileName\":\"" + customFileName + "\"}";
@@ -87,7 +88,6 @@ public class TurnFileServiceImpl implements TurnFileService {
         log.info("Starting delete process for turnId: {}", turnId);
         
         return Mono.fromCallable(() -> {
-            // Verificar que el turno no esté completado
             Optional<TurnAssigned> turnOpt = turnAssignedRepository.findById(turnId);
             if (turnOpt.isPresent()) {
                 TurnAssigned turn = turnOpt.get();
@@ -115,48 +115,35 @@ public class TurnFileServiceImpl implements TurnFileService {
                                 log.info("Database record deleted successfully for turnId: {}", turnId);
                             }));
                 })
-                .then() // Convert to Mono<Void>
+                .then()
                 .doOnError(error -> log.error("Error deleting turn file for turnId {}: {}", turnId, error.getMessage()));
     }
 
     @Override
     public Optional<TurnFile> getTurnFileInfo(UUID turnId) {
-        log.debug("Getting file info for turnId: {}", turnId);
         return turnFileRepository.findByTurnId(turnId);
     }
 
     @Override
     public boolean fileExistsForTurn(UUID turnId) {
-        log.debug("Checking if file exists for turnId: {}", turnId);
         return turnFileRepository.existsByTurnId(turnId);
     }
 
-    /**
-     * Sanitiza el nombre del archivo para que sea válido en S3/Supabase Storage
-     * Reemplaza espacios y caracteres especiales por guiones bajos
-     */
     private String sanitizeFileName(String originalFileName) {
         if (originalFileName == null) {
             return "archivo_sin_nombre.bin";
         }
         
-        // Normalizar caracteres Unicode (convertir acentos)
         String normalized = java.text.Normalizer.normalize(originalFileName, java.text.Normalizer.Form.NFD);
         
-        // Reemplazar caracteres con acentos por sus equivalentes sin acentos
         normalized = normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         
-        // Reemplazar espacios y caracteres especiales por guiones bajos
-        // Mantener solo letras, números, puntos y guiones bajos
         String sanitized = normalized.replaceAll("[^a-zA-Z0-9._]", "_");
         
-        // Evitar múltiples guiones bajos consecutivos
         sanitized = sanitized.replaceAll("_{2,}", "_");
         
-        // Asegurar que no empiece o termine con guión bajo
         sanitized = sanitized.replaceAll("^_+|_+$", "");
         
-        // Si el nombre queda vacío, usar un nombre por defecto
         if (sanitized.isEmpty()) {
             sanitized = "archivo_sin_nombre";
         }

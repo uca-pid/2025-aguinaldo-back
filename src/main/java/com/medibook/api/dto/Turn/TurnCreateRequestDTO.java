@@ -15,4 +15,6 @@ public class TurnCreateRequestDTO {
     
     @NotNull(message = "Scheduled time is required")
     private OffsetDateTime scheduledAt;
+    
+    private String motive;
 }

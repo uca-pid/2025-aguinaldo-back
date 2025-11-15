@@ -65,7 +65,6 @@ public class EmailServiceImpl implements EmailService {
         }
         
         // Enviar usando Google Apps Script
-        log.debug("Using Google Apps Script for email delivery");
         EmailResponseDto result = googleAppsScriptEmailService.sendEmail(emailRequest);
         
         // Si Google Apps Script falla, lanzar excepción para activar el retry
@@ -91,7 +90,6 @@ public class EmailServiceImpl implements EmailService {
     @Async("emailTaskExecutor")
     @Override
     public CompletableFuture<EmailResponseDto> sendWelcomeEmailToPatientAsync(String patientEmail, String patientName) {
-        log.debug("Processing welcome email async to: {}", patientEmail);
         String subject = "Registro confirmado en MediBook";
         String htmlContent = buildWelcomePatientHtml(patientName);
         String textContent = buildWelcomePatientText(patientName);
@@ -110,7 +108,6 @@ public class EmailServiceImpl implements EmailService {
     @Async("emailTaskExecutor")
     @Override
     public CompletableFuture<EmailResponseDto> sendApprovalEmailToDoctorAsync(String doctorEmail, String doctorName) {
-        log.debug("Processing approval email async to doctor: {}", doctorEmail);
         String subject = "Registro médico aprobado";
         String htmlContent = buildDoctorApprovalHtml(doctorName);
         String textContent = buildDoctorApprovalText(doctorName);
@@ -129,7 +126,6 @@ public class EmailServiceImpl implements EmailService {
     @Async("emailTaskExecutor")
     @Override
     public CompletableFuture<EmailResponseDto> sendRejectionEmailToDoctorAsync(String doctorEmail, String doctorName, String reason) {
-        log.debug("Processing rejection email async to doctor: {}", doctorEmail);
         String subject = "Actualización sobre tu registro médico";
         String htmlContent = buildDoctorRejectionHtml(doctorName, reason);
         String textContent = buildDoctorRejectionText(doctorName, reason);
@@ -149,7 +145,6 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendAppointmentConfirmationToPatientAsync(
             String patientEmail, String patientName, String doctorName, String appointmentDate, String appointmentTime, String turnId) {
-        log.debug("Processing appointment confirmation async to patient: {}", patientEmail);
         String subject = "Confirmación de cita médica";
         String htmlContent = buildAppointmentConfirmationPatientHtml(patientName, doctorName, appointmentDate, appointmentTime, turnId);
         String textContent = buildAppointmentConfirmationPatientText(patientName, doctorName, appointmentDate, appointmentTime, turnId);
@@ -187,7 +182,6 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendAppointmentCancellationToPatientAsync(
             String patientEmail, String patientName, String doctorName, String appointmentDate, String appointmentTime) {
-        log.debug("Processing appointment cancellation async to patient: {}", patientEmail);
         String subject = "Cancelación de cita médica";
         String htmlContent = buildAppointmentCancellationPatientHtml(patientName, doctorName, appointmentDate, appointmentTime);
         String textContent = buildAppointmentCancellationPatientText(patientName, doctorName, appointmentDate, appointmentTime);
@@ -207,7 +201,6 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendAppointmentCancellationToDoctorAsync(
             String doctorEmail, String doctorName, String patientName, String appointmentDate, String appointmentTime) {
-        log.debug("Processing appointment cancellation async to doctor: {}", doctorEmail);
         String subject = "Cancelación de cita";
         String htmlContent = buildAppointmentCancellationDoctorHtml(doctorName, patientName, appointmentDate, appointmentTime);
         String textContent = buildAppointmentCancellationDoctorText(doctorName, patientName, appointmentDate, appointmentTime);
@@ -227,7 +220,6 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendAppointmentModificationApprovedToPatientAsync(
             String patientEmail, String patientName, String doctorName, String oldDate, String oldTime, String newDate, String newTime) {
-        log.debug("Processing appointment modification approved async to patient: {}", patientEmail);
         String subject = "Modificación de cita médica aprobada";
         String htmlContent = buildAppointmentModificationApprovedPatientHtml(patientName, doctorName, oldDate, oldTime, newDate, newTime);
         String textContent = buildAppointmentModificationApprovedPatientText(patientName, doctorName, oldDate, oldTime, newDate, newTime);
@@ -247,7 +239,6 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public CompletableFuture<EmailResponseDto> sendAppointmentModificationApprovedToDoctorAsync(
             String doctorEmail, String doctorName, String patientName, String oldDate, String oldTime, String newDate, String newTime) {
-        log.debug("Processing appointment modification approved async to doctor: {}", doctorEmail);
         String subject = "Modificación de horario aprobada";
         String htmlContent = buildAppointmentModificationApprovedDoctorHtml(doctorName, patientName, oldDate, oldTime, newDate, newTime);
         String textContent = buildAppointmentModificationApprovedDoctorText(doctorName, patientName, oldDate, oldTime, newDate, newTime);

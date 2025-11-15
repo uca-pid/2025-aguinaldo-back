@@ -8,6 +8,7 @@ import com.medibook.api.mapper.DoctorMapper;
 import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
+import com.medibook.api.repository.BadgeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,12 @@ class DoctorServiceTest {
 
     @Mock
     private RatingRepository ratingRepository;
+
+    @Mock
+    private BadgeRepository badgeRepository;
+
+    @Mock
+    private BadgeService badgeService;
 
     @InjectMocks
     private DoctorService doctorService;
@@ -381,12 +388,10 @@ class DoctorServiceTest {
         com.medibook.api.dto.DoctorMetricsDTO result = doctorService.getDoctorMetrics(doctorId);
 
         assertNotNull(result);
-        assertEquals(1, result.getUpcomingTurns()); // scheduledFuture
-        // El turn completedThisMonth puede no contarse si la fecha no pasa el filtro "isBefore(now)"
-        // Solo verificamos que no es null
+        assertEquals(1, result.getUpcomingTurns());
         assertNotNull(result.getCompletedTurnsThisMonth());
-        assertEquals(1, result.getCancelledTurns()); // cancelled
-        assertEquals(2, result.getTotalPatients()); // patient1 y patient2
+        assertEquals(1, result.getCancelledTurns());
+        assertEquals(2, result.getTotalPatients());
     }
 
     @Test
