@@ -23,7 +23,7 @@ public class TurnFileServiceImpl implements TurnFileService {
     private final SupabaseStorageService supabaseStorageService;
     private final TurnAssignedRepository turnAssignedRepository;
     private final NotificationService notificationService;
-    private final PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
+    private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
     
     private static final String BUCKET_NAME = "archivosTurnos";
 
@@ -71,7 +71,7 @@ public class TurnFileServiceImpl implements TurnFileService {
                                 log.info("Notification created for doctor {} about file upload by patient {}", 
                                         turn.getDoctor().getId(), turn.getPatient().getId());
 
-                                patientBadgeEvaluationTrigger.evaluateAfterFileUploaded(turn.getPatient().getId());
+                                badgeEvaluationTrigger.evaluateAfterFileUploaded(turn.getPatient().getId());
                             }
                         }
                     } catch (Exception e) {

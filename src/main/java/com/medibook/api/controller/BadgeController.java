@@ -1,12 +1,9 @@
 package com.medibook.api.controller;
+
 import com.medibook.api.dto.Badge.BadgeProgressSummaryDTO;
-import com.medibook.api.dto.Badge.DoctorBadgesResponseDTO;
-import com.medibook.api.dto.Badge.PatientBadgeProgressSummaryDTO;
-import com.medibook.api.dto.Badge.PatientBadgesResponseDTO;
-import com.medibook.api.service.BadgeProgressService;
-import com.medibook.api.service.DoctorBadgeService;
-import com.medibook.api.service.PatientBadgeProgressService;
-import com.medibook.api.service.PatientBadgeService;
+import com.medibook.api.dto.Badge.BadgesResponseDTO;
+import com.medibook.api.service.BadgeService;
+import com.medibook.api.service.BadgeStatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,105 +19,51 @@ import java.util.UUID;
 @Slf4j
 public class BadgeController {
 
-    private final DoctorBadgeService doctorBadgeService;
-    private final BadgeProgressService doctorBadgeProgressService;
-    private final PatientBadgeService patientBadgeService;
-    private final PatientBadgeProgressService patientBadgeProgressService;
+    private final BadgeService badgeService;
+    private final BadgeStatisticsService badgeStatisticsService;
 
-    @GetMapping("/doctor/{doctorId}")
+    @GetMapping("/{userId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<DoctorBadgesResponseDTO> getDoctorBadges(@PathVariable UUID doctorId) {
-        DoctorBadgesResponseDTO badges = doctorBadgeService.getDoctorBadges(doctorId);
+    public ResponseEntity<BadgesResponseDTO> getUserBadges(@PathVariable UUID userId) {
+        BadgesResponseDTO badges = badgeService.getUserBadges(userId);
         return ResponseEntity.ok(badges);
     }
 
     @GetMapping("/my-badges")
-    @PreAuthorize("hasRole('DOCTOR')")
-    public ResponseEntity<DoctorBadgesResponseDTO> getMyDoctorBadges(Authentication authentication) {
-        UUID doctorId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
-        DoctorBadgesResponseDTO badges = doctorBadgeService.getDoctorBadges(doctorId);
+    @PreAuthorize("hasRole('PATIENT') or hasRole('DOCTOR')")
+    public ResponseEntity<BadgesResponseDTO> getMyBadges(Authentication authentication) {
+        UUID userId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
+        BadgesResponseDTO badges = badgeService.getUserBadges(userId);
         return ResponseEntity.ok(badges);
     }
 
-    @GetMapping("/doctor/{doctorId}/progress")
+    @GetMapping("/{userId}/progress")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<BadgeProgressSummaryDTO>> getDoctorBadgeProgress(@PathVariable UUID doctorId) {
-        List<BadgeProgressSummaryDTO> progress = doctorBadgeProgressService.getBadgeProgress(doctorId);
+    public ResponseEntity<List<BadgeProgressSummaryDTO>> getUserBadgeProgress(@PathVariable UUID userId) {
+        List<BadgeProgressSummaryDTO> progress = badgeService.getUserBadgeProgress(userId);
         return ResponseEntity.ok(progress);
     }
 
-    @GetMapping("/doctor/my-progress")
-    @PreAuthorize("hasRole('DOCTOR')")
-    public ResponseEntity<List<BadgeProgressSummaryDTO>> getMyDoctorBadgeProgress(Authentication authentication) {
-        UUID doctorId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
-        List<BadgeProgressSummaryDTO> progress = doctorBadgeProgressService.getBadgeProgress(doctorId);
+    @GetMapping("/my-progress")
+    @PreAuthorize("hasRole('PATIENT') or hasRole('DOCTOR')")
+    public ResponseEntity<List<BadgeProgressSummaryDTO>> getMyBadgeProgress(Authentication authentication) {
+        UUID userId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
+        List<BadgeProgressSummaryDTO> progress = badgeService.getUserBadgeProgress(userId);
         return ResponseEntity.ok(progress);
     }
 
-    @PostMapping("/doctor/{doctorId}/evaluate")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and #doctorId.equals(authentication.principal.id))")
-    public ResponseEntity<Void> evaluateDoctorBadges(@PathVariable UUID doctorId) {
-        doctorBadgeService.evaluateAllBadges(doctorId);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/doctor/evaluate")
-    @PreAuthorize("hasRole('DOCTOR')")
-    public ResponseEntity<Void> evaluateMyDoctorBadges(Authentication authentication) {
-        UUID doctorId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
-        doctorBadgeService.evaluateAllBadges(doctorId);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/patient/{patientId}")
+    @PostMapping("/{userId}/evaluate")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PatientBadgesResponseDTO> getPatientBadges(@PathVariable UUID patientId) {
-        PatientBadgesResponseDTO badges = patientBadgeService.getPatientBadges(patientId);
-        return ResponseEntity.ok(badges);
-    }
-
-    @GetMapping("/patient/my-badges")
-    @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<PatientBadgesResponseDTO> getMyPatientBadges(Authentication authentication) {
-        UUID patientId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
-        PatientBadgesResponseDTO badges = patientBadgeService.getPatientBadges(patientId);
-        return ResponseEntity.ok(badges);
-    }
-
-    @GetMapping("/patient/{patientId}/progress")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<PatientBadgeProgressSummaryDTO>> getPatientBadgeProgress(@PathVariable UUID patientId) {
-
-        try {
-            List<PatientBadgeProgressSummaryDTO> progress = patientBadgeProgressService.getBadgeProgress(patientId);
-
-            return ResponseEntity.ok(progress);
-        } catch (Exception e) {
-            log.error("[BADGE_CONTROLLER] [GET_PATIENT_BADGE_PROGRESS] Error retrieving badge progress for patient {}: {}", patientId, e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    @GetMapping("/patient/my-progress")
-    @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<List<PatientBadgeProgressSummaryDTO>> getMyPatientBadgeProgress(Authentication authentication) {
-        UUID patientId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
-        List<PatientBadgeProgressSummaryDTO> progress = patientBadgeProgressService.getBadgeProgress(patientId);
-        return ResponseEntity.ok(progress);
-    }
-
-    @PostMapping("/patient/{patientId}/evaluate")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.equals(authentication.principal.id))")
-    public ResponseEntity<Void> evaluatePatientBadges(@PathVariable UUID patientId) {
-        patientBadgeService.evaluateAllBadges(patientId);
+    public ResponseEntity<Void> evaluateUserBadges(@PathVariable UUID userId) {
+        badgeService.evaluateAllBadges(userId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/patient/evaluate")
-    @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<Void> evaluateMyPatientBadges(Authentication authentication) {
-        UUID patientId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
-        patientBadgeService.evaluateAllBadges(patientId);
+    @PostMapping("/evaluate")
+    @PreAuthorize("hasRole('PATIENT') or hasRole('DOCTOR')")
+    public ResponseEntity<Void> evaluateMyBadges(Authentication authentication) {
+        UUID userId = ((com.medibook.api.entity.User) authentication.getPrincipal()).getId();
+        badgeService.evaluateAllBadges(userId);
         return ResponseEntity.ok().build();
     }
 }

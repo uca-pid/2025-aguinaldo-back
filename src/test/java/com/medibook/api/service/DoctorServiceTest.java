@@ -8,7 +8,7 @@ import com.medibook.api.mapper.DoctorMapper;
 import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
-import com.medibook.api.repository.DoctorBadgeRepository;
+import com.medibook.api.repository.BadgeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +45,10 @@ class DoctorServiceTest {
     private RatingRepository ratingRepository;
 
     @Mock
-    private DoctorBadgeRepository badgeRepository;
+    private BadgeRepository badgeRepository;
+
+    @Mock
+    private BadgeService badgeService;
 
     @InjectMocks
     private DoctorService doctorService;

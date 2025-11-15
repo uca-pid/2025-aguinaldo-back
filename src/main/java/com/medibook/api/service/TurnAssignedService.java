@@ -37,7 +37,6 @@ public class TurnAssignedService {
     private final EmailService emailService;
     private final TurnFileService turnFileService;
     private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
-    private final PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
@@ -167,7 +166,7 @@ public class TurnAssignedService {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         long daysDifference = java.time.Duration.between(now, turn.getScheduledAt()).toDays();
         if (daysDifference >= 3) {
-            patientBadgeEvaluationTrigger.evaluateAfterAdvanceBooking(patientId);
+            badgeEvaluationTrigger.evaluateAfterAdvanceBooking(patientId);
         }
 
         return saved;
@@ -235,7 +234,7 @@ public class TurnAssignedService {
             badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getDoctor().getId());
         }
         if (turn.getPatient() != null) {
-            patientBadgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getPatient().getId());
+            badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getPatient().getId());
         }
         
         try {
@@ -345,7 +344,7 @@ public class TurnAssignedService {
                 turn.getDoctor().getId(), 
                 turn.getPatient().getId()
             );
-            patientBadgeEvaluationTrigger.evaluateAfterTurnCompletion(
+            badgeEvaluationTrigger.evaluateAfterTurnCompletion(
                 turn.getPatient().getId(),
                 turn.getDoctor().getId()
             );
@@ -374,7 +373,7 @@ public class TurnAssignedService {
         }
 
         if (turn.getPatient() != null) {
-            patientBadgeEvaluationTrigger.evaluateAfterTurnNoShow(turn.getPatient().getId());
+            badgeEvaluationTrigger.evaluateAfterTurnNoShow(turn.getPatient().getId());
         }
 
         return mapper.toDTO(saved);
@@ -499,11 +498,11 @@ public class TurnAssignedService {
             
             badgeEvaluationTrigger.evaluateAfterRating(ratedUser.getId(), communicationScore, empathyScore, punctualityScore);
         } else if ("PATIENT".equals(ratedUser.getRole())) {
-            patientBadgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
+            badgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
         }
 
         if ("PATIENT".equals(rater.getRole())) {
-            patientBadgeEvaluationTrigger.evaluateAfterRatingGiven(rater.getId());
+            badgeEvaluationTrigger.evaluateAfterRatingGiven(rater.getId());
         }
 
         return saved;
@@ -511,8 +510,8 @@ public class TurnAssignedService {
     
     private Integer extractCommunicationScore(Integer score, String subcategories) {
         if (subcategories == null || score == null) return null;
-        String lower = subcategories.toLowerCase();
-        if (lower.contains("explica") || lower.contains("escucha") || lower.contains("claramente")) {
+        // Labels exactas de RatingSubcategory relacionadas con comunicación
+        if (subcategories.contains("Explica claramente") || subcategories.contains("Escucha al paciente")) {
             return score;
         }
         return null;
@@ -520,8 +519,8 @@ public class TurnAssignedService {
     
     private Integer extractEmpathyScore(Integer score, String subcategories) {
         if (subcategories == null || score == null) return null;
-        String lower = subcategories.toLowerCase();
-        if (lower.contains("empatía") || lower.contains("empat") || lower.contains("confianza") || lower.contains("atención")) {
+        // Labels exactas de RatingSubcategory relacionadas con empatía
+        if (subcategories.contains("Demuestra empatía") || subcategories.contains("Genera confianza") || subcategories.contains("Excelente atención")) {
             return score;
         }
         return null;
@@ -529,8 +528,8 @@ public class TurnAssignedService {
     
     private Integer extractPunctualityScore(Integer score, String subcategories) {
         if (subcategories == null || score == null) return null;
-        String lower = subcategories.toLowerCase();
-        if (lower.contains("horarios") || lower.contains("respeta horarios") || lower.contains("tiempo de espera")) {
+        // Labels exactas de RatingSubcategory relacionadas con puntualidad
+        if (subcategories.contains("Respeta horarios") || subcategories.contains("Tiempo de espera aceptable")) {
             return score;
         }
         return null;

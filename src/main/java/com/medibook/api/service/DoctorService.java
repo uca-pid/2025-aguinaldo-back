@@ -5,11 +5,11 @@ import com.medibook.api.dto.DoctorMetricsDTO;
 import com.medibook.api.dto.MedicalHistoryDTO;
 import com.medibook.api.dto.PatientDTO;
 import com.medibook.api.dto.Rating.SubcategoryCountDTO;
-import com.medibook.api.entity.DoctorBadge;
+import com.medibook.api.entity.Badge;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.DoctorMapper;
-import com.medibook.api.repository.DoctorBadgeRepository;
+import com.medibook.api.repository.BadgeRepository;
 import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
 import com.medibook.api.repository.UserRepository;
@@ -33,7 +33,8 @@ public class DoctorService {
     private final DoctorMapper doctorMapper;
     private final MedicalHistoryService medicalHistoryService;
     private final RatingRepository ratingRepository;
-    private final DoctorBadgeRepository badgeRepository;
+    private final BadgeRepository badgeRepository;
+    private final BadgeService badgeService;
 
     public List<DoctorDTO> getAllDoctors() {
         List<User> doctors = userRepository.findDoctorsByStatus("ACTIVE");
@@ -186,16 +187,10 @@ public class DoctorService {
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .collect(Collectors.toList());
         
-        List<DoctorBadge> activeBadges = badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId);
+        List<Badge> activeBadges = badgeRepository.findByUser_IdAndIsActiveTrue(doctorId);
         
         List<BadgeDTO> badgeDTOs = activeBadges.stream()
-                .map(badge -> BadgeDTO.builder()
-                        .badgeType(badge.getBadgeType())
-                        .category(badge.getBadgeType().getCategory().name())
-                        .isActive(badge.getIsActive())
-                        .earnedAt(badge.getEarnedAt())
-                        .lastEvaluatedAt(badge.getLastEvaluatedAt())
-                        .build())
+                .map(badge -> badgeService.toBadgeDTO(badge, "DOCTOR"))
                 .collect(Collectors.toList());
         
         return DoctorMetricsDTO.builder()

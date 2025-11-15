@@ -1,9 +1,10 @@
 package com.medibook.api.mapper;
 import com.medibook.api.dto.Badge.BadgeDTO;
+import com.medibook.api.service.BadgeService;
 import com.medibook.api.dto.DoctorDTO;
-import com.medibook.api.entity.DoctorBadge;
+import com.medibook.api.entity.Badge;
 import com.medibook.api.entity.User;
-import com.medibook.api.repository.DoctorBadgeRepository;
+import com.medibook.api.repository.BadgeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.List;
@@ -13,23 +14,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DoctorMapper {
 
-    private final DoctorBadgeRepository badgeRepository;
+    private final BadgeRepository badgeRepository;
+    private final BadgeService badgeService;
 
     public DoctorDTO toDTO(User user) {
         if (user == null || user.getDoctorProfile() == null) {
             return null;
         }
 
-        List<DoctorBadge> activeBadges = badgeRepository.findByDoctor_IdAndIsActiveTrue(user.getId());
+        List<Badge> activeBadges = badgeRepository.findByUser_IdAndIsActiveTrue(user.getId());
         
         List<BadgeDTO> badgeDTOs = activeBadges.stream()
-                .map(badge -> BadgeDTO.builder()
-                        .badgeType(badge.getBadgeType())
-                        .category(badge.getBadgeType().getCategory().name())
-                        .isActive(badge.getIsActive())
-                        .earnedAt(badge.getEarnedAt())
-                        .lastEvaluatedAt(badge.getLastEvaluatedAt())
-                        .build())
+                .map(badge -> badgeService.toBadgeDTO(badge, "DOCTOR"))
                 .collect(Collectors.toList());
 
         return DoctorDTO.builder()
