@@ -1,18 +1,23 @@
 package com.medibook.api.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.medibook.api.dto.Badge.BadgeProgressSummaryDTO;
+import com.medibook.api.entity.Badge;
 import com.medibook.api.entity.BadgeType;
 import com.medibook.api.entity.BadgeType.BadgeCategory;
-import com.medibook.api.entity.DoctorBadgeStatistics;
+import com.medibook.api.entity.BadgeStatistics;
 import com.medibook.api.entity.User;
-import com.medibook.api.repository.DoctorBadgeRepository;
-import com.medibook.api.repository.DoctorBadgeStatisticsRepository;
+import com.medibook.api.repository.BadgeRepository;
+import com.medibook.api.repository.BadgeStatisticsRepository;
 import com.medibook.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -20,148 +25,117 @@ import java.util.UUID;
 @Slf4j
 public class BadgeProgressService {
 
-    private final DoctorBadgeStatisticsRepository statisticsRepository;
+    private final BadgeStatisticsRepository statisticsRepository;
     private final UserRepository userRepository;
-    private final DoctorBadgeRepository badgeRepository;
+    private final BadgeRepository badgeRepository;
+    private final BadgeMetadataService badgeMetadataService;
 
     @Transactional(readOnly = true)
-    public List<BadgeProgressSummaryDTO> getBadgeProgress(UUID doctorId) {
+    public List<BadgeProgressSummaryDTO> getBadgeProgress(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        User doctor = userRepository.findById(doctorId)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        if ("PATIENT".equals(user.getRole())) {
+            return getPatientBadgeProgress(user);
+        } else if ("DOCTOR".equals(user.getRole())) {
+            return getDoctorBadgeProgress(user);
+        } else {
+            throw new RuntimeException("Unsupported user role: " + user.getRole());
+        }
+    }
 
-        if (!"DOCTOR".equals(doctor.getRole())) {
+    @Transactional(readOnly = true)
+    public List<BadgeProgressSummaryDTO> getDoctorBadgeProgress(User user) {
+        UUID userId = user.getId();
+
+        if (!"DOCTOR".equals(user.getRole())) {
             throw new RuntimeException("User is not a doctor");
         }
 
-        DoctorBadgeStatistics stats = statisticsRepository.findByDoctorId(doctorId)
-                .orElseGet(() -> createEmptyStatistics(doctorId));
+        BadgeStatistics stats = statisticsRepository.findByUserId(userId).orElse(null);
+        if (stats == null || stats.getProgress() == null) {
+            return getEmptyDoctorProgressList();
+        }
 
-        List<BadgeType> earnedBadges = badgeRepository.findByDoctor_IdAndIsActiveTrue(doctorId)
+        List<Badge> earnedBadges = badgeRepository.findByUser_IdOrderByEarnedAtDesc(userId)
                 .stream()
-                .map(badge -> badge.getBadgeType())
+                .filter(Badge::getIsActive)
                 .toList();
-        
+
         List<BadgeProgressSummaryDTO> progressList = new ArrayList<>();
+        JsonNode progressJson = stats.getProgress();
+        Map<String, com.medibook.api.model.BadgeMetadata> doctorMetadata = badgeMetadataService.getAllDoctorBadgeMetadata();
 
-        progressList.add(createProgressDTO(
-                BadgeType.SUSTAINED_EXCELLENCE,
-                "Excelencia Sostenida",
-                BadgeCategory.QUALITY_OF_CARE,
-                stats.getProgressExcellenceInCare(),
-                earnedBadges.contains(BadgeType.SUSTAINED_EXCELLENCE),
-                "Mantén un promedio de 4.7⭐ en los últimos 100 turnos"
-        ));
+        for (Map.Entry<String, com.medibook.api.model.BadgeMetadata> entry : doctorMetadata.entrySet()) {
+            String badgeType = entry.getKey();
+            com.medibook.api.model.BadgeMetadata metadata = entry.getValue();
 
-        progressList.add(createProgressDTO(
-                BadgeType.EMPATHETIC_DOCTOR,
-                "Médico Empático",
-                BadgeCategory.QUALITY_OF_CARE,
-                stats.getProgressEmpathyChampion(),
-                earnedBadges.contains(BadgeType.EMPATHETIC_DOCTOR),
-                "Recibe 15+ menciones de empatía en los últimos 50 comentarios"
-        ));
+            Badge badge = earnedBadges.stream()
+                    .filter(b -> badgeType.equals(b.getBadgeType()))
+                    .findFirst()
+                    .orElse(null);
 
-        progressList.add(createProgressDTO(
-                BadgeType.EXCEPTIONAL_COMMUNICATOR,
-                "Comunicador Excepcional",
-                BadgeCategory.QUALITY_OF_CARE,
-                stats.getProgressClearCommunicator(),
-                earnedBadges.contains(BadgeType.EXCEPTIONAL_COMMUNICATOR),
-                "Recibe 15+ menciones de comunicación clara en los últimos 50 comentarios"
-        ));
+            progressList.add(createProgressDTO(
+                    badgeType,
+                    progressJson.path(badgeType).asDouble(0.0),
+                    badge != null,
+                    metadata,
+                    badge
+            ));
+        }
 
-        progressList.add(createProgressDTO(
-                BadgeType.DETAILED_HISTORIAN,
-                "Historiador Detallado",
-                BadgeCategory.QUALITY_OF_CARE,
-                stats.getProgressDetailedDiagnostician(),
-                earnedBadges.contains(BadgeType.DETAILED_HISTORIAN),
-                "Promedio de 150+ palabras en las últimas 30 historias médicas"
-        ));
+        return progressList;
+    }
 
-        progressList.add(createProgressDTO(
-                BadgeType.PUNCTUALITY_PROFESSIONAL,
-                "Puntualidad Profesional",
-                BadgeCategory.PROFESSIONALISM,
-                stats.getProgressTimelyProfessional(),
-                earnedBadges.contains(BadgeType.PUNCTUALITY_PROFESSIONAL),
-                "Recibe 12+ menciones de puntualidad en los últimos 50 comentarios"
-        ));
+    @Transactional(readOnly = true)
+    public List<BadgeProgressSummaryDTO> getPatientBadgeProgress(User user) {
+        UUID userId = user.getId();
 
-        progressList.add(createProgressDTO(
-                BadgeType.COMPLETE_DOCUMENTER,
-                "Documentador Completo",
-                BadgeCategory.PROFESSIONALISM,
-                stats.getProgressReliableExpert(),
-                earnedBadges.contains(BadgeType.COMPLETE_DOCUMENTER),
-                "96% de documentación en los últimos 50 turnos completados"
-        ));
+        if (!"PATIENT".equals(user.getRole())) {
+            throw new RuntimeException("User is not a patient");
+        }
 
-        progressList.add(createProgressDTO(
-                BadgeType.CONSISTENT_PROFESSIONAL,
-                "Profesional Consistente",
-                BadgeCategory.CONSISTENCY,
-                stats.getProgressFlexibleCaregiver(),
-                earnedBadges.contains(BadgeType.CONSISTENT_PROFESSIONAL),
-                "Mantén una tasa de cancelación <10% con 20+ turnos"
-        ));
+        BadgeStatistics stats = statisticsRepository.findByUserId(userId).orElse(null);
+        if (stats == null || stats.getProgress() == null) {
+            return getEmptyPatientProgressList();
+        }
 
-        progressList.add(createProgressDTO(
-                BadgeType.AGILE_RESPONDER,
-                "Respuesta Ágil",
-                BadgeCategory.PROFESSIONALISM,
-                stats.getProgressAgileResponder(),
-                earnedBadges.contains(BadgeType.AGILE_RESPONDER),
-                "Responde a 90% de solicitudes en <24 horas (últimas 10)"
-        ));
+        List<Badge> earnedBadges = badgeRepository.findByUser_IdOrderByEarnedAtDesc(userId)
+                .stream()
+                .filter(Badge::getIsActive)
+                .toList();
 
-        progressList.add(createProgressDTO(
-                BadgeType.RELATIONSHIP_BUILDER,
-                "Constructor de Relaciones",
-                BadgeCategory.PROFESSIONALISM,
-                stats.getProgressRelationshipBuilder(),
-                earnedBadges.contains(BadgeType.RELATIONSHIP_BUILDER),
-                "Consigue 10+ pacientes que regresan de un total de 50+ únicos"
-        ));
+        List<BadgeProgressSummaryDTO> progressList = new ArrayList<>();
+        JsonNode progressJson = stats.getProgress();
+        Map<String, com.medibook.api.model.BadgeMetadata> patientMetadata = badgeMetadataService.getAllPatientBadgeMetadata();
 
-        progressList.add(createProgressDTO(
-                BadgeType.TOP_SPECIALIST,
-                "Especialista TOP",
-                BadgeCategory.CONSISTENCY,
-                stats.getProgressTopSpecialist(),
-                earnedBadges.contains(BadgeType.TOP_SPECIALIST),
-                "Ubícate en el top 10% de tu especialidad con 100+ turnos"
-        ));
+        for (Map.Entry<String, com.medibook.api.model.BadgeMetadata> entry : patientMetadata.entrySet()) {
+            String badgeType = entry.getKey();
+            com.medibook.api.model.BadgeMetadata metadata = entry.getValue();
 
-        progressList.add(createProgressDTO(
-                BadgeType.MEDICAL_LEGEND,
-                "Leyenda Médica",
-                BadgeCategory.CONSISTENCY,
-                stats.getProgressMedicalLegend(),
-                earnedBadges.contains(BadgeType.MEDICAL_LEGEND),
-                "Completa 500+ turnos con promedio de 4.7⭐ y 8+ badges"
-        ));
+            Badge badge = earnedBadges.stream()
+                    .filter(b -> badgeType.equals(b.getBadgeType()))
+                    .findFirst()
+                    .orElse(null);
 
-        progressList.add(createProgressDTO(
-                BadgeType.ALWAYS_AVAILABLE,
-                "Siempre Disponible",
-                BadgeCategory.CONSISTENCY,
-                stats.getProgressAllStarDoctor(),
-                earnedBadges.contains(BadgeType.ALWAYS_AVAILABLE),
-                "Disponibilidad en 4+ días/semana por 60+ días consecutivos"
-        ));
+            progressList.add(createProgressDTO(
+                    badgeType,
+                    progressJson.path(badgeType).asDouble(0.0),
+                    badge != null,
+                    metadata,
+                    badge
+            ));
+        }
 
         return progressList;
     }
 
     private BadgeProgressSummaryDTO createProgressDTO(
-            BadgeType type,
-            String name,
-            BadgeCategory category,
+            String badgeType,
             Double progress,
             Boolean earned,
-            String description
+            com.medibook.api.model.BadgeMetadata metadata,
+            Badge badge
     ) {
         String statusMessage = earned ?
                 "¡Insignia obtenida! Excelente trabajo." :
@@ -171,41 +145,42 @@ public class BadgeProgressService {
                                         "Comienza a trabajar en esta insignia.");
 
         return BadgeProgressSummaryDTO.builder()
-                .badgeType(type)
-                .badgeName(name)
-                .category(category)
+                .badgeType(badgeType)
+                .badgeName(metadata.getName())
+                .category(metadata.getCategory())
+                .rarity(metadata.getRarity())
+                .description(metadata.getDescription())
+                .icon(metadata.getIcon())
+                .color(metadata.getColor())
+                .criteria(metadata.getCriteria())
                 .earned(earned)
+                .earnedAt(badge != null ? badge.getEarnedAt() : null)
+                .isActive(badge != null ? badge.getIsActive() : null)
+                .lastEvaluatedAt(badge != null ? badge.getLastEvaluatedAt() : null)
                 .progressPercentage(progress)
-                .description(description)
                 .statusMessage(statusMessage)
                 .build();
     }
 
-    private DoctorBadgeStatistics createEmptyStatistics(UUID doctorId) {
-        return DoctorBadgeStatistics.builder()
-                .doctorId(doctorId)
-                .totalRatingsReceived(0)
-                .last50CommunicationCount(0)
-                .last50EmpathyCount(0)
-                .last50PunctualityCount(0)
-                .totalTurnsCompleted(0)
-                .totalTurnsCancelled(0)
-                .last30DocumentedCount(0)
-                .totalUniquePatients(0)
-                .returningPatientsCount(0)
-                .last10RequestsHandled(0)
-                .progressExcellenceInCare(0.0)
-                .progressEmpathyChampion(0.0)
-                .progressClearCommunicator(0.0)
-                .progressDetailedDiagnostician(0.0)
-                .progressTimelyProfessional(0.0)
-                .progressReliableExpert(0.0)
-                .progressFlexibleCaregiver(0.0)
-                .progressAgileResponder(0.0)
-                .progressRelationshipBuilder(0.0)
-                .progressTopSpecialist(0.0)
-                .progressMedicalLegend(0.0)
-                .progressAllStarDoctor(0.0)
-                .build();
+    private List<BadgeProgressSummaryDTO> getEmptyDoctorProgressList() {
+        List<BadgeProgressSummaryDTO> progressList = new ArrayList<>();
+        Map<String, com.medibook.api.model.BadgeMetadata> doctorMetadata = badgeMetadataService.getAllDoctorBadgeMetadata();
+
+        for (Map.Entry<String, com.medibook.api.model.BadgeMetadata> entry : doctorMetadata.entrySet()) {
+            progressList.add(createProgressDTO(entry.getKey(), 0.0, false, entry.getValue(), null));
+        }
+
+        return progressList;
+    }
+
+    private List<BadgeProgressSummaryDTO> getEmptyPatientProgressList() {
+        List<BadgeProgressSummaryDTO> progressList = new ArrayList<>();
+        Map<String, com.medibook.api.model.BadgeMetadata> patientMetadata = badgeMetadataService.getAllPatientBadgeMetadata();
+
+        for (Map.Entry<String, com.medibook.api.model.BadgeMetadata> entry : patientMetadata.entrySet()) {
+            progressList.add(createProgressDTO(entry.getKey(), 0.0, false, entry.getValue(), null));
+        }
+
+        return progressList;
     }
 }

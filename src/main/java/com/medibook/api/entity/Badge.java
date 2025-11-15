@@ -1,31 +1,34 @@
 package com.medibook.api.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "doctor_badges", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_doctor_badge_type", columnNames = {"doctor_id", "badge_type"})
+@Table(name = "badges", uniqueConstraints = {
+    @UniqueConstraint(name = "uc_user_badge_type", columnNames = {"user_id", "badge_type"})
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DoctorBadge {
+public class Badge {
 
     @Id
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor_id", nullable = false)
-    private User doctor;
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, insertable = false, updatable = false)
+    private User user;
+
     @Column(name = "badge_type", nullable = false)
-    private BadgeType badgeType;
+    private String badgeType;
 
     @Column(name = "earned_at", nullable = false)
     private OffsetDateTime earnedAt;

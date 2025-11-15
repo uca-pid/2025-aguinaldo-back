@@ -14,145 +14,233 @@ import java.util.UUID;
 @Slf4j
 public class BadgeEvaluationTriggerService {
 
-    private final DoctorBadgeService badgeService;
-    private final DoctorBadgeStatisticsUpdateService statisticsUpdateService;
+    private final BadgeService badgeService;
+    private final BadgeStatisticsUpdateService statisticsUpdateService;
     private final UserRepository userRepository;
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAfterRating(UUID doctorId, Integer communicationScore, Integer empathyScore, Integer punctualityScore) {
+    public void evaluateAfterRating(UUID userId, Integer communicationScore, Integer empathyScore, Integer punctualityScore) {
         try {
-            validateDoctorRole(doctorId);
+            User user = userRepository.findById(userId).orElse(null);
             
-            statisticsUpdateService.updateAfterRatingAddedSync(doctorId, communicationScore, empathyScore, punctualityScore);
-            statisticsUpdateService.updateProgressAfterRatingSync(doctorId);
+            if (user == null) {
+                log.warn("Attempted badge evaluation for non-existent user: {}", userId);
+                return;
+            }
             
-            badgeService.evaluateRatingRelatedBadges(doctorId);
+            if (!"DOCTOR".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", userId, user.getRole());
+                return;
+            }
+            
+            statisticsUpdateService.updateAfterRatingAddedSync(userId, communicationScore, empathyScore, punctualityScore);
+            statisticsUpdateService.updateProgressAfterRatingSync(userId);
+            
+            badgeService.evaluateRatingRelatedBadges(userId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating rating-related badges for doctor {} after rating: {}", doctorId, e.getMessage(), e);
+            log.error("[TRIGGER] Unexpected error evaluating rating-related badges for user {} after rating: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAfterTurnCompletion(UUID doctorId, UUID patientId) {
+    public void evaluateAfterTurnCompletion(UUID userId, UUID otherUserId) {
         try {
-            validateDoctorRole(doctorId);
+            userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
             
-            statisticsUpdateService.updateAfterTurnCompletedSync(doctorId, patientId);
-            statisticsUpdateService.updateProgressAfterTurnCompletionSync(doctorId);
+            statisticsUpdateService.updateAfterTurnCompletedSync(userId, otherUserId);
+            statisticsUpdateService.updateProgressAfterTurnCompletionSync(userId);
             
-            badgeService.evaluateTurnCompletionRelatedBadges(doctorId);
+            badgeService.evaluateTurnCompletionRelatedBadges(userId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating turn completion badges for doctor {} after turn completion: {}", doctorId, e.getMessage(), e);
+            log.error("[TRIGGER] Unexpected error evaluating turn completion badges for user {} after turn completion: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAfterMedicalHistoryDocumented(UUID doctorId, String content) {
+    public void evaluateAfterMedicalHistoryDocumented(UUID userId, String content) {
         try {
-            validateDoctorRole(doctorId);
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
             
-            statisticsUpdateService.updateAfterMedicalHistoryDocumentedSync(doctorId, content);
-            statisticsUpdateService.updateProgressAfterMedicalHistorySync(doctorId);
+            if (!"DOCTOR".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", userId, user.getRole());
+                return;
+            }
             
-            badgeService.evaluateDocumentationRelatedBadges(doctorId);
+            statisticsUpdateService.updateAfterMedicalHistoryDocumentedSync(userId, content);
+            statisticsUpdateService.updateProgressAfterMedicalHistorySync(userId);
+            
+            badgeService.evaluateDocumentationRelatedBadges(userId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating documentation badges for doctor {} after medical history: {}", doctorId, e.getMessage(), e);
+            log.error("[TRIGGER] Unexpected error evaluating documentation badges for user {} after medical history: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAfterModifyRequestHandled(UUID doctorId) {
+    public void evaluateAfterModifyRequestHandled(UUID userId) {
         try {
-            validateDoctorRole(doctorId);
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
             
-            statisticsUpdateService.updateAfterModifyRequestHandledSync(doctorId);
-            statisticsUpdateService.updateProgressAfterModifyRequestSync(doctorId);
+            if (!"DOCTOR".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", userId, user.getRole());
+                return;
+            }
             
-            badgeService.evaluateResponseRelatedBadges(doctorId);
+            statisticsUpdateService.updateAfterModifyRequestHandledSync(userId);
+            statisticsUpdateService.updateProgressAfterModifyRequestSync(userId);
+            
+            badgeService.evaluateResponseRelatedBadges(userId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating response badges for doctor {} after modify request: {}", doctorId, e.getMessage(), e);
+            log.error("[TRIGGER] Unexpected error evaluating response badges for user {} after modify request: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAfterTurnCancellation(UUID doctorId) {
+    public void evaluateAfterTurnCancellation(UUID userId) {
         try {
-            validateDoctorRole(doctorId);
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
             
-            statisticsUpdateService.updateAfterTurnCancelledSync(doctorId);
-            statisticsUpdateService.updateProgressAfterCancellationSync(doctorId);
+            if (!"DOCTOR".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", userId, user.getRole());
+                return;
+            }
             
-            badgeService.evaluateConsistencyRelatedBadges(doctorId);
+            statisticsUpdateService.updateAfterTurnCancelledSync(userId);
+            statisticsUpdateService.updateProgressAfterCancellationSync(userId);
+            
+            badgeService.evaluateConsistencyRelatedBadges(userId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating consistency badges for doctor {} after cancellation: {}", doctorId, e.getMessage(), e);
+            log.error("[TRIGGER] Unexpected error evaluating consistency badges for user {} after cancellation: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAfterTurnNoShow(UUID doctorId) {
+    public void evaluateAfterTurnNoShow(UUID userId) {
         try {
-            validateDoctorRole(doctorId);
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
             
-            statisticsUpdateService.updateAfterTurnNoShowSync(doctorId);
-            statisticsUpdateService.updateProgressAfterCancellationSync(doctorId);
+            if (!"DOCTOR".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", userId, user.getRole());
+                return;
+            }
             
-            badgeService.evaluateConsistencyRelatedBadges(doctorId);
+            statisticsUpdateService.updateAfterTurnNoShowSync(userId);
+            statisticsUpdateService.updateProgressAfterCancellationSync(userId);
+            
+            badgeService.evaluateConsistencyRelatedBadges(userId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating consistency badges for doctor {} after no-show: {}", doctorId, e.getMessage(), e);
+            log.error("[TRIGGER] Unexpected error evaluating consistency badges for user {} after no-show: {}", userId, e.getMessage(), e);
+        }
+    }
+
+    @Async("badgeEvaluationTaskExecutor")
+    public void evaluateAfterAdvanceBooking(UUID userId) {
+        try {
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+            
+            if (!"PATIENT".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-patient user: {} (role: {})", userId, user.getRole());
+                return;
+            }
+            
+            statisticsUpdateService.updateAfterAdvanceBookingSync(userId);
+            statisticsUpdateService.updateProgressAfterBookingSync(userId);
+            badgeService.evaluateBookingRelatedBadges(userId);
+
+        } catch (Exception e) {
+            log.error("[TRIGGER] Unexpected error evaluating advance booking badges for user {} after booking: {}", userId, e.getMessage(), e);
+        }
+    }
+
+    @Async("badgeEvaluationTaskExecutor")
+    public void evaluateAfterRatingGiven(UUID userId) {
+        try {
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+            
+            if (!"PATIENT".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-patient user: {} (role: {})", userId, user.getRole());
+                return;
+            }
+            
+            statisticsUpdateService.updateAfterRatingGivenSync(userId);
+            statisticsUpdateService.updateProgressAfterRatingSync(userId);
+            badgeService.evaluateRatingRelatedBadges(userId);
+
+        } catch (Exception e) {
+            log.error("[TRIGGER] Unexpected error evaluating rating given badges for user {} after rating given: {}", userId, e.getMessage(), e);
+        }
+    }
+
+    @Async("badgeEvaluationTaskExecutor")
+    public void evaluateAfterRatingReceived(UUID userId) {
+        try {
+            userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+            
+            statisticsUpdateService.updateAfterRatingReceivedSync(userId);
+            statisticsUpdateService.updateProgressAfterRatingSync(userId);
+            badgeService.evaluateRatingRelatedBadges(userId);
+
+        } catch (Exception e) {
+            log.error("[TRIGGER] Unexpected error evaluating rating received badges for user {} after rating received: {}", userId, e.getMessage(), e);
+        }
+    }
+
+    @Async("badgeEvaluationTaskExecutor")
+    public void evaluateAfterFileUploaded(UUID userId) {
+        try {
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+            
+            if (!"PATIENT".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-patient user: {} (role: {})", userId, user.getRole());
+                return;
+            }
+            
+            statisticsUpdateService.updateAfterFileUploadedSync(userId);
+            statisticsUpdateService.updateProgressAfterFileUploadSync(userId);
+            badgeService.evaluateFileRelatedBadges(userId);
+
+        } catch (Exception e) {
+            log.error("[TRIGGER] Unexpected error evaluating file upload badges for user {} after file upload: {}", userId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
     public void evaluateAfterAvailabilityConfigured(UUID doctorId) {
         try {
-            validateDoctorRole(doctorId);
-            badgeService.evaluateAlwaysAvailableBadge(doctorId);
+            User user = userRepository.findById(doctorId).orElseThrow(() -> new IllegalArgumentException("User not found: " + doctorId));
+            
+            if (!"DOCTOR".equals(user.getRole())) {
+                log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", doctorId, user.getRole());
+                return;
+            }
+            
+            badgeService.evaluateAlwaysAvailable(user);
 
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
         } catch (Exception e) {
             log.error("[TRIGGER] Unexpected error evaluating ALWAYS_AVAILABLE badge for doctor {} after availability configuration: {}", doctorId, e.getMessage(), e);
         }
     }
 
     @Async("badgeEvaluationTaskExecutor")
-    public void evaluateAllBadges(UUID doctorId) {
+    public void evaluateAllBadges(UUID userId) {
         try {
-            validateDoctorRole(doctorId);            
-            statisticsUpdateService.updateAllBadgeProgress(doctorId);
-            badgeService.evaluateAllBadges(doctorId);
+            User user = userRepository.findById(userId).orElse(null);
             
-        } catch (IllegalArgumentException e) {
-            log.error("[TRIGGER] Invalid doctor role for badge evaluation: {}", e.getMessage());
+            if (user == null) {
+                log.warn("Attempted badge evaluation for non-existent user: {}", userId);
+                return;
+            }
+            
+            statisticsUpdateService.updateAllBadgeProgress(userId);
+            badgeService.evaluateAllBadges(userId);
+            
         } catch (Exception e) {
-            log.error("[TRIGGER] Unexpected error evaluating all badges for doctor {}: {}", doctorId, e.getMessage(), e);
-        }
-    }
-    
-    private void validateDoctorRole(UUID userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        
-        if (!"DOCTOR".equals(user.getRole())) {
-            log.warn("Attempted badge evaluation for non-doctor user: {} (role: {})", userId, user.getRole());
-            throw new IllegalArgumentException("Badge evaluation only allowed for doctors");
+            log.error("[TRIGGER] Unexpected error evaluating all badges for user {}: {}", userId, e.getMessage(), e);
         }
     }
 }

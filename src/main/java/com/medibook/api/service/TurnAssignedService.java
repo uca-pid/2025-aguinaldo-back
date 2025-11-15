@@ -37,7 +37,6 @@ public class TurnAssignedService {
     private final EmailService emailService;
     private final TurnFileService turnFileService;
     private final BadgeEvaluationTriggerService badgeEvaluationTrigger;
-    private final PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
     private static final ZoneId ARGENTINA_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
 
     public TurnResponseDTO createTurn(TurnCreateRequestDTO dto) {
@@ -167,7 +166,7 @@ public class TurnAssignedService {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         long daysDifference = java.time.Duration.between(now, turn.getScheduledAt()).toDays();
         if (daysDifference >= 3) {
-            patientBadgeEvaluationTrigger.evaluateAfterAdvanceBooking(patientId);
+            badgeEvaluationTrigger.evaluateAfterAdvanceBooking(patientId);
         }
 
         return saved;
@@ -235,7 +234,7 @@ public class TurnAssignedService {
             badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getDoctor().getId());
         }
         if (turn.getPatient() != null) {
-            patientBadgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getPatient().getId());
+            badgeEvaluationTrigger.evaluateAfterTurnCancellation(turn.getPatient().getId());
         }
         
         try {
@@ -345,7 +344,7 @@ public class TurnAssignedService {
                 turn.getDoctor().getId(), 
                 turn.getPatient().getId()
             );
-            patientBadgeEvaluationTrigger.evaluateAfterTurnCompletion(
+            badgeEvaluationTrigger.evaluateAfterTurnCompletion(
                 turn.getPatient().getId(),
                 turn.getDoctor().getId()
             );
@@ -374,7 +373,7 @@ public class TurnAssignedService {
         }
 
         if (turn.getPatient() != null) {
-            patientBadgeEvaluationTrigger.evaluateAfterTurnNoShow(turn.getPatient().getId());
+            badgeEvaluationTrigger.evaluateAfterTurnNoShow(turn.getPatient().getId());
         }
 
         return mapper.toDTO(saved);
@@ -499,11 +498,12 @@ public class TurnAssignedService {
             
             badgeEvaluationTrigger.evaluateAfterRating(ratedUser.getId(), communicationScore, empathyScore, punctualityScore);
         } else if ("PATIENT".equals(ratedUser.getRole())) {
-            patientBadgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
+            badgeEvaluationTrigger.evaluateAfterRatingReceived(ratedUser.getId());
+            badgeEvaluationTrigger.evaluateAfterTurnCompletion(ratedUser.getId(), rater.getId());
         }
 
         if ("PATIENT".equals(rater.getRole())) {
-            patientBadgeEvaluationTrigger.evaluateAfterRatingGiven(rater.getId());
+            badgeEvaluationTrigger.evaluateAfterRatingGiven(rater.getId());
         }
 
         return saved;

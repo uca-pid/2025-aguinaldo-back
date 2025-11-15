@@ -39,7 +39,7 @@ class TurnFileServiceImplTest {
     private NotificationService notificationService;
 
     @Mock
-    private PatientBadgeEvaluationTriggerService patientBadgeEvaluationTrigger;
+    private BadgeEvaluationTriggerService badgeEvaluationTrigger;
 
     @Mock
     private MultipartFile file;

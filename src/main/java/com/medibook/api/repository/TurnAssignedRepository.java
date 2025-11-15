@@ -29,6 +29,7 @@ public interface TurnAssignedRepository extends JpaRepository<TurnAssigned, UUID
     
     boolean existsByDoctor_IdAndPatient_Id(UUID doctorId, UUID patientId);
     
-    @Query("SELECT COUNT(t) FROM TurnAssigned t WHERE t.doctor.id = :doctorId AND t.patient.id = :patientId AND t.status = :status")
-    long countByDoctorIdAndPatientIdAndStatus(@Param("doctorId") UUID doctorId, @Param("patientId") UUID patientId, @Param("status") String status);
+    List<TurnAssigned> findByPatient_IdAndStatusAndScheduledAtAfter(UUID patientId, String status, OffsetDateTime scheduledAt);
+    
+    List<TurnAssigned> findByPatient_IdAndStatus(UUID patientId, String status);
 }

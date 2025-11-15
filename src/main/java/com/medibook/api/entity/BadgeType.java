@@ -26,6 +26,10 @@ public enum BadgeType {
     }
     
     public enum BadgeCategory {
+        WELCOME,
+        PREVENTIVE_CARE,
+        ACTIVE_COMMITMENT,
+        CLINICAL_EXCELLENCE,
         QUALITY_OF_CARE,
         PROFESSIONALISM,
         CONSISTENCY

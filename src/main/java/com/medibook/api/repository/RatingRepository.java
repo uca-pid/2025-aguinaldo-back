@@ -30,9 +30,14 @@ public interface RatingRepository extends JpaRepository<Rating, UUID> {
     java.util.List<SubcategoryCount> countSubcategoriesByRatedId(@org.springframework.data.repository.query.Param("ratedId") java.util.UUID ratedId, @org.springframework.data.repository.query.Param("raterRole") String raterRole);
 
     @Query("SELECT r FROM Rating r WHERE r.rated.id = :ratedId ORDER BY r.createdAt DESC")
-    List<Rating> findTop50ByRatedIdOrderByCreatedAtDesc(@org.springframework.data.repository.query.Param("ratedId") UUID ratedId);
+    List<Rating> findTop100ByRatedIdOrderByCreatedAtDesc(@org.springframework.data.repository.query.Param("ratedId") UUID ratedId);
 
-    // Projection for repository result
+    @Query("SELECT r FROM Rating r WHERE r.rater.id = :raterId ORDER BY r.createdAt DESC")
+    List<Rating> findByRaterId(@org.springframework.data.repository.query.Param("raterId") UUID raterId);
+
+    @Query("SELECT r FROM Rating r WHERE r.rated.id = :ratedId ORDER BY r.createdAt DESC")
+    List<Rating> findByRatedId(@org.springframework.data.repository.query.Param("ratedId") UUID ratedId);
+
     interface SubcategoryCount {
         String getSubcategory();
         Long getCount();
