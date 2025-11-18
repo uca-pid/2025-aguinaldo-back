@@ -102,7 +102,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 30
         );
 
@@ -243,7 +243,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 null,
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 30
         );        IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -1259,7 +1259,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "   ",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 30
         );
 
@@ -1502,7 +1502,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "ABC123",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 30
         );
 
@@ -1526,7 +1526,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 30
         );
 
@@ -1550,7 +1550,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "12345678901",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 30
         );
 
@@ -1574,7 +1574,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                "Cardiology123",
+                "INVALID_SPECIALTY",
                 30
         );
 
@@ -1583,7 +1583,7 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(request)
         );
 
-        assertTrue(exception.getMessage().contains("Specialty can only contain letters and spaces"));
+        assertTrue(exception.getMessage().contains("Invalid specialty selected"));
     }
 
     @Test
@@ -1598,7 +1598,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                "A",
+                "INVALID",
                 30
         );
 
@@ -1607,12 +1607,11 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(request)
         );
 
-        assertTrue(exception.getMessage().contains("Specialty minimum 2 characters"));
+        assertTrue(exception.getMessage().contains("Invalid specialty selected"));
     }
 
     @Test
     void registerDoctor_Specialty_TooLong_ThrowsException() {
-        String longSpecialty = "A".repeat(51);
         RegisterRequestDTO request = new RegisterRequestDTO(
                 "doctor@test.com",
                 87654321L,
@@ -1623,7 +1622,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                longSpecialty,
+                "INVALID_SPECIALTY_TOO_LONG_FOR_TESTING_PURPOSES",
                 30
         );
 
@@ -1632,7 +1631,7 @@ class AuthServiceImplTest {
                 () -> authService.registerDoctor(request)
         );
 
-        assertTrue(exception.getMessage().contains("Specialty maximum 50 characters"));
+        assertTrue(exception.getMessage().contains("Invalid specialty selected"));
     }
 
     @Test
@@ -1647,7 +1646,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 null
         );
 
@@ -1671,7 +1670,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 1
         );
 
@@ -1691,7 +1690,7 @@ class AuthServiceImplTest {
                 LocalDate.of(1980, 1, 1),
                 "FEMALE",
                 "123456",
-                "CARDIOLOGY",
+                "CARDIOLOGÍA",
                 1000
         );
 
