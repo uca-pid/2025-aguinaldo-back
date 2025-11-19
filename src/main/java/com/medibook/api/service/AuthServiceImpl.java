@@ -33,6 +33,71 @@ class AuthServiceImpl implements AuthService {
     private final AuthMapper authMapper;
     private final EmailService emailService;
 
+    private static final java.util.Set<String> VALID_SPECIALTIES = java.util.Set.of(
+        "ALERGIA E INMUNOLOGÍA",
+        "ANATOMÍA PATOLÓGICA",
+        "ANESTESIOLOGÍA",
+        "ANGIOLOGÍA GENERAL y HEMODINAMIA",
+        "CARDIOLOGÍA",
+        "CARDIÓLOGO INFANTIL",
+        "CIRUGÍA GENERAL",
+        "CIRUGÍA CARDIOVASCULAR",
+        "CIRUGÍA DE CABEZA Y CUELLO",
+        "CIRUGÍA DE TÓRAX (CIRUGÍA TORÁCICA)",
+        "CIRUGÍA INFANTIL (CIRUGÍA PEDIÁTRICA)",
+        "CIRUGÍA PLÁSTICA Y REPARADORA",
+        "CIRUGÍA VASCULAR PERIFÉRICA",
+        "CLÍNICA MÉDICA",
+        "COLOPROCTOLOGÍA",
+        "DERMATOLOGÍA",
+        "DIAGNOSTICO POR IMÁGENES",
+        "ENDOCRINOLOGÍA",
+        "ENDOCRINÓLOGO INFANTIL",
+        "FARMACOLOGÍA CLÍNICA",
+        "FISIATRÍA (MEDICINA FÍSICA Y REHABILITACIÓN)",
+        "GASTROENTEROLOGÍA",
+        "GASTROENTERÓLOGO INFANTIL",
+        "GENÉTICA MEDICA",
+        "GERIATRÍA",
+        "GINECOLOGÍA",
+        "HEMATOLOGÍA",
+        "HEMATÓLOGO INFANTIL",
+        "HEMOTERAPIA E INMUNOHEMATOLOGÍA",
+        "INFECTOLOGÍA",
+        "INFECTÓLOGO INFANTIL",
+        "MEDICINA DEL DEPORTE",
+        "MEDICINA GENERAL y/o MEDICINA DE FAMILIA",
+        "MEDICINA LEGAL",
+        "MEDICINA NUCLEAR",
+        "MEDICINA DEL TRABAJO",
+        "NEFROLOGÍA",
+        "NEFRÓLOGO INFANTIL",
+        "NEONATOLOGÍA",
+        "NEUMONOLOGÍA",
+        "NEUMONÓLOGO INFANTIL",
+        "NEUROCIRUGÍA",
+        "NEUROLOGÍA",
+        "NEURÓLOGO INFANTIL",
+        "NUTRICIÓN",
+        "OBSTETRICIA",
+        "OFTALMOLOGÍA",
+        "ONCOLOGÍA",
+        "ONCÓLOGO INFANTIL",
+        "ORTOPEDIA Y TRAUMATOLOGÍA",
+        "OTORRINOLARINGOLOGÍA",
+        "PEDIATRÍA",
+        "PSIQUIATRÍA",
+        "PSIQUIATRÍA INFANTO JUVENIL",
+        "RADIOTERAPIA O TERAPIA RADIANTE",
+        "REUMATOLOGÍA",
+        "REUMATÓLOGO INFANTIL",
+        "TERAPIA INTENSIVA",
+        "TERAPISTA INTENSIVO INFANTIL",
+        "TOCOGINECOLOGÍA",
+        "TOXICOLOGÍA",
+        "UROLOGÍA"
+    );
+
     public AuthServiceImpl(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
@@ -255,24 +320,16 @@ class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Specialty is required for doctors");
         }
         
+        if (!VALID_SPECIALTIES.contains(request.specialty().trim())) {
+            throw new IllegalArgumentException("Invalid specialty selected");
+        }
+        
         if (request.slotDurationMin() == null) {
             throw new IllegalArgumentException("Slot duration is required for doctors");
         }
                 
         if (!request.medicalLicense().matches("^[0-9]{4,10}$")) {
             throw new IllegalArgumentException("Medical license must be 4-10 digits");
-        }
-                
-        if (!request.specialty().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
-            throw new IllegalArgumentException("Specialty can only contain letters and spaces");
-        }
-                
-        if (request.specialty().length() < 2) {
-            throw new IllegalArgumentException("Specialty minimum 2 characters");
-        }
-        
-        if (request.specialty().length() > 50) {
-            throw new IllegalArgumentException("Specialty maximum 50 characters");
         }
                 
         if (request.slotDurationMin() < 5 || request.slotDurationMin() > 180) {

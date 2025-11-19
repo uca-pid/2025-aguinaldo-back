@@ -48,7 +48,7 @@ public record RegisterRequestDTO(
     @Size(max = 100, message = "Specialty must be less than 100 characters")
     String specialty,
 
-    @Min(value = 5, message = "Slot duration must be at least 5 minutes")
+    @Min(value = 15, message = "Slot duration must be at least 15 minutes")
     @Max(value = 180, message = "Slot duration must be at most 180 minutes")
     Integer slotDurationMin
 ) {}

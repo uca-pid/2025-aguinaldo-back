@@ -127,7 +127,7 @@ class RegisterRequestDTOTest {
 
         var violations = validator.validate(dto);
         assertEquals(1, violations.size());
-        assertEquals("Slot duration must be at least 5 minutes", violations.iterator().next().getMessage());
+        assertEquals("Slot duration must be at least 15 minutes", violations.iterator().next().getMessage());
     }
 
     @Test

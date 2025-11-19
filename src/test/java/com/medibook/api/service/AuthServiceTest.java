@@ -134,7 +134,7 @@ class AuthServiceTest {
     void whenRegisterDoctor_thenSuccess() {
         RegisterRequestDTO request = new RegisterRequestDTO(
             "doctor@example.com",
-            87654321L,
+            87654322L,
             "Password123",  // Corregido para cumplir patrón
             "John",
             "Doe",
@@ -142,7 +142,7 @@ class AuthServiceTest {
             LocalDate.of(1990, 1, 1),
             "MALE",
             "1234567890",  // Corregido: licencia médica debe ser 4-10 dígitos
-            "Cardiology",
+            "CARDIOLOGÍA",
             30
         );
 
