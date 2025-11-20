@@ -16,6 +16,9 @@ public class MedicalCheckApiService {
     @Value("${medical.check.api.url:https://mock-pid-api.onrender.com}")
     private String apiBaseUrl;
 
+    @Value("${medical.check.api.key:}")
+    private String apiKey;
+
     private final RestTemplate restTemplate;
 
     public MedicalCheckApiService() {
@@ -29,13 +32,14 @@ public class MedicalCheckApiService {
      */
     public boolean isUser(String email) {
         try {
-            String url = apiBaseUrl + "/api/isUser";
+            String url = apiBaseUrl + "/isUser";
             
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("email", email);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
 
             // Try to get response as plain boolean first
@@ -66,7 +70,7 @@ public class MedicalCheckApiService {
     @SuppressWarnings("unchecked")
     public boolean registerMedicalCheck(String email, boolean hasMedicalCheck) {
         try {
-            String url = apiBaseUrl + "/api/userHasMedicalCheck";
+            String url = apiBaseUrl + "/userHasMedicalCheck";
             
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("email", email);
@@ -74,6 +78,7 @@ public class MedicalCheckApiService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + apiKey);
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
