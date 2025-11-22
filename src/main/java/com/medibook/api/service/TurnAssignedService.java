@@ -547,4 +547,9 @@ public class TurnAssignedService {
         }
         return null;
     }
+
+    public boolean hasHealthCertificateWithinLastYear(String email) {
+        OffsetDateTime oneYearAgo = OffsetDateTime.now(ARGENTINA_ZONE).minusYears(1);
+        return turnRepo.existsHealthCertificateWithinLastYear(email, oneYearAgo);
+    }
 }
