@@ -192,6 +192,7 @@ public class BadgeService {
             evaluateRelationshipBuilder(user);
             evaluateTopSpecialist(user);
             evaluateMedicalLegend(user);
+            evaluateConsistentProfessional(user);
         } else if ("PATIENT".equals(user.getRole())) {
             evaluateMediBookWelcome(user);
             evaluateHealthGuardian(user);
@@ -710,12 +711,11 @@ public class BadgeService {
             }
 
             double cancellationRate = totalTurnsCompleted > 0 ? (double) totalCancellations / totalTurnsCompleted : 0.0;
-            boolean lowCancellationRate = cancellationRate < CONSISTENT_PROFESSIONAL_CANCELLATION_MAX;
-            double progress = lowCancellationRate ? 100.0 : 0.0;
+            double progress = (cancellationRate < CONSISTENT_PROFESSIONAL_CANCELLATION_MAX) ? 100.0 : 0.0;
 
             updateProgress(doctorId, "DOCTOR_CONSISTENT_PROFESSIONAL", progress);
 
-            if (lowCancellationRate) {
+            if (totalTurnsCompleted >= CONSISTENT_PROFESSIONAL_MIN_TURNS && cancellationRate < CONSISTENT_PROFESSIONAL_CANCELLATION_MAX) {
                 activateBadge(doctorId, "DOCTOR_CONSISTENT_PROFESSIONAL");
             } else {
                 deactivateBadge(doctorId, "DOCTOR_CONSISTENT_PROFESSIONAL");
@@ -852,31 +852,24 @@ public class BadgeService {
     }
 
     void activateBadge(UUID userId, String badgeType) {
-        log.debug("Activating badge: userId={}, badgeType={}", userId, badgeType);
-
         Optional<Badge> existing = badgeRepository.findByUser_IdAndBadgeType(userId, badgeType);
-        log.debug("Existing badge lookup result: {}", existing.isPresent() ? "found" : "not found");
-
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
         if (existing.isPresent()) {
             Badge badge = existing.get();
-            log.debug("Existing badge state: isActive={}, updating to active", badge.getIsActive());
 
             if (!badge.getIsActive()) {
                 badge.setIsActive(true);
+                if (badge.getEarnedAt() == null) {
+                    badge.setEarnedAt(now);
+                }
                 badge.setLastEvaluatedAt(now);
-                log.debug("Saving updated existing badge for userId: {}", userId);
                 badgeRepository.save(badge);
-                log.debug("Successfully activated existing badge for userId: {}", userId);
             } else {
                 badge.setLastEvaluatedAt(now);
-                log.debug("Saving existing badge (already active) for userId: {}", userId);
                 badgeRepository.save(badge);
-                log.debug("Successfully updated existing badge for userId: {}", userId);
             }
         } else {
-            log.debug("Creating new badge for userId: {}, badgeType: {}", userId, badgeType);
             Badge newBadge = Badge.builder()
                     .userId(userId)
                     .badgeType(badgeType)
@@ -884,9 +877,7 @@ public class BadgeService {
                     .isActive(true)
                     .lastEvaluatedAt(now)
                     .build();
-            log.debug("Saving new badge for userId: {}", userId);
             badgeRepository.save(newBadge);
-            log.debug("Successfully created and activated new badge for userId: {}", userId);
         }
     }
 
