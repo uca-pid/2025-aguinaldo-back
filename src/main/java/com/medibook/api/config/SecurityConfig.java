@@ -44,6 +44,7 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/gymcloud/**").permitAll()
                 .requestMatchers("/api/ratings/**").authenticated()
                 .requestMatchers("/api/turns/**").authenticated()
                 .requestMatchers("/api/admin/**").authenticated()
