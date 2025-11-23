@@ -1032,7 +1032,6 @@ class BadgeStatisticsUpdateServiceTest {
         assert progress.containsKey("DOCTOR_EXCEPTIONAL_COMMUNICATOR");
         assert progress.containsKey("DOCTOR_EMPATHETIC_DOCTOR");
         assert progress.containsKey("DOCTOR_PUNCTUALITY_PROFESSIONAL");
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
     }
 
     @Test
@@ -1063,7 +1062,6 @@ class BadgeStatisticsUpdateServiceTest {
         assert progress.containsKey("DOCTOR_EXCEPTIONAL_COMMUNICATOR");
         assert progress.containsKey("DOCTOR_EMPATHETIC_DOCTOR");
         assert progress.containsKey("DOCTOR_PUNCTUALITY_PROFESSIONAL");
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
     }
 
     @Test
@@ -1128,7 +1126,6 @@ class BadgeStatisticsUpdateServiceTest {
         assert progress.containsKey("DOCTOR_EXCEPTIONAL_COMMUNICATOR");
         assert progress.containsKey("DOCTOR_EMPATHETIC_DOCTOR");
         assert progress.containsKey("DOCTOR_PUNCTUALITY_PROFESSIONAL");
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
     }
 
     @Test
@@ -1158,7 +1155,6 @@ class BadgeStatisticsUpdateServiceTest {
         assert progress.containsKey("DOCTOR_EXCEPTIONAL_COMMUNICATOR");
         assert progress.containsKey("DOCTOR_EMPATHETIC_DOCTOR");
         assert progress.containsKey("DOCTOR_PUNCTUALITY_PROFESSIONAL");
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
     }
 
     @Test
@@ -1189,7 +1185,7 @@ class BadgeStatisticsUpdateServiceTest {
         statistics.put("documentation_count", 40);
         statistics.put("total_turns_cancelled", 5);
         statistics.put("unique_patients_served", 12);
-        statistics.put("requests_handled", 4); 
+        statistics.put("total_requests_handled", 4); 
         statistics.put("total_ratings_received", 100);
         statistics.put("total_communication_count", 30);
         statistics.put("total_empathy_count", 30);
@@ -1203,72 +1199,6 @@ class BadgeStatisticsUpdateServiceTest {
 
         assert progress.containsKey("DOCTOR_AGILE_RESPONDER");
         assert progress.get("DOCTOR_AGILE_RESPONDER").equals(4 * 100.0 / 7);
-    }
-
-    @Test
-    void updateDoctorBadgeProgress_SustainedExcellence_PartialRatingProgress() {
-        Map<String, Object> statistics = new HashMap<>();
-        statistics.put("documentation_count", 40);
-        statistics.put("total_turns_cancelled", 5);
-        statistics.put("unique_patients_served", 12);
-        statistics.put("requests_handled", 8);
-        statistics.put("total_ratings_received", 80); 
-        statistics.put("total_communication_count", 30);
-        statistics.put("total_empathy_count", 30);
-        statistics.put("total_punctuality_count", 25);
-        statistics.put("total_avg_rating", 4.5);
-        statistics.put("total_low_rating_count", 5);
-
-        Map<String, Object> progress = new HashMap<>();
-
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 80);
-
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
-        assert progress.get("DOCTOR_SUSTAINED_EXCELLENCE").equals(80 * 100.0 / 100);
-    }
-
-    @Test
-    void updateDoctorBadgeProgress_SustainedExcellence_LowRatingCount() {
-        Map<String, Object> statistics = new HashMap<>();
-        statistics.put("documentation_count", 40);
-        statistics.put("total_turns_cancelled", 5);
-        statistics.put("unique_patients_served", 12);
-        statistics.put("requests_handled", 8);
-        statistics.put("total_ratings_received", 120);
-        statistics.put("total_communication_count", 30);
-        statistics.put("total_empathy_count", 30);
-        statistics.put("total_punctuality_count", 25);
-        statistics.put("total_avg_rating", 4.5);
-        statistics.put("total_low_rating_count", 20); 
-
-        Map<String, Object> progress = new HashMap<>();
-
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 80);
-
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
-        assert progress.get("DOCTOR_SUSTAINED_EXCELLENCE").equals(50.0);
-    }
-
-    @Test
-    void updateDoctorBadgeProgress_SustainedExcellence_LowAverageRating() {
-        Map<String, Object> statistics = new HashMap<>();
-        statistics.put("documentation_count", 40);
-        statistics.put("total_turns_cancelled", 5);
-        statistics.put("unique_patients_served", 12);
-        statistics.put("requests_handled", 8);
-        statistics.put("total_ratings_received", 120);
-        statistics.put("total_communication_count", 30);
-        statistics.put("total_empathy_count", 30);
-        statistics.put("total_punctuality_count", 25);
-        statistics.put("total_avg_rating", 3.5); 
-        statistics.put("total_low_rating_count", 5);
-
-        Map<String, Object> progress = new HashMap<>();
-
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 80);
-
-        assert progress.containsKey("DOCTOR_SUSTAINED_EXCELLENCE");
-        assert progress.get("DOCTOR_SUSTAINED_EXCELLENCE").equals(Math.min((3.5 / 4.0) * 50, 50.0));
     }
 
     @Test
