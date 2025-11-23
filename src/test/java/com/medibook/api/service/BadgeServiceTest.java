@@ -76,6 +76,9 @@ class BadgeServiceTest {
 
         patientId = patient.getId();
         doctorId = doctor.getId();
+
+        lenient().when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(any(UUID.class), anyString()))
+            .thenReturn(new ArrayList<>());
     }
 
     @Test
@@ -813,6 +816,7 @@ class BadgeServiceTest {
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_TOP_SPECIALIST")).thenReturn(Optional.empty());
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(userId, "PATIENT")).thenReturn(createRatings(35, 4));
 
         badgeService.evaluateTurnRelatedBadges(userId);
 
@@ -846,6 +850,7 @@ class BadgeServiceTest {
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(Optional.empty());
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_ALWAYS_AVAILABLE")).thenReturn(Optional.empty());
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_CONSISTENT_PROFESSIONAL")).thenReturn(Optional.empty());
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(userId, "PATIENT")).thenReturn(new ArrayList<>());
 
         badgeService.evaluateConsistencyRelatedBadges(userId);
 
@@ -1305,6 +1310,7 @@ class BadgeServiceTest {
         when(statisticsRepository.findByUserId(doctorId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(doctorId, "PATIENT")).thenReturn(createRatings(35, 4));
 
         badgeService.evaluateAllBadges(doctorId);
 
@@ -1773,6 +1779,14 @@ class BadgeServiceTest {
         verify(badgeRepository).save(any(Badge.class));
     }
 
+    private List<Rating> createRatings(int count, int score) {
+        List<Rating> ratings = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            ratings.add(Rating.builder().score(score).build());
+        }
+        return ratings;
+    }
+
     @Test
     void evaluateTopSpecialist_SufficientTurns_ActivatesBadge() {
         User doctor = new User();
@@ -1793,6 +1807,7 @@ class BadgeServiceTest {
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_TOP_SPECIALIST")).thenReturn(Optional.empty());
         when(badgeRepository.save(any(Badge.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(userId, "PATIENT")).thenReturn(createRatings(35, 4));
 
         badgeService.evaluateTopSpecialist(doctor);
 

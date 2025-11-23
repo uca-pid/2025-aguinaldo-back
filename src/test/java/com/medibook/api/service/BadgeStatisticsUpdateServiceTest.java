@@ -58,6 +58,8 @@ class BadgeStatisticsUpdateServiceTest {
         user.setRole("PATIENT");
         objectMapper = new ObjectMapper();
         lenient().when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(user));
+        lenient().when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(any(UUID.class), anyString()))
+            .thenReturn(List.of());
         badgeStatisticsUpdateService = new BadgeStatisticsUpdateService(statisticsRepository, userRepository, ratingRepository, turnAssignedRepository);
     }
 
@@ -1021,7 +1023,7 @@ class BadgeStatisticsUpdateServiceTest {
 
         Map<String, Object> progress = new HashMap<>();
 
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 150);
+        badgeStatisticsUpdateService.updateDoctorBadgeProgress(userId, statistics, progress, 150);
 
         assert progress.containsKey("DOCTOR_COMPLETE_DOCUMENTER");
         assert progress.containsKey("DOCTOR_CONSISTENT_PROFESSIONAL");
@@ -1051,7 +1053,7 @@ class BadgeStatisticsUpdateServiceTest {
 
         Map<String, Object> progress = new HashMap<>();
 
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 10);
+        badgeStatisticsUpdateService.updateDoctorBadgeProgress(userId, statistics, progress, 10);
 
         assert progress.containsKey("DOCTOR_COMPLETE_DOCUMENTER");
         assert progress.containsKey("DOCTOR_CONSISTENT_PROFESSIONAL");
@@ -1115,7 +1117,7 @@ class BadgeStatisticsUpdateServiceTest {
 
         Map<String, Object> progress = new HashMap<>();
 
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 30);
+        badgeStatisticsUpdateService.updateDoctorBadgeProgress(userId, statistics, progress, 30);
 
         assert progress.containsKey("DOCTOR_COMPLETE_DOCUMENTER");
         assert progress.containsKey("DOCTOR_CONSISTENT_PROFESSIONAL");
@@ -1144,7 +1146,7 @@ class BadgeStatisticsUpdateServiceTest {
 
         Map<String, Object> progress = new HashMap<>();
 
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 80);
+        badgeStatisticsUpdateService.updateDoctorBadgeProgress(userId, statistics, progress, 80);
 
         assert progress.containsKey("DOCTOR_COMPLETE_DOCUMENTER");
         assert progress.containsKey("DOCTOR_CONSISTENT_PROFESSIONAL");
@@ -1173,7 +1175,7 @@ class BadgeStatisticsUpdateServiceTest {
 
         Map<String, Object> progress = new HashMap<>();
 
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 80);
+        badgeStatisticsUpdateService.updateDoctorBadgeProgress(userId, statistics, progress, 80);
 
         assert progress.containsKey("DOCTOR_CONSISTENT_PROFESSIONAL");
         assert progress.get("DOCTOR_CONSISTENT_PROFESSIONAL").equals(0.0);
@@ -1195,7 +1197,7 @@ class BadgeStatisticsUpdateServiceTest {
 
         Map<String, Object> progress = new HashMap<>();
 
-        badgeStatisticsUpdateService.updateDoctorBadgeProgress(statistics, progress, 80);
+        badgeStatisticsUpdateService.updateDoctorBadgeProgress(userId, statistics, progress, 80);
 
         assert progress.containsKey("DOCTOR_AGILE_RESPONDER");
         assert progress.get("DOCTOR_AGILE_RESPONDER").equals(4 * 100.0 / 7);

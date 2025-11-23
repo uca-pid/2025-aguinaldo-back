@@ -115,7 +115,7 @@ public class BadgeMetadataService {
                 .description("Entre los mejores especialistas")
                 .icon("EmojiEvents")
                 .color("#FF5722")
-                .criteria("Completa 100+ turnos con promedio de calificación 4.2+")
+                .criteria("Sus últimas 35 calificaciones tienen puntaje 4 o más")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_MEDICAL_LEGEND", BadgeMetadata.builder()
