@@ -78,7 +78,7 @@ class BadgeProgressServiceTest {
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
 
         List<Badge> earnedBadges = List.of(
-                Badge.builder().badgeType("DOCTOR_SUSTAINED_EXCELLENCE").isActive(true).build()
+                Badge.builder().badgeType("DOCTOR_EMPATHETIC_DOCTOR").isActive(true).build()
         );
         when(badgeRepository.findByUser_IdOrderByEarnedAtDesc(userId)).thenReturn(earnedBadges);
 
@@ -86,7 +86,7 @@ class BadgeProgressServiceTest {
 
         assertNotNull(result);
         assertFalse(result.isEmpty());
-        assertTrue(result.stream().anyMatch(dto -> "DOCTOR_SUSTAINED_EXCELLENCE".equals(dto.getBadgeType())));
+        assertTrue(result.stream().anyMatch(dto -> "DOCTOR_EMPATHETIC_DOCTOR".equals(dto.getBadgeType())));
         assertTrue(result.stream().anyMatch(dto -> dto.getEarned()));
 
         verify(userRepository).findById(userId);
@@ -188,7 +188,6 @@ class BadgeProgressServiceTest {
 
     private ObjectNode createDoctorProgressJson() {
         ObjectNode progress = objectMapper.createObjectNode();
-        progress.put("DOCTOR_SUSTAINED_EXCELLENCE", 100.0);
         progress.put("DOCTOR_EMPATHETIC_DOCTOR", 75.0);
         progress.put("DOCTOR_EXCEPTIONAL_COMMUNICATOR", 50.0);
         return progress;
@@ -204,15 +203,6 @@ class BadgeProgressServiceTest {
 
     private Map<String, BadgeMetadata> createDoctorMetadata() {
         Map<String, BadgeMetadata> metadata = new java.util.HashMap<>();
-        metadata.put("DOCTOR_SUSTAINED_EXCELLENCE", BadgeMetadata.builder()
-                .name("Excelencia Sostenida")
-                .category(BadgeCategory.QUALITY_OF_CARE)
-                .rarity(BadgeMetadata.BadgeRarity.EPIC)
-                .description("Mantiene consistentemente altas calificaciones")
-                .icon("⭐")
-                .color("#FF9800")
-                .criteria("Mantén un promedio de 4.7 en 100+ turnos")
-                .build());
         metadata.put("DOCTOR_EMPATHETIC_DOCTOR", BadgeMetadata.builder()
                 .name("Médico Empático")
                 .category(BadgeCategory.QUALITY_OF_CARE)

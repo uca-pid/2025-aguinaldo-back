@@ -35,4 +35,7 @@ public interface TurnAssignedRepository extends JpaRepository<TurnAssigned, UUID
     
     @Query("SELECT COUNT(t) > 0 FROM TurnAssigned t WHERE t.patient.email = :email AND t.status = 'COMPLETED' AND t.motive = 'HEALTH CERTIFICATE' AND t.scheduledAt > :oneYearAgo")
     boolean existsHealthCertificateWithinLastYear(@Param("email") String email, @Param("oneYearAgo") OffsetDateTime oneYearAgo);
+    
+    @Query("SELECT COALESCE(MAX(sub.count), 0) FROM (SELECT COUNT(t) AS count FROM TurnAssigned t WHERE t.patient.id = :patientId AND t.status = 'COMPLETED' GROUP BY t.doctor.id) sub")
+    Long findMaxCompletedTurnsWithSameDoctor(@Param("patientId") UUID patientId);
 }

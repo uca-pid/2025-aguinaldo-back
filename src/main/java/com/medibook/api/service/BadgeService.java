@@ -44,13 +44,10 @@ public class BadgeService {
     private static final int EMPATHETIC_DOCTOR_THRESHOLD = 25;
     private static final int PUNCTUALITY_PROFESSIONAL_THRESHOLD = 20;
     private static final double PUNCTUALITY_CANCELLATION_MAX = 0.15;
-    private static final double SUSTAINED_EXCELLENCE_AVG_RATING = 4.7;
-    private static final int SUSTAINED_EXCELLENCE_MIN_RATINGS = 100;
-    private static final double SUSTAINED_EXCELLENCE_LOW_SCORE_MAX = 0.1;
     private static final int COMPLETE_DOCUMENTER_THRESHOLD = 35;
     private static final double DETAILED_HISTORIAN_THRESHOLD = 0.9;
     private static final double DETAILED_HISTORIAN_MIN_WORDS = 150.0;
-    private static final int RELATIONSHIP_BUILDER_MIN_PATIENTS = 50;
+    private static final int RELATIONSHIP_BUILDER_MIN_PATIENTS = 25;
     private static final int RELATIONSHIP_BUILDER_RETURNING_MIN = 10;
     private static final int CONSISTENT_PROFESSIONAL_MIN_TURNS = 80;
     private static final double CONSISTENT_PROFESSIONAL_CANCELLATION_MAX = 0.15;
@@ -127,7 +124,6 @@ public class BadgeService {
             evaluateExceptionalCommunicator(user);
             evaluateEmpatheticDoctor(user);
             evaluatePunctualityProfessional(user);
-            evaluateSustainedExcellence(user);
         }
     }
 
@@ -293,7 +289,7 @@ public class BadgeService {
             BadgeStatistics stats = getOrCreateStatistics(patientId);
             JsonNode statistics = stats.getStatistics();
 
-            int turnsSameDoctor = statistics.path("turns_with_same_doctor_last_12_months").asInt(0);
+            int turnsSameDoctor = statistics.path("turns_with_same_doctor").asInt(0);
             double progress = Math.min(((double) turnsSameDoctor / CONTINUOUS_FOLLOWUP_MIN_TURNS_SAME_DOCTOR) * 100, 100.0);
 
             updateProgress(patientId, "PATIENT_CONTINUOUS_FOLLOWUP", progress);
@@ -334,24 +330,16 @@ public class BadgeService {
             JsonNode statistics = stats.getStatistics();
 
             int totalTurnsCompleted = statistics.path("total_turns_completed").asInt(0);
-            int totalPunctualityCount = statistics.path("total_punctuality_count").asInt(0);
+            int totalPunctualityCount = statistics.path("doctor_punctuality_mentions").asInt(0);
 
-            if (totalTurnsCompleted < EXEMPLARY_PUNCTUALITY_MIN_TURNS) {
+            if (totalPunctualityCount < EXEMPLARY_PUNCTUALITY_MIN_POSITIVE_RATINGS) {
                 deactivateBadge(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY");
-                updateProgress(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY", ((double) totalTurnsCompleted / EXEMPLARY_PUNCTUALITY_MIN_TURNS) * 100);
+                updateProgress(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY", ((double) totalPunctualityCount / EXEMPLARY_PUNCTUALITY_MIN_POSITIVE_RATINGS) * 100);
                 return;
             }
 
-            boolean hasRequiredPunctualRatings = totalPunctualityCount >= EXEMPLARY_PUNCTUALITY_MIN_POSITIVE_RATINGS;
-            double progress = Math.min(((double) totalPunctualityCount / EXEMPLARY_PUNCTUALITY_MIN_POSITIVE_RATINGS) * 100, 100.0);
-
-            updateProgress(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY", progress);
-
-            if (hasRequiredPunctualRatings) {
-                activateBadge(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY");
-            } else {
-                deactivateBadge(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY");
-            }
+            updateProgress(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY", 100.0);
+            activateBadge(patientId, "PATIENT_EXEMPLARY_PUNCTUALITY");
         } catch (Exception e) {
             log.error("Error evaluating EXEMPLARY_PUNCTUALITY for patient {}", patientId, e);
         }
@@ -363,7 +351,7 @@ public class BadgeService {
             BadgeStatistics stats = getOrCreateStatistics(patientId);
             JsonNode statistics = stats.getStatistics();
 
-            int totalAdvanceBookingCount = statistics.path("total_advance_booking_count").asInt(0);
+            int totalAdvanceBookingCount = statistics.path("advance_bookings").asInt(0);
 
             if (totalAdvanceBookingCount < 10) {
                 deactivateBadge(patientId, "PATIENT_SMART_PLANNER");
@@ -384,7 +372,7 @@ public class BadgeService {
             BadgeStatistics stats = getOrCreateStatistics(patientId);
             JsonNode statistics = stats.getStatistics();
 
-            int totalCollaborationCount = statistics.path("total_collaboration_count").asInt(0);
+            int totalCollaborationCount = statistics.path("doctor_collaboration_mentions").asInt(0);
 
             if (totalCollaborationCount < 10) {
                 deactivateBadge(patientId, "PATIENT_EXCELLENT_COLLABORATOR");
@@ -548,33 +536,6 @@ public class BadgeService {
         }
     }
 
-    void evaluateSustainedExcellence(User doctor) {
-        UUID doctorId = doctor.getId();
-        try {
-            BadgeStatistics stats = getOrCreateStatistics(doctorId);
-            JsonNode statistics = stats.getStatistics();
-
-            Double avgRating = statistics.path("total_avg_rating").asDouble();
-            int totalRatings = statistics.path("total_ratings_received").asInt(0);
-            int lowRatingCount = statistics.path("total_low_rating_count").asInt(0);
-
-            double progress = 0.0;
-            if (avgRating != null && totalRatings >= SUSTAINED_EXCELLENCE_MIN_RATINGS) {
-                progress = avgRating >= SUSTAINED_EXCELLENCE_AVG_RATING ? 100.0 : 0.0;
-            }
-
-            updateProgress(doctorId, "DOCTOR_SUSTAINED_EXCELLENCE", progress);
-
-            if (progress >= 100.0) {
-                activateBadge(doctorId, "DOCTOR_SUSTAINED_EXCELLENCE");
-            } else {
-                deactivateBadge(doctorId, "DOCTOR_SUSTAINED_EXCELLENCE");
-            }
-        } catch (Exception e) {
-            log.error("Error evaluating SUSTAINED_EXCELLENCE for doctor {}", doctorId, e);
-        }
-    }
-
     private void evaluateCompleteDocumenter(User doctor) {
         UUID doctorId = doctor.getId();
         try {
@@ -582,7 +543,7 @@ public class BadgeService {
             JsonNode statistics = stats.getStatistics();
 
             int totalTurnsCompleted = statistics.path("total_turns_completed").asInt(0);
-            int totalDocumentedCount = statistics.path("total_documented_count").asInt(0);
+            int totalDocumentedCount = statistics.path("documentation_count").asInt(0);
 
             if (totalTurnsCompleted < 50) {
                 deactivateBadge(doctorId, "DOCTOR_COMPLETE_DOCUMENTER");
@@ -610,33 +571,14 @@ public class BadgeService {
             BadgeStatistics stats = getOrCreateStatistics(doctorId);
             JsonNode statistics = stats.getStatistics();
 
-            int totalTurnsCompleted = statistics.path("total_turns_completed").asInt(0);
-            int totalDocumentedCount = statistics.path("total_documented_count").asInt(0);
-            int totalWords = statistics.path("total_words").asInt(0);
-            Double totalAvgWordsPerEntry = statistics.path("total_avg_words_per_entry").asDouble();
+            int documentationCount = statistics.path("documentation_count").asInt(0);
 
-            if (totalTurnsCompleted < 30) {
+            if (documentationCount < 60) {
+                updateProgress(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN", (double) documentationCount / 60 * 100);
                 deactivateBadge(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN");
-                updateProgress(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN", ((double) totalTurnsCompleted / 30) * 100);
-                return;
-            }
-
-            int requiredDocumented = (int) Math.ceil(30 * DETAILED_HISTORIAN_THRESHOLD);
-            boolean hasHighDocRate = totalDocumentedCount >= requiredDocumented;
-            boolean hasDetailedEntries = totalAvgWordsPerEntry != null && totalAvgWordsPerEntry >= DETAILED_HISTORIAN_MIN_WORDS;
-            boolean hasPrerequisite = badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_COMPLETE_DOCUMENTER", true);
-
-            double progress = 0.0;
-            if (totalDocumentedCount > 0 && totalAvgWordsPerEntry != null) {
-                progress = totalAvgWordsPerEntry >= DETAILED_HISTORIAN_MIN_WORDS ? 100.0 : Math.min((totalAvgWordsPerEntry / DETAILED_HISTORIAN_MIN_WORDS) * 100, 100.0);
-            }
-
-            updateProgress(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN", progress);
-
-            if (hasHighDocRate && hasDetailedEntries && hasPrerequisite) {
-                activateBadge(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN");
             } else {
-                deactivateBadge(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN");
+                updateProgress(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN", 100.0);
+                activateBadge(doctorId, "DOCTOR_DETAILED_DIAGNOSTICIAN");
             }
         } catch (Exception e) {
             log.error("Error evaluating DETAILED_DIAGNOSTICIAN for doctor {}", doctorId, e);
@@ -651,13 +593,13 @@ public class BadgeService {
 
             int totalRequestsHandled = statistics.path("total_requests_handled").asInt(0);
 
-            if (totalRequestsHandled < 7) {
+            if (totalRequestsHandled < 8) {
                 deactivateBadge(doctorId, "DOCTOR_AGILE_RESPONDER");
-                updateProgress(doctorId, "DOCTOR_AGILE_RESPONDER", ((double) totalRequestsHandled / 7) * 100);
+                updateProgress(doctorId, "DOCTOR_AGILE_RESPONDER", ((double) totalRequestsHandled / 8) * 100);
                 return;
             }
 
-            double progress = Math.min(((double) totalRequestsHandled / 7) * 100, 100.0);
+            double progress = Math.min(((double) totalRequestsHandled / 8) * 100, 100.0);
 
             updateProgress(doctorId, "DOCTOR_AGILE_RESPONDER", progress);
 
@@ -670,17 +612,15 @@ public class BadgeService {
     void evaluateRelationshipBuilder(User doctor) {
         UUID doctorId = doctor.getId();
         try {
-            BadgeStatistics stats = getOrCreateStatistics(doctorId);
-            JsonNode statistics = stats.getStatistics();
-
-            int totalUniquePatients = statistics.path("total_unique_patients").asInt(0);
-            int returningPatientsCount = statistics.path("returning_patients_count").asInt(0);
+            int totalUniquePatients = turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId).size();
 
             boolean hasEnoughPatients = totalUniquePatients >= RELATIONSHIP_BUILDER_MIN_PATIENTS;
 
             double progress = 0.0;
             if (hasEnoughPatients) {
                 progress = 100.0;
+            } else {
+                progress = ((double) totalUniquePatients / RELATIONSHIP_BUILDER_MIN_PATIENTS) * 100;
             }
 
             updateProgress(doctorId, "DOCTOR_RELATIONSHIP_BUILDER", progress);
@@ -926,7 +866,7 @@ public class BadgeService {
             return BadgeCategory.CLINICAL_EXCELLENCE;
         } else {
             if (badgeType.contains("EXCEPTIONAL_COMMUNICATOR") || badgeType.contains("EMPATHETIC_DOCTOR") ||
-                badgeType.contains("PUNCTUALITY_PROFESSIONAL") || badgeType.contains("SUSTAINED_EXCELLENCE")) return BadgeCategory.QUALITY_OF_CARE;
+                badgeType.contains("PUNCTUALITY_PROFESSIONAL")) return BadgeCategory.QUALITY_OF_CARE;
             if (badgeType.contains("COMPLETE_DOCUMENTER") || badgeType.contains("DETAILED_DIAGNOSTICIAN") ||
                 badgeType.contains("AGILE_RESPONDER") || badgeType.contains("RELATIONSHIP_BUILDER")) return BadgeCategory.PROFESSIONALISM;
             return BadgeCategory.CONSISTENCY;
