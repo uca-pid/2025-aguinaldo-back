@@ -486,7 +486,7 @@ class BadgeServiceTest {
     }
 
     @Test
-    void evaluateMedicalLegend_AllCriteriaMet_ActivatesBadge() {
+    void evaluateMedicalLegend_AllRequiredBadgesActive_ActivatesBadge() {
         ObjectNode statisticsJson = objectMapper.createObjectNode();
         statisticsJson.put("total_turns_completed", 350);
         statisticsJson.put("total_avg_rating", 4.8);
@@ -500,8 +500,8 @@ class BadgeServiceTest {
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
-        when(badgeRepository.countActiveBadgesByUserIdExcludingType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(10L);
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(Optional.empty());
+        stubMedicalLegendDependencies(userId, true, true, true);
 
         badgeService.evaluateTurnRelatedBadges(userId);
 
@@ -1433,7 +1433,7 @@ class BadgeServiceTest {
         when(statisticsRepository.findByUserId(doctorId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(badgeRepository.countActiveBadgesByUserIdExcludingType(doctorId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(10L);
+        stubMedicalLegendDependencies(doctorId, true, true, true);
 
         badgeService.evaluateAllBadges(doctorId);
 
@@ -1787,6 +1787,15 @@ class BadgeServiceTest {
         return ratings;
     }
 
+    private void stubMedicalLegendDependencies(UUID doctorId, boolean communicator, boolean empathetic, boolean punctuality) {
+        when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_EXCEPTIONAL_COMMUNICATOR", true))
+                .thenReturn(communicator);
+        when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_EMPATHETIC_DOCTOR", true))
+                .thenReturn(empathetic);
+        when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_PUNCTUALITY_PROFESSIONAL", true))
+                .thenReturn(punctuality);
+    }
+
     @Test
     void evaluateTopSpecialist_SufficientTurns_ActivatesBadge() {
         User doctor = new User();
@@ -1831,14 +1840,16 @@ class BadgeServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
-        when(badgeRepository.countActiveBadgesByUserIdExcludingType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(9L);
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(Optional.empty());
         when(badgeRepository.save(any(Badge.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
+        stubMedicalLegendDependencies(userId, true, true, true);
 
         badgeService.evaluateMedicalLegend(doctor);
 
-        verify(badgeRepository).countActiveBadgesByUserIdExcludingType(userId, "DOCTOR_MEDICAL_LEGEND");
+        verify(badgeRepository, times(1)).existsByUser_IdAndBadgeTypeAndIsActive(userId, "DOCTOR_EXCEPTIONAL_COMMUNICATOR", true);
+        verify(badgeRepository, times(1)).existsByUser_IdAndBadgeTypeAndIsActive(userId, "DOCTOR_EMPATHETIC_DOCTOR", true);
+        verify(badgeRepository, times(1)).existsByUser_IdAndBadgeTypeAndIsActive(userId, "DOCTOR_PUNCTUALITY_PROFESSIONAL", true);
         verify(badgeRepository).findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND");
         verify(badgeRepository).save(any(Badge.class));
     }

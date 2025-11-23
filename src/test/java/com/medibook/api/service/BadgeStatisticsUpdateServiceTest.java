@@ -7,6 +7,7 @@ import com.medibook.api.entity.BadgeStatistics;
 import com.medibook.api.entity.Rating;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
+import com.medibook.api.repository.BadgeRepository;
 import com.medibook.api.repository.BadgeStatisticsRepository;
 import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
@@ -42,6 +43,9 @@ class BadgeStatisticsUpdateServiceTest {
     @Mock
     private TurnAssignedRepository turnAssignedRepository;
 
+    @Mock
+    private BadgeRepository badgeRepository;
+
     private BadgeStatisticsUpdateService badgeStatisticsUpdateService;
 
     private UUID userId;
@@ -60,7 +64,8 @@ class BadgeStatisticsUpdateServiceTest {
         lenient().when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(user));
         lenient().when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(any(UUID.class), anyString()))
             .thenReturn(List.of());
-        badgeStatisticsUpdateService = new BadgeStatisticsUpdateService(statisticsRepository, userRepository, ratingRepository, turnAssignedRepository);
+        lenient().when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(any(UUID.class), anyString(), eq(true))).thenReturn(false);
+        badgeStatisticsUpdateService = new BadgeStatisticsUpdateService(statisticsRepository, userRepository, ratingRepository, turnAssignedRepository, badgeRepository);
     }
 
     @Test
@@ -1225,7 +1230,7 @@ class BadgeStatisticsUpdateServiceTest {
         invalidNode.put("invalid", "data");
 
         BadgeStatisticsUpdateService serviceWithMockMapper = new BadgeStatisticsUpdateService(
-            statisticsRepository, userRepository, ratingRepository, turnAssignedRepository) {
+            statisticsRepository, userRepository, ratingRepository, turnAssignedRepository, badgeRepository) {
             @Override
             protected Map<String, Object> parseJson(com.fasterxml.jackson.databind.JsonNode json) {
                 throw new RuntimeException("Parsing failed");

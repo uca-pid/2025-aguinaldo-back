@@ -126,7 +126,7 @@ public class BadgeMetadataService {
                 .description("Ha alcanzado el más alto nivel de reconocimiento")
                 .icon("Star")
                 .color("#9C27B0")
-                .criteria("Obtuvo 8+ otros badges y completó 300+ turnos")
+                .criteria("Activa Comunicador Excepcional, Médico Empático y Puntualidad Profesional")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_ALWAYS_AVAILABLE", BadgeMetadata.builder()
