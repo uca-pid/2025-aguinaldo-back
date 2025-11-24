@@ -115,7 +115,7 @@ public class BadgeMetadataService {
                 .description("Entre los mejores especialistas")
                 .icon("EmojiEvents")
                 .color("#FF5722")
-                .criteria("Completa 100+ turnos con promedio de calificación 4.2+")
+                .criteria("Sus últimas 35 calificaciones tienen puntaje 4 o más")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_MEDICAL_LEGEND", BadgeMetadata.builder()
@@ -126,7 +126,7 @@ public class BadgeMetadataService {
                 .description("Ha alcanzado el más alto nivel de reconocimiento")
                 .icon("Star")
                 .color("#9C27B0")
-                .criteria("Obtuvo 8+ otros badges y completó 300+ turnos")
+                .criteria("Activa Comunicador Excepcional, Médico Empático y Puntualidad Profesional")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_ALWAYS_AVAILABLE", BadgeMetadata.builder()

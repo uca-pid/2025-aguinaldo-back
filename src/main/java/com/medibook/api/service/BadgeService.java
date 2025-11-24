@@ -49,13 +49,14 @@ public class BadgeService {
     private static final double DETAILED_HISTORIAN_MIN_WORDS = 150.0;
     private static final int RELATIONSHIP_BUILDER_MIN_PATIENTS = 25;
     private static final int RELATIONSHIP_BUILDER_RETURNING_MIN = 10;
-    private static final int CONSISTENT_PROFESSIONAL_MIN_TURNS = 80;
-    private static final double CONSISTENT_PROFESSIONAL_CANCELLATION_MAX = 0.15;
-    private static final int TOP_SPECIALIST_MIN_TURNS = 100;
-    private static final double TOP_SPECIALIST_PERCENTILE = 0.1;
-    private static final int MEDICAL_LEGEND_MIN_TURNS = 300;
-    private static final double MEDICAL_LEGEND_AVG_RATING = 4.7;
-    private static final int MEDICAL_LEGEND_MIN_OTHER_BADGES = 8;
+        private static final int CONSISTENT_PROFESSIONAL_MIN_TURNS = 80;
+        private static final double CONSISTENT_PROFESSIONAL_CANCELLATION_MAX = 0.15;
+        private static final int TOP_SPECIALIST_REQUIRED_RATINGS = 35;
+        static final List<String> MEDICAL_LEGEND_REQUIRED_BADGES = List.of(
+            "DOCTOR_EXCEPTIONAL_COMMUNICATOR",
+            "DOCTOR_EMPATHETIC_DOCTOR",
+            "DOCTOR_PUNCTUALITY_PROFESSIONAL"
+        );
 
     private final BadgeRepository badgeRepository;
     private final UserRepository userRepository;
@@ -701,22 +702,20 @@ public class BadgeService {
     void evaluateTopSpecialist(User doctor) {
         UUID doctorId = doctor.getId();
         try {
-            BadgeStatistics stats = getOrCreateStatistics(doctorId);
-            JsonNode statistics = stats.getStatistics();
-
-            int turnsCompleted = statistics.path("total_turns_completed").asInt(0);
-            Double avgRating = statistics.path("total_avg_rating").asDouble();
-            Double percentile = statistics.path("specialty_rank_percentile").asDouble();
-
-            double progress = 0.0;
-            if (turnsCompleted >= TOP_SPECIALIST_MIN_TURNS &&
-                avgRating != null && avgRating >= 4.2) {
-                progress = 100.0;
+            List<Rating> recentRatings = ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(doctorId, "PATIENT");
+            if (recentRatings == null) {
+                recentRatings = Collections.emptyList();
             }
+
+            long highScoreCount = recentRatings.stream()
+                    .filter(rating -> rating.getScore() != null && rating.getScore() >= 4)
+                    .count();
+
+            double progress = Math.min((highScoreCount / (double) TOP_SPECIALIST_REQUIRED_RATINGS) * 100.0, 100.0);
 
             updateProgress(doctorId, "DOCTOR_TOP_SPECIALIST", progress);
 
-            if (progress >= 100.0) {
+            if (recentRatings.size() == TOP_SPECIALIST_REQUIRED_RATINGS && highScoreCount == TOP_SPECIALIST_REQUIRED_RATINGS) {
                 activateBadge(doctorId, "DOCTOR_TOP_SPECIALIST");
             } else {
                 deactivateBadge(doctorId, "DOCTOR_TOP_SPECIALIST");
@@ -729,21 +728,17 @@ public class BadgeService {
     void evaluateMedicalLegend(User doctor) {
         UUID doctorId = doctor.getId();
         try {
-            BadgeStatistics stats = getOrCreateStatistics(doctorId);
-            JsonNode statistics = stats.getStatistics();
+            long activeRequiredBadges = MEDICAL_LEGEND_REQUIRED_BADGES.stream()
+                    .filter(badgeType -> badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, badgeType, true))
+                    .count();
 
-            int turnsCompleted = statistics.path("total_turns_completed").asInt(0);
-            Double avgRating = statistics.path("total_avg_rating").asDouble();
-            long otherBadges = badgeRepository.countActiveBadgesByUserIdExcludingType(doctorId, "DOCTOR_MEDICAL_LEGEND");
-
-            double progress = 0.0;
-            if (turnsCompleted >= MEDICAL_LEGEND_MIN_TURNS && otherBadges >= MEDICAL_LEGEND_MIN_OTHER_BADGES) {
-                progress = 100.0;
-            }
+            double progress = MEDICAL_LEGEND_REQUIRED_BADGES.isEmpty()
+                    ? 0.0
+                    : Math.min(activeRequiredBadges * 100.0 / MEDICAL_LEGEND_REQUIRED_BADGES.size(), 100.0);
 
             updateProgress(doctorId, "DOCTOR_MEDICAL_LEGEND", progress);
 
-            if (progress >= 100.0) {
+            if (activeRequiredBadges == MEDICAL_LEGEND_REQUIRED_BADGES.size()) {
                 activateBadge(doctorId, "DOCTOR_MEDICAL_LEGEND");
             } else {
                 deactivateBadge(doctorId, "DOCTOR_MEDICAL_LEGEND");
