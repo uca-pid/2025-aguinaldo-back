@@ -19,24 +19,13 @@ public class BadgeMetadataService {
     }
 
     private void initializeDoctorBadgeMetadata() {
-        doctorBadgeMetadata.put("DOCTOR_SUSTAINED_EXCELLENCE", BadgeMetadata.builder()
-                .badgeType("DOCTOR_SUSTAINED_EXCELLENCE")
-                .category(BadgeCategory.QUALITY_OF_CARE)
-                .rarity(BadgeMetadata.BadgeRarity.EPIC)
-                .name("Excelencia Sostenida")
-                .description("Mantiene consistentemente altas calificaciones")
-                .icon("⭐")
-                .color("#FF9800")
-                .criteria("Mantén un promedio de 4.7 en 100+ turnos")
-                .build());
-
         doctorBadgeMetadata.put("DOCTOR_EMPATHETIC_DOCTOR", BadgeMetadata.builder()
                 .badgeType("DOCTOR_EMPATHETIC_DOCTOR")
                 .category(BadgeCategory.QUALITY_OF_CARE)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Médico Empático")
                 .description("Destaca por su empatía y comprensión hacia los pacientes")
-                .icon("❤️")
+                .icon("Psychology")
                 .color("#E91E63")
                 .criteria("Recibe 25 menciones positivas de empatía en total")
                 .build());
@@ -46,8 +35,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.QUALITY_OF_CARE)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Comunicador Excepcional")
-                .description("Reconocido por su excelente comunicación con pacientes")
-                .icon("💬")
+                .description("Reconocido por su buena comunicación con pacientes")
+                .icon("Chat")
                 .color("#4CAF50")
                 .criteria("Recibe 25 menciones positivas de comunicación en total")
                 .build());
@@ -57,10 +46,10 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.QUALITY_OF_CARE)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Historiador Detallado")
-                .description("Crea historiales médicos excepcionalmente detallados")
-                .icon("📚")
+                .description("Completa historias médicas de los pacientes")
+                .icon("LibraryBooks")
                 .color("#795548")
-                .criteria("Promedio de 150+ palabras en 30+ historias médicas")
+                .criteria("Completa 60+ historias médicas")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_PUNCTUALITY_PROFESSIONAL", BadgeMetadata.builder()
@@ -69,7 +58,7 @@ public class BadgeMetadataService {
                 .rarity(BadgeMetadata.BadgeRarity.COMMON)
                 .name("Puntualidad Profesional")
                 .description("Siempre a tiempo, respetando el horario de los pacientes")
-                .icon("⏰")
+                .icon("Schedule")
                 .color("#2196F3")
                 .criteria("Recibe 20 menciones positivas de puntualidad en total")
                 .build());
@@ -79,10 +68,10 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.PROFESSIONALISM)
                 .rarity(BadgeMetadata.BadgeRarity.COMMON)
                 .name("Documentador Completo")
-                .description("Documenta exhaustivamente cada consulta")
-                .icon("📋")
+                .description("Completa historias médicas de los pacientes")
+                .icon("Assignment")
                 .color("#607D8B")
-                .criteria("Documenta 35+ consultas en total")
+                .criteria("Completa 35+ historias médicas")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_CONSISTENT_PROFESSIONAL", BadgeMetadata.builder()
@@ -90,21 +79,21 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.CONSISTENCY)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Profesional Consistente")
-                .description("Mantiene un alto nivel de profesionalismo consistente")
-                .icon("🎯")
+                .description("Logra un alto nivel de asistencia")
+                .icon("VerifiedUser")
                 .color("#3F51B5")
-                .criteria("Completó 80+ turnos con menos del 15% de cancelaciones")
+                .criteria("Completa 80+ turnos con menos del 15% de cancelaciones")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_AGILE_RESPONDER", BadgeMetadata.builder()
                 .badgeType("DOCTOR_AGILE_RESPONDER")
                 .category(BadgeCategory.PROFESSIONALISM)
                 .rarity(BadgeMetadata.BadgeRarity.COMMON)
-                .name("Respuesta Ágil")
-                .description("Responde rápidamente a solicitudes de modificación")
-                .icon("⚡")
+                .name("Agenda Abierta")
+                .description("Responde a solicitudes de modificación de turnos")
+                .icon("CalendarToday")
                 .color("#FFC107")
-                .criteria("Responde a 7+ solicitudes de modificación")
+                .criteria("Responde a 8+ solicitudes de modificación")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_RELATIONSHIP_BUILDER", BadgeMetadata.builder()
@@ -112,10 +101,10 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.PROFESSIONALISM)
                 .rarity(BadgeMetadata.BadgeRarity.EPIC)
                 .name("Constructor de Relaciones")
-                .description("Construye relaciones duraderas con sus pacientes")
-                .icon("🤝")
+                .description("Atiende a una amplia variedad de pacientes")
+                .icon("People")
                 .color("#00BCD4")
-                .criteria("Atendió a 50+ pacientes únicos")
+                .criteria("Atendió a 25+ pacientes distintos")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_TOP_SPECIALIST", BadgeMetadata.builder()
@@ -123,10 +112,10 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.CONSISTENCY)
                 .rarity(BadgeMetadata.BadgeRarity.EPIC)
                 .name("Especialista TOP")
-                .description("Entre los mejores especialistas de su área")
-                .icon("🏆")
+                .description("Entre los mejores especialistas")
+                .icon("EmojiEvents")
                 .color("#FF5722")
-                .criteria("Completó 100+ turnos con promedio de calificación 4.2+")
+                .criteria("Sus últimas 35 calificaciones tienen puntaje 4 o más")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_MEDICAL_LEGEND", BadgeMetadata.builder()
@@ -135,9 +124,9 @@ public class BadgeMetadataService {
                 .rarity(BadgeMetadata.BadgeRarity.LEGENDARY)
                 .name("Leyenda Médica")
                 .description("Ha alcanzado el más alto nivel de reconocimiento")
-                .icon("👑")
+                .icon("Star")
                 .color("#9C27B0")
-                .criteria("Obtuvo 8+ otros badges y completó 300+ turnos")
+                .criteria("Activa Comunicador Excepcional, Médico Empático y Puntualidad Profesional")
                 .build());
 
         doctorBadgeMetadata.put("DOCTOR_ALWAYS_AVAILABLE", BadgeMetadata.builder()
@@ -146,7 +135,7 @@ public class BadgeMetadataService {
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Siempre Disponible")
                 .description("Ofrece amplia disponibilidad para sus pacientes")
-                .icon("🌟")
+                .icon("AccessTime")
                 .color("#8BC34A")
                 .criteria("Disponibilidad en 4+ días/semana")
                 .build());
@@ -159,9 +148,9 @@ public class BadgeMetadataService {
                 .rarity(BadgeMetadata.BadgeRarity.COMMON)
                 .name("Bienvenido a MediBook")
                 .description("Tu primer paso en el camino de la salud digital")
-                .icon("👋")
+                .icon("WavingHand")
                 .color("#4CAF50")
-                .criteria("Completa tu primer turno")
+                .criteria("Ten tu primer turno")
                 .build());
 
         patientBadgeMetadata.put("PATIENT_HEALTH_GUARDIAN", BadgeMetadata.builder()
@@ -170,7 +159,7 @@ public class BadgeMetadataService {
                 .rarity(BadgeMetadata.BadgeRarity.COMMON)
                 .name("Guardián de la Salud")
                 .description("Demuestras compromiso con tu bienestar")
-                .icon("🛡️")
+                .icon("Shield")
                 .color("#2196F3")
                 .criteria("Completa 6+ turnos")
                 .build());
@@ -180,8 +169,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.PREVENTIVE_CARE)
                 .rarity(BadgeMetadata.BadgeRarity.COMMON)
                 .name("Paciente Comprometido")
-                .description("Muestras dedicación consistente a tu salud")
-                .icon("💪")
+                .description("Cuidando de tu salud")
+                .icon("ThumbUp")
                 .color("#FF9800")
                 .criteria("Completa 5+ turnos")
                 .build());
@@ -191,8 +180,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.PREVENTIVE_CARE)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Seguimiento Continuo")
-                .description("Mantienes una relación continua con tu médico")
-                .icon("🔄")
+                .description("Mantienes un seguimiento con tu doctor")
+                .icon("Refresh")
                 .color("#9C27B0")
                 .criteria("Completa 3+ turnos con el mismo doctor")
                 .build());
@@ -202,8 +191,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.PREVENTIVE_CARE)
                 .rarity(BadgeMetadata.BadgeRarity.EPIC)
                 .name("Paciente Constante")
-                .description("Eres un paciente regular y confiable")
-                .icon("🎯")
+                .description("Gracias por confiar en MediBook")
+                .icon("Repeat")
                 .color("#3F51B5")
                 .criteria("Completa 15+ turnos")
                 .build());
@@ -213,8 +202,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.ACTIVE_COMMITMENT)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Puntualidad Ejemplar")
-                .description("Siempre llegas a tiempo a tus citas")
-                .icon("⏰")
+                .description("Llegas a tiempo a tus turnos")
+                .icon("Schedule")
                 .color("#8BC34A")
                 .criteria("Recibe 10+ menciones de puntualidad de tus médicos")
                 .build());
@@ -223,9 +212,9 @@ public class BadgeMetadataService {
                 .badgeType("PATIENT_SMART_PLANNER")
                 .category(BadgeCategory.ACTIVE_COMMITMENT)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
-                .name("Planificador Inteligente")
-                .description("Planeas tus citas médicas con anticipación")
-                .icon("📅")
+                .name("Planificador")
+                .description("Reservas tus turnos médicos con anticipación")
+                .icon("CalendarToday")
                 .color("#00BCD4")
                 .criteria("Reserva 10+ turnos con al menos 24 horas de anticipación")
                 .build());
@@ -235,8 +224,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.ACTIVE_COMMITMENT)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Colaborador Excelente")
-                .description("Colaboras activamente en tu proceso de atención")
-                .icon("🤝")
+                .description("Colaboras positivamente en tus procesos de atención")
+                .icon("People")
                 .color("#FFC107")
                 .criteria("Recibe 10+ menciones positivas de colaboración de tus médicos")
                 .build());
@@ -246,10 +235,10 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.ACTIVE_COMMITMENT)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Siempre Preparado")
-                .description("Vienes preparado a cada consulta")
-                .icon("📋")
+                .description("Vienes preparado a las consultas")
+                .icon("Assignment")
                 .color("#607D8B")
-                .criteria("Sube 10+ documentos requeridos")
+                .criteria("Sube 10+ documentos requeridos por tus doctores")
                 .build());
 
         patientBadgeMetadata.put("PATIENT_RESPONSIBLE_EVALUATOR", BadgeMetadata.builder()
@@ -257,8 +246,8 @@ public class BadgeMetadataService {
                 .category(BadgeCategory.ACTIVE_COMMITMENT)
                 .rarity(BadgeMetadata.BadgeRarity.RARE)
                 .name("Evaluador Responsable")
-                .description("Proporcionas feedback constructivo y útil")
-                .icon("⭐")
+                .description("Proporcionas feedback constructivo")
+                .icon("Star")
                 .color("#E91E63")
                 .criteria("Deja 10+ evaluaciones con calificación promedio entre 3 y 5.0")
                 .build());
@@ -267,9 +256,9 @@ public class BadgeMetadataService {
                 .badgeType("PATIENT_EXCELLENCE_MODEL")
                 .category(BadgeCategory.CLINICAL_EXCELLENCE)
                 .rarity(BadgeMetadata.BadgeRarity.LEGENDARY)
-                .name("Modelo de Excelencia")
-                .description("Eres un ejemplo de paciente excepcional")
-                .icon("👑")
+                .name("Modelo a Seguir")
+                .description("Eres un paciente ejemplar")
+                .icon("Star")
                 .color("#FF5722")
                 .criteria("Completa 25+ turnos con 4+ otros badges")
                 .build());

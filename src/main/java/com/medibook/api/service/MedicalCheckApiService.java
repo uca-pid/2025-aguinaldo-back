@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,28 +31,32 @@ public class MedicalCheckApiService {
      * @param email Patient email
      * @return true if user exists, false otherwise
      */
+    @SuppressWarnings("unchecked")
     public boolean isUser(String email) {
         try {
             String url = apiBaseUrl + "/isUser";
             
             Map<String, String> requestBody = new HashMap<>();
-            requestBody.put("email", email);
+            requestBody.put("mail", email);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + apiKey);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
 
-            // Try to get response as plain boolean first
-            ResponseEntity<Boolean> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 url,
                 HttpMethod.POST,
                 request,
-                Boolean.class
+                (Class<Map<String, Object>>)(Class<?>)Map.class
             );
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return Boolean.TRUE.equals(response.getBody());
+                Object existsValue = response.getBody().get("isUser");
+                if (existsValue instanceof Boolean) {
+                    return Boolean.TRUE.equals(existsValue);
+                }
+                return true;
             }
             
             return false;
@@ -73,7 +78,7 @@ public class MedicalCheckApiService {
             String url = apiBaseUrl + "/userHasMedicalCheck";
             
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("email", email);
+            requestBody.put("mail", email);
             requestBody.put("medicalCheck", hasMedicalCheck);
 
             HttpHeaders headers = new HttpHeaders();

@@ -5,8 +5,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medibook.api.entity.BadgeStatistics;
+import com.medibook.api.entity.Rating;
 import com.medibook.api.entity.TurnAssigned;
 import com.medibook.api.entity.User;
+import com.medibook.api.repository.BadgeRepository;
 import com.medibook.api.repository.BadgeStatisticsRepository;
 import com.medibook.api.repository.RatingRepository;
 import com.medibook.api.repository.TurnAssignedRepository;
@@ -34,7 +36,9 @@ public class BadgeStatisticsUpdateService {
     private final UserRepository userRepository;
     private final RatingRepository ratingRepository;
     private final TurnAssignedRepository turnAssignedRepository;
+    private final BadgeRepository badgeRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final int TOP_SPECIALIST_REQUIRED_RATINGS = 35;
 
     @Transactional
     public void updateAfterRatingAddedSync(UUID userId, Integer communicationScore, Integer empathyScore, Integer punctualityScore) {
@@ -71,13 +75,16 @@ public class BadgeStatisticsUpdateService {
         Integer totalTurns = (Integer) statistics.getOrDefault("total_turns_completed", 0);
         if ("PATIENT".equals(user.getRole())) {
             Integer ratingsGiven = (Integer) statistics.getOrDefault("ratings_given", 0);
-            progress.put("PATIENT_RESPONSIBLE_EVALUATOR", Math.min(ratingsGiven * 100.0 / 10, 100.0));
+            double current = (Double) progress.getOrDefault("PATIENT_RESPONSIBLE_EVALUATOR", 0.0);
+            progress.put("PATIENT_RESPONSIBLE_EVALUATOR", Math.max(current, Math.min(ratingsGiven * 100.0 / 10, 100.0)));
 
             Integer collaborationCount = (Integer) statistics.getOrDefault("doctor_collaboration_mentions", 0);
-            progress.put("PATIENT_EXCELLENT_COLLABORATOR", Math.min(collaborationCount * 100.0 / 10, 100.0));
+            current = (Double) progress.getOrDefault("PATIENT_EXCELLENT_COLLABORATOR", 0.0);
+            progress.put("PATIENT_EXCELLENT_COLLABORATOR", Math.max(current, Math.min(collaborationCount * 100.0 / 10, 100.0)));
 
             Integer doctorPunctualityCount = (Integer) statistics.getOrDefault("doctor_punctuality_mentions", 0);
-            progress.put("PATIENT_EXEMPLARY_PUNCTUALITY", Math.min(doctorPunctualityCount * 100.0 / 10, 100.0));
+            current = (Double) progress.getOrDefault("PATIENT_EXEMPLARY_PUNCTUALITY", 0.0);
+            progress.put("PATIENT_EXEMPLARY_PUNCTUALITY", Math.max(current, Math.min(doctorPunctualityCount * 100.0 / 10, 100.0)));
 
         } else if ("DOCTOR".equals(user.getRole())) {
             Integer totalRatings = (Integer) statistics.getOrDefault("total_ratings_received", 0);
@@ -88,26 +95,19 @@ public class BadgeStatisticsUpdateService {
             Integer lowRatingCount = (Integer) statistics.getOrDefault("total_low_rating_count", 0);
 
             double communicationProgress = Math.min(communicationCount * 100.0 / 25, 100.0);
-            progress.put("DOCTOR_EXCEPTIONAL_COMMUNICATOR", communicationProgress);
+            double current = (Double) progress.getOrDefault("DOCTOR_EXCEPTIONAL_COMMUNICATOR", 0.0);
+            progress.put("DOCTOR_EXCEPTIONAL_COMMUNICATOR", Math.max(current, communicationProgress));
 
             double empathyProgress = Math.min(empathyCount * 100.0 / 25, 100.0);
-            progress.put("DOCTOR_EMPATHETIC_DOCTOR", empathyProgress);
+            current = (Double) progress.getOrDefault("DOCTOR_EMPATHETIC_DOCTOR", 0.0);
+            progress.put("DOCTOR_EMPATHETIC_DOCTOR", Math.max(current, empathyProgress));
 
             double punctualityProgress = Math.min(punctualityCount * 100.0 / 20, 100.0);
-            progress.put("DOCTOR_PUNCTUALITY_PROFESSIONAL", punctualityProgress);
+            current = (Double) progress.getOrDefault("DOCTOR_PUNCTUALITY_PROFESSIONAL", 0.0);
+            progress.put("DOCTOR_PUNCTUALITY_PROFESSIONAL", Math.max(current, punctualityProgress));
 
-            if (totalRatings >= 100) {
-                boolean meetsLowScoreRequirement = lowRatingCount <= 0.10 * totalRatings;
-                if (meetsLowScoreRequirement && avgRating >= 4.0) {
-                    progress.put("DOCTOR_SUSTAINED_EXCELLENCE", 100.0);
-                } else if (avgRating >= 4.0) {
-                    progress.put("DOCTOR_SUSTAINED_EXCELLENCE", 50.0);
-                } else {
-                    progress.put("DOCTOR_SUSTAINED_EXCELLENCE", Math.min((avgRating / 4.0) * 50, 50.0));
-                }
-            } else {
-                progress.put("DOCTOR_SUSTAINED_EXCELLENCE", totalRatings * 100.0 / 100);
-            }
+            progress.put("DOCTOR_TOP_SPECIALIST", calculateTopSpecialistProgress(userId));
+            progress.put("DOCTOR_MEDICAL_LEGEND", calculateMedicalLegendProgress(userId));
         }
 
         try {
@@ -126,6 +126,12 @@ public class BadgeStatisticsUpdateService {
 
             Map<String, Object> statistics = parseJson(stats.getStatistics());
             incrementCounter(statistics, "total_turns_completed");
+
+            User user = userRepository.findById(userId).orElseThrow();
+            if ("PATIENT".equals(user.getRole())) {
+                long maxTurns = turnAssignedRepository.findMaxCompletedTurnsWithSameDoctor(userId);
+                statistics.put("turns_with_same_doctor", (int) maxTurns);
+            }
 
             stats.setStatistics(objectMapper.valueToTree(statistics));
             statisticsRepository.save(stats);
@@ -150,8 +156,8 @@ public class BadgeStatisticsUpdateService {
 
             Map<String, Object> statistics = parseJson(stats.getStatistics());
 
-            Integer uniquePatients = (Integer) statistics.getOrDefault("unique_patients_served", 0);
-            statistics.put("unique_patients_served", uniquePatients + 1);
+            Integer uniquePatients = (Integer) statistics.getOrDefault("total_unique_patients", 0);
+            statistics.put("total_unique_patients", uniquePatients + 1);
 
             stats.setStatistics(objectMapper.valueToTree(statistics));
             statisticsRepository.save(stats);
@@ -184,21 +190,7 @@ public class BadgeStatisticsUpdateService {
                 progress.put("PATIENT_CONSTANT_PATIENT", Math.min(totalTurns * 100.0 / 15, 100.0));
 
             } else if ("DOCTOR".equals(user.getRole())) {
-                progress.put("DOCTOR_COMPLETE_DOCUMENTER", 0.0);
-
-                Integer totalCancelled = (Integer) statistics.getOrDefault("total_turns_cancelled", 0);
-                double cancellationRate = totalTurns > 0 ? (totalCancelled * 100.0 / totalTurns) : 0;
-                if (totalTurns >= 20) {
-                    progress.put("DOCTOR_CONSISTENT_PROFESSIONAL", cancellationRate < 10 ? 100.0 : 0.0);
-                } else {
-                    progress.put("DOCTOR_CONSISTENT_PROFESSIONAL", totalTurns * 100.0 / 20);
-                }
-
-                progress.put("DOCTOR_RELATIONSHIP_BUILDER", 0.0);
-
-                progress.put("DOCTOR_TOP_SPECIALIST", Math.min(totalTurns * 100.0 / 100, 100.0));
-
-                progress.put("DOCTOR_MEDICAL_LEGEND", Math.min(totalTurns * 100.0 / 500, 100.0));
+                updateDoctorBadgeProgress(user.getId(), statistics, progress, totalTurns);
             }
 
             try {
@@ -292,7 +284,7 @@ public class BadgeStatisticsUpdateService {
             BadgeStatistics stats = statisticsRepository.findByUserId(userId).orElseThrow();
 
             Map<String, Object> statistics = parseJson(stats.getStatistics());
-            incrementCounter(statistics, "requests_handled");
+            incrementCounter(statistics, "total_requests_handled");
 
             stats.setStatistics(objectMapper.valueToTree(statistics));
             statisticsRepository.save(stats);
@@ -312,7 +304,7 @@ public class BadgeStatisticsUpdateService {
         User user = userRepository.findById(userId).orElseThrow();
 
         if ("DOCTOR".equals(user.getRole())) {
-            Integer requestsHandled = (Integer) statistics.getOrDefault("requests_handled", 0);
+            Integer requestsHandled = (Integer) statistics.getOrDefault("total_requests_handled", 0);
             Integer requestsCreated = (Integer) statistics.getOrDefault("requests_created", 0);
 
             if (requestsHandled >= 7) {
@@ -337,7 +329,7 @@ public class BadgeStatisticsUpdateService {
             BadgeStatistics stats = statisticsRepository.findByUserId(userId).orElseThrow();
 
             Map<String, Object> statistics = parseJson(stats.getStatistics());
-            incrementCounter(statistics, "total_turns_cancelled");
+            incrementCounter(statistics, "total_cancellations");
 
             stats.setStatistics(objectMapper.valueToTree(statistics));
             statisticsRepository.save(stats);
@@ -425,7 +417,7 @@ public class BadgeStatisticsUpdateService {
                 
                 updatePatientBadgeProgress(statistics, progress, totalTurns, completedBadges, avgRatingReceived);
             } else if ("DOCTOR".equals(user.getRole())) {
-                updateDoctorBadgeProgress(statistics, progress, totalTurns);
+                updateDoctorBadgeProgress(user.getId(), statistics, progress, totalTurns);
             }
 
             stats.setProgress(objectMapper.valueToTree(progress));
@@ -517,6 +509,8 @@ public class BadgeStatisticsUpdateService {
                     statistics.put("avg_rating_received", avgRating);
                 }
             }
+
+            updateRatingBasedStatistics(userId, statistics);
 
             stats.setStatistics(objectMapper.valueToTree(statistics));
             statisticsRepository.save(stats);
@@ -671,72 +665,91 @@ public class BadgeStatisticsUpdateService {
     }
 
     private void updatePatientBadgeProgress(Map<String, Object> statistics, Map<String, Object> progress, Integer totalTurns, long completedBadges, Double avgRatingReceived) {
-        progress.put("PATIENT_MEDIBOOK_WELCOME", Math.min(totalTurns * 100.0 / 1, 100.0));
+        double current = (Double) progress.getOrDefault("PATIENT_MEDIBOOK_WELCOME", 0.0);
+        progress.put("PATIENT_MEDIBOOK_WELCOME", Math.max(current, Math.min(totalTurns * 100.0 / 1, 100.0)));
 
-        progress.put("PATIENT_HEALTH_GUARDIAN", Math.min(totalTurns * 100.0 / 6, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_HEALTH_GUARDIAN", 0.0);
+        progress.put("PATIENT_HEALTH_GUARDIAN", Math.max(current, Math.min(totalTurns * 100.0 / 6, 100.0)));
 
-        progress.put("PATIENT_COMMITTED_PATIENT", Math.min(totalTurns * 100.0 / 5, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_COMMITTED_PATIENT", 0.0);
+        progress.put("PATIENT_COMMITTED_PATIENT", Math.max(current, Math.min(totalTurns * 100.0 / 5, 100.0)));
 
         Integer turnsWithSameDoctor = (Integer) statistics.getOrDefault("turns_with_same_doctor", 0);
-        progress.put("PATIENT_CONTINUOUS_FOLLOWUP", Math.min(turnsWithSameDoctor * 100.0 / 3, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_CONTINUOUS_FOLLOWUP", 0.0);
+        progress.put("PATIENT_CONTINUOUS_FOLLOWUP", Math.max(current, Math.min(turnsWithSameDoctor * 100.0 / 3, 100.0)));
 
-        progress.put("PATIENT_CONSTANT_PATIENT", Math.min(totalTurns * 100.0 / 15, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_CONSTANT_PATIENT", 0.0);
+        progress.put("PATIENT_CONSTANT_PATIENT", Math.max(current, Math.min(totalTurns * 100.0 / 15, 100.0)));
 
         Integer ratingsGiven = (Integer) statistics.getOrDefault("ratings_given", 0);
-        progress.put("PATIENT_RESPONSIBLE_EVALUATOR", Math.min(ratingsGiven * 100.0 / 10, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_RESPONSIBLE_EVALUATOR", 0.0);
+        progress.put("PATIENT_RESPONSIBLE_EVALUATOR", Math.max(current, Math.min(ratingsGiven * 100.0 / 10, 100.0)));
 
         Integer collaborationCount = (Integer) statistics.getOrDefault("doctor_collaboration_mentions", 0);
-        progress.put("PATIENT_EXCELLENT_COLLABORATOR", Math.min(collaborationCount * 100.0 / 10, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_EXCELLENT_COLLABORATOR", 0.0);
+        progress.put("PATIENT_EXCELLENT_COLLABORATOR", Math.max(current, Math.min(collaborationCount * 100.0 / 10, 100.0)));
 
         Integer doctorPunctualityCount = (Integer) statistics.getOrDefault("doctor_punctuality_mentions", 0);
-        progress.put("PATIENT_EXEMPLARY_PUNCTUALITY", Math.min(doctorPunctualityCount * 100.0 / 10, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_EXEMPLARY_PUNCTUALITY", 0.0);
+        progress.put("PATIENT_EXEMPLARY_PUNCTUALITY", Math.max(current, Math.min(doctorPunctualityCount * 100.0 / 10, 100.0)));
 
         Integer advanceBookings = (Integer) statistics.getOrDefault("advance_bookings", 0);
-        progress.put("PATIENT_SMART_PLANNER", Math.min(advanceBookings * 100.0 / 10, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_SMART_PLANNER", 0.0);
+        progress.put("PATIENT_SMART_PLANNER", Math.max(current, Math.min(advanceBookings * 100.0 / 10, 100.0)));
 
         Integer filesUploaded = (Integer) statistics.getOrDefault("files_uploaded", 0);
-        progress.put("PATIENT_ALWAYS_PREPARED", Math.min(filesUploaded * 100.0 / 10, 100.0));
+        current = (Double) progress.getOrDefault("PATIENT_ALWAYS_PREPARED", 0.0);
+        progress.put("PATIENT_ALWAYS_PREPARED", Math.max(current, Math.min(filesUploaded * 100.0 / 10, 100.0)));
 
+        current = (Double) progress.getOrDefault("PATIENT_EXCELLENCE_MODEL", 0.0);
+        double excellenceCalculated;
         if (totalTurns >= 25 && completedBadges >= 4) {
-            progress.put("PATIENT_EXCELLENCE_MODEL", 100.0);
+            excellenceCalculated = 100.0;
         } else if (totalTurns >= 25) {
-            progress.put("PATIENT_EXCELLENCE_MODEL", 50.0);
+            excellenceCalculated = 50.0;
         } else {
-            progress.put("PATIENT_EXCELLENCE_MODEL", totalTurns * 100.0 / 25);
+            excellenceCalculated = totalTurns * 100.0 / 25;
         }
+        progress.put("PATIENT_EXCELLENCE_MODEL", Math.max(current, excellenceCalculated));
     }
 
-    void updateDoctorBadgeProgress(Map<String, Object> statistics, Map<String, Object> progress, Integer totalTurns) {
+    void updateDoctorBadgeProgress(UUID doctorId, Map<String, Object> statistics, Map<String, Object> progress, Integer totalTurns) {
         Integer documentationCount = (Integer) statistics.getOrDefault("documentation_count", 0);
+        double current = (Double) progress.getOrDefault("DOCTOR_COMPLETE_DOCUMENTER", 0.0);
         if (totalTurns >= 50) {
             double documentationProgress = Math.min((documentationCount * 100.0) / 35, 100.0);
-            progress.put("DOCTOR_COMPLETE_DOCUMENTER", documentationProgress);
+            progress.put("DOCTOR_COMPLETE_DOCUMENTER", Math.max(current, documentationProgress));
         } else {
             double requiredDocumentation = Math.max(35.0 * (totalTurns / 50.0), 1.0);
-            progress.put("DOCTOR_COMPLETE_DOCUMENTER", Math.min(documentationCount * 100.0 / requiredDocumentation, 100.0));
+            progress.put("DOCTOR_COMPLETE_DOCUMENTER", Math.max(current, Math.min(documentationCount * 100.0 / requiredDocumentation, 100.0)));
         }
 
         Integer totalCancelled = (Integer) statistics.getOrDefault("total_turns_cancelled", 0);
         double cancellationRate = totalTurns > 0 ? (totalCancelled * 100.0 / totalTurns) : 0;
+        current = (Double) progress.getOrDefault("DOCTOR_CONSISTENT_PROFESSIONAL", 0.0);
         if (totalTurns >= 80) {
-            progress.put("DOCTOR_CONSISTENT_PROFESSIONAL", cancellationRate < 15 ? 100.0 : 0.0);
+            double consistentProgress = cancellationRate < 15 ? 100.0 : 0.0;
+            progress.put("DOCTOR_CONSISTENT_PROFESSIONAL", Math.max(current, consistentProgress));
         } else {
-            progress.put("DOCTOR_CONSISTENT_PROFESSIONAL", totalTurns * 100.0 / 80);
+            progress.put("DOCTOR_CONSISTENT_PROFESSIONAL", Math.max(current, totalTurns * 100.0 / 80));
         }
 
-        Integer uniquePatients = (Integer) statistics.getOrDefault("unique_patients_served", 0);
-        progress.put("DOCTOR_RELATIONSHIP_BUILDER", Math.min(uniquePatients * 100.0 / 10, 100.0));
+        Integer uniquePatients = (Integer) statistics.getOrDefault("total_unique_patients", 0);
+        current = (Double) progress.getOrDefault("DOCTOR_RELATIONSHIP_BUILDER", 0.0);
+        progress.put("DOCTOR_RELATIONSHIP_BUILDER", Math.max(current, Math.min(uniquePatients * 100.0 / 10, 100.0)));
 
-        Integer requestsHandled = (Integer) statistics.getOrDefault("requests_handled", 0);
+        Integer requestsHandled = (Integer) statistics.getOrDefault("total_requests_handled", 0);
+        current = (Double) progress.getOrDefault("DOCTOR_AGILE_RESPONDER", 0.0);
         if (requestsHandled >= 7) {
-            progress.put("DOCTOR_AGILE_RESPONDER", 100.0);
+            progress.put("DOCTOR_AGILE_RESPONDER", Math.max(current, 100.0));
         } else {
-            progress.put("DOCTOR_AGILE_RESPONDER", requestsHandled * 100.0 / 7);
+            progress.put("DOCTOR_AGILE_RESPONDER", Math.max(current, requestsHandled * 100.0 / 7));
         }
 
-        progress.put("DOCTOR_TOP_SPECIALIST", Math.min(totalTurns * 100.0 / 100, 100.0));
+        double topSpecialistProgress = calculateTopSpecialistProgress(doctorId);
+        progress.put("DOCTOR_TOP_SPECIALIST", topSpecialistProgress);
 
-        progress.put("DOCTOR_MEDICAL_LEGEND", Math.min(totalTurns * 100.0 / 500, 100.0));
+        progress.put("DOCTOR_MEDICAL_LEGEND", calculateMedicalLegendProgress(doctorId));
 
         Integer totalRatings = (Integer) statistics.getOrDefault("total_ratings_received", 0);
         Integer communicationCount = (Integer) statistics.getOrDefault("total_communication_count", 0);
@@ -746,25 +759,35 @@ public class BadgeStatisticsUpdateService {
         Integer lowRatingCount = (Integer) statistics.getOrDefault("total_low_rating_count", 0);
 
         double communicationProgress = Math.min(communicationCount * 100.0 / 25, 100.0);
-        progress.put("DOCTOR_EXCEPTIONAL_COMMUNICATOR", communicationProgress);
+        current = (Double) progress.getOrDefault("DOCTOR_EXCEPTIONAL_COMMUNICATOR", 0.0);
+        progress.put("DOCTOR_EXCEPTIONAL_COMMUNICATOR", Math.max(current, communicationProgress));
 
         double empathyProgress = Math.min(empathyCount * 100.0 / 25, 100.0);
-        progress.put("DOCTOR_EMPATHETIC_DOCTOR", empathyProgress);
+        current = (Double) progress.getOrDefault("DOCTOR_EMPATHETIC_DOCTOR", 0.0);
+        progress.put("DOCTOR_EMPATHETIC_DOCTOR", Math.max(current, empathyProgress));
 
         double punctualityProgress = Math.min(punctualityCount * 100.0 / 20, 100.0);
-        progress.put("DOCTOR_PUNCTUALITY_PROFESSIONAL", punctualityProgress);
+        current = (Double) progress.getOrDefault("DOCTOR_PUNCTUALITY_PROFESSIONAL", 0.0);
+        progress.put("DOCTOR_PUNCTUALITY_PROFESSIONAL", Math.max(current, punctualityProgress));
+    }
 
-        if (totalRatings >= 100) {
-            boolean meetsLowScoreRequirement = lowRatingCount <= 0.10 * totalRatings;
-            if (meetsLowScoreRequirement && avgRating >= 4.0) {
-                progress.put("DOCTOR_SUSTAINED_EXCELLENCE", 100.0);
-            } else if (avgRating >= 4.0) {
-                progress.put("DOCTOR_SUSTAINED_EXCELLENCE", 50.0);
-            } else {
-                progress.put("DOCTOR_SUSTAINED_EXCELLENCE", Math.min((avgRating / 4.0) * 50, 50.0));
-            }
-        } else {
-            progress.put("DOCTOR_SUSTAINED_EXCELLENCE", totalRatings * 100.0 / 100);
+    private double calculateTopSpecialistProgress(UUID doctorId) {
+        List<Rating> recentRatings = ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(doctorId, "PATIENT");
+        if (recentRatings == null) {
+            recentRatings = java.util.Collections.emptyList();
         }
+        long highScoreCount = recentRatings.stream()
+                .filter(rating -> rating.getScore() != null && rating.getScore() >= 4)
+                .count();
+        return Math.min(highScoreCount * 100.0 / TOP_SPECIALIST_REQUIRED_RATINGS, 100.0);
+    }
+
+    private double calculateMedicalLegendProgress(UUID doctorId) {
+        long activeRequiredBadges = BadgeService.MEDICAL_LEGEND_REQUIRED_BADGES.stream()
+                .filter(badgeType -> badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, badgeType, true))
+                .count();
+        return BadgeService.MEDICAL_LEGEND_REQUIRED_BADGES.isEmpty()
+                ? 0.0
+                : Math.min(activeRequiredBadges * 100.0 / BadgeService.MEDICAL_LEGEND_REQUIRED_BADGES.size(), 100.0);
     }
 }

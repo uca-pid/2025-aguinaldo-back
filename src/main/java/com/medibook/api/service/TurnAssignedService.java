@@ -80,6 +80,12 @@ public class TurnAssignedService {
 
         TurnAssigned saved = turnRepo.save(turn);
         
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        long daysDifference = java.time.Duration.between(now, turn.getScheduledAt()).toDays();
+        if (daysDifference >= 1) {
+            badgeEvaluationTrigger.evaluateAfterAdvanceBooking(dto.getPatientId());
+        }
+        
         try {
             String date = DateTimeUtils.formatDate(saved.getScheduledAt());
             String time = DateTimeUtils.formatTime(saved.getScheduledAt());
@@ -166,7 +172,7 @@ public class TurnAssignedService {
 
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         long daysDifference = java.time.Duration.between(now, turn.getScheduledAt()).toDays();
-        if (daysDifference >= 3) {
+        if (daysDifference >= 1) {
             badgeEvaluationTrigger.evaluateAfterAdvanceBooking(patientId);
         }
 
@@ -546,5 +552,10 @@ public class TurnAssignedService {
             return score;
         }
         return null;
+    }
+
+    public boolean hasHealthCertificateWithinLastYear(String email) {
+        OffsetDateTime oneYearAgo = OffsetDateTime.now(ARGENTINA_ZONE).minusYears(1);
+        return turnRepo.existsHealthCertificateWithinLastYear(email, oneYearAgo);
     }
 }

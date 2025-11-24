@@ -32,6 +32,8 @@ public interface RatingRepository extends JpaRepository<Rating, UUID> {
     @Query("SELECT r FROM Rating r WHERE r.rated.id = :ratedId ORDER BY r.createdAt DESC")
     List<Rating> findTop100ByRatedIdOrderByCreatedAtDesc(@org.springframework.data.repository.query.Param("ratedId") UUID ratedId);
 
+    List<Rating> findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(UUID ratedId, String role);
+
     @Query("SELECT r FROM Rating r WHERE r.rater.id = :raterId ORDER BY r.createdAt DESC")
     List<Rating> findByRaterId(@org.springframework.data.repository.query.Param("raterId") UUID raterId);
 

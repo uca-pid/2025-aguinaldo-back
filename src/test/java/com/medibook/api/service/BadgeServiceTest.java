@@ -76,6 +76,9 @@ class BadgeServiceTest {
 
         patientId = patient.getId();
         doctorId = doctor.getId();
+
+        lenient().when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(any(UUID.class), anyString()))
+            .thenReturn(new ArrayList<>());
     }
 
     @Test
@@ -111,14 +114,14 @@ class BadgeServiceTest {
     void getUserBadgeProgress_UserFound_ReturnsProgressList() {
         List<BadgeProgressSummaryDTO> expectedProgress = List.of(
             BadgeProgressSummaryDTO.builder()
-                .badgeType("DOCTOR_SUSTAINED_EXCELLENCE")
-                .badgeName("Excelencia Sostenida")
+                .badgeType("DOCTOR_EMPATHETIC_DOCTOR")
+                .badgeName("Médico Empático")
                 .category(BadgeCategory.QUALITY_OF_CARE)
-                .rarity(com.medibook.api.model.BadgeMetadata.BadgeRarity.EPIC)
-                .description("Consistente excelencia en el cuidado")
-                .icon("star")
-                .color("#FFD700")
-                .criteria("Mantener un promedio de calificación superior a 4.0 con al menos 100 calificaciones")
+                .rarity(com.medibook.api.model.BadgeMetadata.BadgeRarity.RARE)
+                .description("Destaca por su empatía")
+                .icon("❤️")
+                .color("#E91E63")
+                .criteria("Recibe 25 menciones positivas de empatía")
                 .earned(true)
                 .progressPercentage(100.0)
                 .statusMessage("¡Insignia obtenida! Excelente trabajo.")
@@ -131,8 +134,8 @@ class BadgeServiceTest {
 
         assertNotNull(result);
         assertFalse(result.isEmpty());
-        assertEquals("DOCTOR_SUSTAINED_EXCELLENCE", result.get(0).getBadgeType());
-        assertEquals("Excelencia Sostenida", result.get(0).getBadgeName());
+        assertEquals("DOCTOR_EMPATHETIC_DOCTOR", result.get(0).getBadgeType());
+        assertEquals("Médico Empático", result.get(0).getBadgeName());
         assertEquals(BadgeCategory.QUALITY_OF_CARE, result.get(0).getCategory());
 
         verify(badgeProgressService).getBadgeProgress(userId);
@@ -262,7 +265,7 @@ class BadgeServiceTest {
         Badge badge = Badge.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .badgeType("DOCTOR_SUSTAINED_EXCELLENCE")
+                .badgeType("DOCTOR_EMPATHETIC_DOCTOR")
                 .earnedAt(OffsetDateTime.now())
                 .isActive(true)
                 .lastEvaluatedAt(OffsetDateTime.now())
@@ -359,8 +362,8 @@ class BadgeServiceTest {
         UUID patientId = patient.getId();
         
         ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_turns_completed", 10);
-        statisticsJson.put("total_punctuality_count", 15);
+        statisticsJson.put("doctor_punctuality_mentions", 20);
+        statisticsJson.put("total_turns_completed", 20);
         
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(patientId)
@@ -432,36 +435,10 @@ class BadgeServiceTest {
     }
 
     @Test
-    void evaluateSustainedExcellence_HighRatingAndSufficientCount_ActivatesBadge() {
-        ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_avg_rating", 4.7);
-        statisticsJson.put("total_ratings_received", 150);
-        statisticsJson.put("total_low_rating_count", 5);
-        
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(userId)
-                .statistics(statisticsJson)
-                .progress(objectMapper.createObjectNode())
-                .build();
-        
-        when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
-        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
-        when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_SUSTAINED_EXCELLENCE")).thenReturn(Optional.empty());
-
-        badgeService.evaluateRatingRelatedBadges(userId);
-
-        verify(badgeRepository).save(argThat(badge -> 
-            "DOCTOR_SUSTAINED_EXCELLENCE".equals(badge.getBadgeType()) && 
-            badge.getIsActive()
-        ));
-    }
-
-    @Test
     void evaluateCompleteDocumenter_SufficientTurnsAndDocumentation_ActivatesBadge() {
         ObjectNode statisticsJson = objectMapper.createObjectNode();
         statisticsJson.put("total_turns_completed", 60);
-        statisticsJson.put("total_documented_count", 40);
+        statisticsJson.put("documentation_count", 40);
         
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(userId)
@@ -509,7 +486,7 @@ class BadgeServiceTest {
     }
 
     @Test
-    void evaluateMedicalLegend_AllCriteriaMet_ActivatesBadge() {
+    void evaluateMedicalLegend_AllRequiredBadgesActive_ActivatesBadge() {
         ObjectNode statisticsJson = objectMapper.createObjectNode();
         statisticsJson.put("total_turns_completed", 350);
         statisticsJson.put("total_avg_rating", 4.8);
@@ -523,8 +500,8 @@ class BadgeServiceTest {
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
-        when(badgeRepository.countActiveBadgesByUserIdExcludingType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(10L);
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(Optional.empty());
+        stubMedicalLegendDependencies(userId, true, true, true);
 
         badgeService.evaluateTurnRelatedBadges(userId);
 
@@ -565,7 +542,7 @@ class BadgeServiceTest {
         UUID patientId = patient.getId();
         
         ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_advance_booking_count", 10);
+        statisticsJson.put("advance_bookings", 10);
         
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(patientId)
@@ -591,7 +568,7 @@ class BadgeServiceTest {
         UUID patientId = patient.getId();
         
         ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_collaboration_count", 10);
+        statisticsJson.put("doctor_collaboration_mentions", 10);
         
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(patientId)
@@ -718,7 +695,7 @@ class BadgeServiceTest {
     void evaluateDetailedDiagnostician_AllCriteriaMet_ActivatesBadge() {
         ObjectNode statisticsJson = objectMapper.createObjectNode();
         statisticsJson.put("total_turns_completed", 30);
-        statisticsJson.put("total_documented_count", 30);
+        statisticsJson.put("documentation_count", 60);
         statisticsJson.put("total_avg_words_per_entry", 160.0);
         
         BadgeStatistics stats = BadgeStatistics.builder()
@@ -744,7 +721,7 @@ class BadgeServiceTest {
     @Test
     void evaluateAgileResponder_ViaResponseRelatedBadges_ActivatesBadge() {
         ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_requests_handled", 7);
+        statisticsJson.put("total_requests_handled", 8);
         
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(userId)
@@ -781,6 +758,13 @@ class BadgeServiceTest {
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_RELATIONSHIP_BUILDER")).thenReturn(Optional.empty());
+
+        List<User> patients = java.util.stream.IntStream.range(0, 50).mapToObj(i -> {
+            User u = new User();
+            u.setId(UUID.randomUUID());
+            return u;
+        }).collect(java.util.stream.Collectors.toList());
+        when(turnAssignedRepository.findDistinctPatientsByDoctorId(userId)).thenReturn(patients);
 
         badgeService.evaluateTurnRelatedBadges(userId);
 
@@ -832,6 +816,7 @@ class BadgeServiceTest {
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_TOP_SPECIALIST")).thenReturn(Optional.empty());
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(userId, "PATIENT")).thenReturn(createRatings(35, 4));
 
         badgeService.evaluateTurnRelatedBadges(userId);
 
@@ -865,6 +850,7 @@ class BadgeServiceTest {
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(Optional.empty());
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_ALWAYS_AVAILABLE")).thenReturn(Optional.empty());
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_CONSISTENT_PROFESSIONAL")).thenReturn(Optional.empty());
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(userId, "PATIENT")).thenReturn(new ArrayList<>());
 
         badgeService.evaluateConsistencyRelatedBadges(userId);
 
@@ -1324,34 +1310,11 @@ class BadgeServiceTest {
         when(statisticsRepository.findByUserId(doctorId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(doctorId, "PATIENT")).thenReturn(createRatings(35, 4));
 
         badgeService.evaluateAllBadges(doctorId);
 
         verify(badgeRepository).findByUser_IdAndBadgeType(doctorId, "DOCTOR_EXCEPTIONAL_COMMUNICATOR");
-    }
-
-    @Test
-    void evaluateSustainedExcellence_Doctor_WithLowRating_NoActivation() {
-        User doctor = new User();
-        doctor.setId(doctorId);
-        doctor.setRole("DOCTOR");
-
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(doctorId)
-                .statistics(objectMapper.createObjectNode()
-                        .put("total_avg_rating", 3.5)
-                        .put("total_ratings_received", 150)
-                        .put("total_low_rating_count", 5))
-                .progress(objectMapper.createObjectNode())
-                .build();
-
-        when(statisticsRepository.findByUserId(doctorId)).thenReturn(Optional.of(stats));
-        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
-        when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-
-        badgeService.evaluateAllBadges(doctorId);
-
-        verify(badgeRepository).findByUser_IdAndBadgeType(doctorId, "DOCTOR_SUSTAINED_EXCELLENCE");
     }
 
     @Test
@@ -1470,7 +1433,7 @@ class BadgeServiceTest {
         when(statisticsRepository.findByUserId(doctorId)).thenReturn(Optional.of(stats));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
-        when(badgeRepository.countActiveBadgesByUserIdExcludingType(doctorId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(10L);
+        stubMedicalLegendDependencies(doctorId, true, true, true);
 
         badgeService.evaluateAllBadges(doctorId);
 
@@ -1529,12 +1492,6 @@ class BadgeServiceTest {
     void getCategoryForBadge_DoctorDocumentation_ReturnsCorrectCategory() {
         BadgeCategory result = badgeService.getCategoryForBadge("DOCTOR_COMPLETE_DOCUMENTER", "DOCTOR");
         assertEquals(BadgeCategory.PROFESSIONALISM, result);
-    }
-
-    @Test
-    void getCategoryForBadge_DoctorExcellence_ReturnsCorrectCategory() {
-        BadgeCategory result = badgeService.getCategoryForBadge("DOCTOR_SUSTAINED_EXCELLENCE", "DOCTOR");
-        assertEquals(BadgeCategory.QUALITY_OF_CARE, result);
     }
 
     @Test
@@ -1707,7 +1664,7 @@ class BadgeServiceTest {
         BadgeStatistics stats = BadgeStatistics.builder()
                 .userId(userId)
                 .statistics(objectMapper.createObjectNode()
-                        .put("turns_with_same_doctor_last_12_months", 5))
+                        .put("turns_with_same_doctor", 5))
                 .progress(objectMapper.createObjectNode())
                 .build();
 
@@ -1822,57 +1779,21 @@ class BadgeServiceTest {
         verify(badgeRepository).save(any(Badge.class));
     }
 
-    @Test
-    void evaluateSustainedExcellence_HighRatingLowLowRatings_ActivatesBadge() {
-        User doctor = new User();
-        doctor.setId(userId);
-        doctor.setRole("DOCTOR");
-
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(userId)
-                .statistics(objectMapper.createObjectNode()
-                        .put("total_ratings_received", 120)
-                        .put("total_avg_rating", 4.7)
-                        .put("total_low_rating_count", 5))
-                .progress(objectMapper.createObjectNode())
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
-        when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
-        when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_SUSTAINED_EXCELLENCE")).thenReturn(Optional.empty());
-        when(badgeRepository.save(any(Badge.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
-
-        badgeService.evaluateSustainedExcellence(doctor);
-
-        verify(badgeRepository).findByUser_IdAndBadgeType(userId, "DOCTOR_SUSTAINED_EXCELLENCE");
-        verify(badgeRepository).save(any(Badge.class));
+    private List<Rating> createRatings(int count, int score) {
+        List<Rating> ratings = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            ratings.add(Rating.builder().score(score).build());
+        }
+        return ratings;
     }
 
-    @Test
-    void evaluateSustainedExcellence_HighRatingHighLowRatings_DoesNotActivate() {
-        User doctor = new User();
-        doctor.setId(userId);
-        doctor.setRole("DOCTOR");
-
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(userId)
-                .statistics(objectMapper.createObjectNode()
-                        .put("total_ratings_received", 120)
-                        .put("total_avg_rating", 4.5)
-                        .put("total_low_rating_count", 15))
-                .progress(objectMapper.createObjectNode())
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
-        when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
-        when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_SUSTAINED_EXCELLENCE")).thenReturn(Optional.empty());
-        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
-
-        badgeService.evaluateSustainedExcellence(doctor);
-
-        verify(badgeRepository).findByUser_IdAndBadgeType(userId, "DOCTOR_SUSTAINED_EXCELLENCE");
-        verify(badgeRepository, never()).save(any());
+    private void stubMedicalLegendDependencies(UUID doctorId, boolean communicator, boolean empathetic, boolean punctuality) {
+        when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_EXCEPTIONAL_COMMUNICATOR", true))
+                .thenReturn(communicator);
+        when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_EMPATHETIC_DOCTOR", true))
+                .thenReturn(empathetic);
+        when(badgeRepository.existsByUser_IdAndBadgeTypeAndIsActive(doctorId, "DOCTOR_PUNCTUALITY_PROFESSIONAL", true))
+                .thenReturn(punctuality);
     }
 
     @Test
@@ -1895,6 +1816,7 @@ class BadgeServiceTest {
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_TOP_SPECIALIST")).thenReturn(Optional.empty());
         when(badgeRepository.save(any(Badge.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
+        when(ratingRepository.findTop35ByRated_IdAndRater_RoleOrderByCreatedAtDesc(userId, "PATIENT")).thenReturn(createRatings(35, 4));
 
         badgeService.evaluateTopSpecialist(doctor);
 
@@ -1918,14 +1840,16 @@ class BadgeServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(doctor));
         when(statisticsRepository.findByUserId(userId)).thenReturn(Optional.of(stats));
-        when(badgeRepository.countActiveBadgesByUserIdExcludingType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(9L);
         when(badgeRepository.findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND")).thenReturn(Optional.empty());
         when(badgeRepository.save(any(Badge.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
+        stubMedicalLegendDependencies(userId, true, true, true);
 
         badgeService.evaluateMedicalLegend(doctor);
 
-        verify(badgeRepository).countActiveBadgesByUserIdExcludingType(userId, "DOCTOR_MEDICAL_LEGEND");
+        verify(badgeRepository, times(1)).existsByUser_IdAndBadgeTypeAndIsActive(userId, "DOCTOR_EXCEPTIONAL_COMMUNICATOR", true);
+        verify(badgeRepository, times(1)).existsByUser_IdAndBadgeTypeAndIsActive(userId, "DOCTOR_EMPATHETIC_DOCTOR", true);
+        verify(badgeRepository, times(1)).existsByUser_IdAndBadgeTypeAndIsActive(userId, "DOCTOR_PUNCTUALITY_PROFESSIONAL", true);
         verify(badgeRepository).findByUser_IdAndBadgeType(userId, "DOCTOR_MEDICAL_LEGEND");
         verify(badgeRepository).save(any(Badge.class));
     }
