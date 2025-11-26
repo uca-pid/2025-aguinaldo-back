@@ -180,8 +180,6 @@ public class BadgeStatisticsUpdateService {
             if ("PATIENT".equals(user.getRole())) {
                 progress.put("PATIENT_MEDIBOOK_WELCOME", Math.min(totalTurns * 100.0 / 1, 100.0));
 
-                progress.put("PATIENT_HEALTH_GUARDIAN", Math.min(totalTurns * 100.0 / 6, 100.0));
-
                 progress.put("PATIENT_COMMITTED_PATIENT", Math.min(totalTurns * 100.0 / 5, 100.0));
 
                 Integer turnsWithSameDoctor = (Integer) statistics.getOrDefault("turns_with_same_doctor", 0);
@@ -667,9 +665,6 @@ public class BadgeStatisticsUpdateService {
     private void updatePatientBadgeProgress(Map<String, Object> statistics, Map<String, Object> progress, Integer totalTurns, long completedBadges, Double avgRatingReceived) {
         double current = (Double) progress.getOrDefault("PATIENT_MEDIBOOK_WELCOME", 0.0);
         progress.put("PATIENT_MEDIBOOK_WELCOME", Math.max(current, Math.min(totalTurns * 100.0 / 1, 100.0)));
-
-        current = (Double) progress.getOrDefault("PATIENT_HEALTH_GUARDIAN", 0.0);
-        progress.put("PATIENT_HEALTH_GUARDIAN", Math.max(current, Math.min(totalTurns * 100.0 / 6, 100.0)));
 
         current = (Double) progress.getOrDefault("PATIENT_COMMITTED_PATIENT", 0.0);
         progress.put("PATIENT_COMMITTED_PATIENT", Math.max(current, Math.min(totalTurns * 100.0 / 5, 100.0)));

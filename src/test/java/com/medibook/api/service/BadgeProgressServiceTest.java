@@ -196,7 +196,6 @@ class BadgeProgressServiceTest {
     private ObjectNode createPatientProgressJson() {
         ObjectNode progress = objectMapper.createObjectNode();
         progress.put("PATIENT_MEDIBOOK_WELCOME", 100.0);
-        progress.put("PATIENT_HEALTH_GUARDIAN", 60.0);
         progress.put("PATIENT_COMMITTED_PATIENT", 40.0);
         return progress;
     }
@@ -234,15 +233,6 @@ class BadgeProgressServiceTest {
                 .icon("👋")
                 .color("#78909C")
                 .criteria("Completa tu primer turno")
-                .build());
-        metadata.put("PATIENT_HEALTH_GUARDIAN", BadgeMetadata.builder()
-                .name("Guardián de la Salud")
-                .category(BadgeCategory.PREVENTIVE_CARE)
-                .rarity(BadgeMetadata.BadgeRarity.RARE)
-                .description("Comprometido con la salud")
-                .icon("🏥")
-                .color("#2196F3")
-                .criteria("Completa 6+ turnos")
                 .build());
         metadata.put("PATIENT_COMMITTED_PATIENT", BadgeMetadata.builder()
                 .name("Paciente Comprometido")
