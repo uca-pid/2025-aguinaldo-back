@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -115,6 +116,15 @@ public class MedicalHistoryService {
     public String getLatestMedicalHistoryContent(UUID patientId) {
         MedicalHistory latestHistory = medicalHistoryRepository.findFirstByPatient_IdOrderByCreatedAtDesc(patientId);
         return latestHistory != null ? latestHistory.getContent() : null;
+    }
+
+    public Map<UUID, String> getLatestMedicalHistoryContents(List<UUID> patientIds) {
+        List<Object[]> results = medicalHistoryRepository.findLatestContentsByPatientIds(patientIds);
+        return results.stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (String) row[1]
+                ));
     }
 
     @Transactional

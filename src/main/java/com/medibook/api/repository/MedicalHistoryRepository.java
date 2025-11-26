@@ -2,6 +2,8 @@ package com.medibook.api.repository;
 
 import com.medibook.api.entity.MedicalHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -45,4 +47,10 @@ public interface MedicalHistoryRepository extends JpaRepository<MedicalHistory, 
      * Get the latest medical history entry for a patient
      */
     MedicalHistory findFirstByPatient_IdOrderByCreatedAtDesc(UUID patientId);
+
+    /**
+     * Get the latest medical history content for multiple patients
+     */
+    @Query("SELECT mh.patient.id, mh.content FROM MedicalHistory mh WHERE mh.patient.id IN :patientIds AND mh.createdAt = (SELECT MAX(mh2.createdAt) FROM MedicalHistory mh2 WHERE mh2.patient.id = mh.patient.id)")
+    List<Object[]> findLatestContentsByPatientIds(@Param("patientIds") List<UUID> patientIds);
 }

@@ -26,7 +26,6 @@ public class BadgeService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final int MEDIBOOK_WELCOME_MIN_TURNS = 1;
-    private static final int HEALTH_GUARDIAN_MIN_TURNS = 6;
     private static final int CONSTANT_PATIENT_MIN_TURNS_TOTAL = 15;
     private static final double CONSTANT_PATIENT_ATTENDANCE_RATE = 0.75;
     private static final int CONTINUOUS_FOLLOWUP_MIN_TURNS_SAME_DOCTOR = 3;
@@ -100,7 +99,6 @@ public class BadgeService {
 
         if ("PATIENT".equals(user.getRole())) {
             evaluateMediBookWelcome(user);
-            evaluateHealthGuardian(user);
             evaluateCommittedPatient(user);
             evaluateContinuousFollowup(user);
             evaluateConstantPatient(user);
@@ -192,7 +190,6 @@ public class BadgeService {
             evaluateConsistentProfessional(user);
         } else if ("PATIENT".equals(user.getRole())) {
             evaluateMediBookWelcome(user);
-            evaluateHealthGuardian(user);
             evaluateCommittedPatient(user);
             evaluateContinuousFollowup(user);
             evaluateConstantPatient(user);
@@ -237,27 +234,6 @@ public class BadgeService {
             }
         } catch (Exception e) {
             log.error("Error evaluating MEDIBOOK_WELCOME for patient {}", patientId, e);
-        }
-    }
-
-    private void evaluateHealthGuardian(User patient) {
-        UUID patientId = patient.getId();
-        try {
-            BadgeStatistics stats = getOrCreateStatistics(patientId);
-            JsonNode statistics = stats.getStatistics();
-
-            int totalTurnsCompleted = statistics.path("total_turns_completed").asInt(0);
-            double progress = Math.min(((double) totalTurnsCompleted / HEALTH_GUARDIAN_MIN_TURNS) * 100, 100.0);
-
-            updateProgress(patientId, "PATIENT_HEALTH_GUARDIAN", progress);
-
-            if (totalTurnsCompleted >= HEALTH_GUARDIAN_MIN_TURNS) {
-                activateBadge(patientId, "PATIENT_HEALTH_GUARDIAN");
-            } else {
-                deactivateBadge(patientId, "PATIENT_HEALTH_GUARDIAN");
-            }
-        } catch (Exception e) {
-            log.error("Error evaluating HEALTH_GUARDIAN for patient {}", patientId, e);
         }
     }
 
@@ -854,7 +830,7 @@ public class BadgeService {
     BadgeCategory getCategoryForBadge(String badgeType, String role) {
         if ("PATIENT".equals(role)) {
             if (badgeType.contains("MEDIBOOK_WELCOME")) return BadgeCategory.WELCOME;
-            if (badgeType.contains("HEALTH_GUARDIAN") || badgeType.contains("COMMITTED_PATIENT") ||
+            if (badgeType.contains("COMMITTED_PATIENT") ||
                 badgeType.contains("CONTINUOUS_FOLLOWUP") || badgeType.contains("CONSTANT_PATIENT")) return BadgeCategory.PREVENTIVE_CARE;
             if (badgeType.contains("EXEMPLARY_PUNCTUALITY") || badgeType.contains("SMART_PLANNER") ||
                 badgeType.contains("EXCELLENT_COLLABORATOR")) return BadgeCategory.ACTIVE_COMMITMENT;

@@ -113,8 +113,10 @@ class DoctorServiceComprehensiveTest {
         // Set up default mocks for medical history service (lenient because not all tests use them)
         lenient().when(medicalHistoryService.getPatientMedicalHistory(any(UUID.class)))
                 .thenReturn(Collections.emptyList());
-        lenient().when(medicalHistoryService.getLatestMedicalHistoryContent(any(UUID.class)))
-                .thenReturn("");
+        lenient().when(medicalHistoryService.getLatestMedicalHistoryContents(anyList()))
+                .thenReturn(Collections.emptyMap());
+        lenient().when(ratingRepository.countSubcategoriesByRatedIds(anyList(), anyString()))
+                .thenReturn(Collections.emptyList());
     }
 
     private User createUser(UUID id, String email, Long dni, String role, String status) {
@@ -250,7 +252,8 @@ class DoctorServiceComprehensiveTest {
         when(userRepository.findById(doctorId1)).thenReturn(Optional.of(doctorUser1));
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId1))
                 .thenReturn(Arrays.asList(patientUser1, patientUser2));
-        when(ratingRepository.countSubcategoriesByRatedId(any(UUID.class), anyString()))
+        when(medicalHistoryService.getLatestMedicalHistoryContents(Arrays.asList(patientId1, patientId2))).thenReturn(Collections.emptyMap());
+        when(ratingRepository.countSubcategoriesByRatedIds(Arrays.asList(patientId1, patientId2), "DOCTOR"))
                 .thenReturn(Collections.emptyList());
 
         List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId1);
@@ -272,8 +275,8 @@ class DoctorServiceComprehensiveTest {
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId1);
         verify(medicalHistoryService).getPatientMedicalHistory(patientId1);
         verify(medicalHistoryService).getPatientMedicalHistory(patientId2);
-        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId1);
-        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId2);
+        verify(medicalHistoryService).getLatestMedicalHistoryContents(Arrays.asList(patientId1, patientId2));
+        verify(ratingRepository).countSubcategoriesByRatedIds(Arrays.asList(patientId1, patientId2), "DOCTOR");
     }
 
     @Test
@@ -311,11 +314,14 @@ class DoctorServiceComprehensiveTest {
     @Test
     void getPatientsByDoctor_NoPatients_ReturnsEmptyList() {        when(userRepository.findById(doctorId1)).thenReturn(Optional.of(doctorUser1));
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId1))
-                .thenReturn(Collections.emptyList());        List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId1);        assertNotNull(result);
+                .thenReturn(Collections.emptyList());        when(medicalHistoryService.getLatestMedicalHistoryContents(Collections.emptyList())).thenReturn(Collections.emptyMap());
+        when(ratingRepository.countSubcategoriesByRatedIds(Collections.emptyList(), "DOCTOR")).thenReturn(Collections.emptyList());        List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId1);        assertNotNull(result);
         assertTrue(result.isEmpty());
         
         verify(userRepository).findById(doctorId1);
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId1);
+        verify(medicalHistoryService).getLatestMedicalHistoryContents(Collections.emptyList());
+        verify(ratingRepository).countSubcategoriesByRatedIds(Collections.emptyList(), "DOCTOR");
     }
 
     @Test

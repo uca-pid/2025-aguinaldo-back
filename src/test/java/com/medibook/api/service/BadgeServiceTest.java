@@ -332,32 +332,6 @@ class BadgeServiceTest {
     }
 
     @Test
-    void evaluateHealthGuardian_SufficientTurns_ActivatesBadge() {
-        UUID patientId = patient.getId();
-        
-        ObjectNode statisticsJson = objectMapper.createObjectNode();
-        statisticsJson.put("total_turns_completed", 10);
-        
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(patientId)
-                .statistics(statisticsJson)
-                .progress(objectMapper.createObjectNode())
-                .build();
-        
-        when(statisticsRepository.findByUserId(patientId)).thenReturn(Optional.of(stats));
-        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-        when(badgeRepository.findByUser_IdAndBadgeType(patientId, "PATIENT_HEALTH_GUARDIAN")).thenReturn(Optional.empty());
-
-        badgeService.evaluateTurnRelatedBadges(patientId);
-
-        verify(badgeRepository).save(argThat(badge -> 
-            "PATIENT_HEALTH_GUARDIAN".equals(badge.getBadgeType()) && 
-            badge.getIsActive()
-        ));
-    }
-
-    @Test
     void evaluateExemplaryPunctuality_SufficientRatings_ActivatesBadge() {
         UUID patientId = patient.getId();
         
@@ -1059,12 +1033,6 @@ class BadgeServiceTest {
     }
 
     @Test
-    void getCategoryForBadge_PatientBadge_ReturnsPatientCategory() {
-        BadgeCategory result = badgeService.getCategoryForBadge("PATIENT_HEALTH_GUARDIAN", "PATIENT");
-        assertEquals(BadgeCategory.PREVENTIVE_CARE, result);
-    }
-
-    @Test
     void getCategoryForBadge_UnknownBadge_ReturnsConsistency() {
         BadgeCategory result = badgeService.getCategoryForBadge("UNKNOWN_BADGE", "DOCTOR");
         assertEquals(BadgeCategory.CONSISTENCY, result);
@@ -1182,28 +1150,6 @@ class BadgeServiceTest {
 
         verify(badgeRepository).findByUser_IdAndBadgeType(patientId, "PATIENT_MEDIBOOK_WELCOME");
         verify(badgeRepository, never()).save(any(Badge.class));
-    }
-
-    @Test
-    void evaluateHealthGuardian_WithExactRequiredTurns_ActivatesBadge() {
-        User patient = new User();
-        patient.setId(patientId);
-        patient.setRole("PATIENT");
-
-        BadgeStatistics stats = BadgeStatistics.builder()
-                .userId(patientId)
-                .statistics(objectMapper.createObjectNode().put("total_turns_completed", 6))
-                .progress(objectMapper.createObjectNode())
-                .build();
-
-        when(statisticsRepository.findByUserId(patientId)).thenReturn(Optional.of(stats));
-        when(statisticsRepository.save(any(BadgeStatistics.class))).thenReturn(stats);
-        when(userRepository.findById(patientId)).thenReturn(Optional.of(patient));
-        when(badgeRepository.existsByUser_IdAndBadgeType(patientId, "PATIENT_HEALTH_GUARDIAN")).thenReturn(false);
-
-        badgeService.evaluateAllBadges(patientId);
-
-        verify(badgeRepository, atLeastOnce()).save(any(Badge.class));
     }
 
     @Test
@@ -1444,12 +1390,6 @@ class BadgeServiceTest {
     void getCategoryForBadge_DoctorBadge_ReturnsCorrectCategory() {
         BadgeCategory result = badgeService.getCategoryForBadge("DOCTOR_EXCEPTIONAL_COMMUNICATOR", "DOCTOR");
         assertEquals(BadgeCategory.QUALITY_OF_CARE, result);
-    }
-
-    @Test
-    void getCategoryForBadge_PatientBadge_ReturnsCorrectCategory() {
-        BadgeCategory result = badgeService.getCategoryForBadge("PATIENT_HEALTH_GUARDIAN", "PATIENT");
-        assertEquals(BadgeCategory.PREVENTIVE_CARE, result);
     }
 
     @Test

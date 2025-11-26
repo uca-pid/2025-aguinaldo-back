@@ -117,8 +117,8 @@ class DoctorServiceTest {
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId)).thenReturn(patients);
         when(medicalHistoryService.getPatientMedicalHistory(patientId1)).thenReturn(Collections.emptyList());
         when(medicalHistoryService.getPatientMedicalHistory(patientId2)).thenReturn(Collections.emptyList());
-        when(medicalHistoryService.getLatestMedicalHistoryContent(patientId1)).thenReturn(null);
-        when(medicalHistoryService.getLatestMedicalHistoryContent(patientId2)).thenReturn(null);
+        when(medicalHistoryService.getLatestMedicalHistoryContents(Arrays.asList(patientId1, patientId2))).thenReturn(Collections.emptyMap());
+        when(ratingRepository.countSubcategoriesByRatedIds(Arrays.asList(patientId1, patientId2), "DOCTOR")).thenReturn(Collections.emptyList());
 
         List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId);
 
@@ -154,8 +154,8 @@ class DoctorServiceTest {
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId);
         verify(medicalHistoryService).getPatientMedicalHistory(patientId1);
         verify(medicalHistoryService).getPatientMedicalHistory(patientId2);
-        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId1);
-        verify(medicalHistoryService).getLatestMedicalHistoryContent(patientId2);
+        verify(medicalHistoryService).getLatestMedicalHistoryContents(Arrays.asList(patientId1, patientId2));
+        verify(ratingRepository).countSubcategoriesByRatedIds(Arrays.asList(patientId1, patientId2), "DOCTOR");
     }
 
     @Test
@@ -200,13 +200,16 @@ class DoctorServiceTest {
     void getPatientsByDoctor_EmptyPatientList() {
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
         when(turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId)).thenReturn(Collections.emptyList());
+        when(medicalHistoryService.getLatestMedicalHistoryContents(Collections.emptyList())).thenReturn(Collections.emptyMap());
+        when(ratingRepository.countSubcategoriesByRatedIds(Collections.emptyList(), "DOCTOR")).thenReturn(Collections.emptyList());
 
         List<PatientDTO> result = doctorService.getPatientsByDoctor(doctorId);
 
         assertTrue(result.isEmpty());
         verify(userRepository).findById(doctorId);
         verify(turnAssignedRepository).findDistinctPatientsByDoctorId(doctorId);
-        verifyNoInteractions(medicalHistoryService);
+        verify(medicalHistoryService).getLatestMedicalHistoryContents(Collections.emptyList());
+        verify(ratingRepository).countSubcategoriesByRatedIds(Collections.emptyList(), "DOCTOR");
     }
 
     @Test
