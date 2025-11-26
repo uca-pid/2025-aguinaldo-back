@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -69,9 +70,37 @@ public class DoctorService {
 
         List<User> patients = turnAssignedRepository.findDistinctPatientsByDoctorId(doctorId);
         
-        return patients.stream()
-                .map(this::mapPatientToDTO)
+        List<UUID> patientIds = patients.stream()
+                .map(User::getId)
                 .collect(Collectors.toList());
+        
+        Map<UUID, String> latestHistories = medicalHistoryService.getLatestMedicalHistoryContents(patientIds);
+        
+        Map<UUID, Map<String, Long>> ratingsMap = getRatingsMap(patientIds);
+        
+        return patients.stream()
+                .map(patient -> mapPatientToDTO(patient, latestHistories.get(patient.getId()), ratingsMap.get(patient.getId())))
+                .collect(Collectors.toList());
+    }
+
+    private Map<UUID, Map<String, Long>> getRatingsMap(List<UUID> patientIds) {
+        List<Object[]> results = ratingRepository.countSubcategoriesByRatedIds(patientIds, "DOCTOR");
+        Map<UUID, Map<String, Long>> ratingsMap = new java.util.HashMap<>();
+        for (Object[] row : results) {
+            UUID patientId = (UUID) row[0];
+            String subcategoriesString = (String) row[1];
+            Long count = (Long) row[2];
+            if (subcategoriesString != null && !subcategoriesString.trim().isEmpty()) {
+                String[] subcategories = subcategoriesString.split(",");
+                for (String subcategory : subcategories) {
+                    String trimmed = subcategory.trim();
+                    if (!trimmed.isEmpty()) {
+                        ratingsMap.computeIfAbsent(patientId, k -> new java.util.HashMap<>()).merge(trimmed, count, Long::sum);
+                    }
+                }
+            }
+        }
+        return ratingsMap;
     }
 
     @Transactional
@@ -90,29 +119,12 @@ public class DoctorService {
         medicalHistoryService.addMedicalHistory(doctorId, turnId, medicalHistory);
     }
 
-    private PatientDTO mapPatientToDTO(User patient) {
+    private PatientDTO mapPatientToDTO(User patient, String latestMedicalHistory, Map<String, Long> ratings) {
         List<MedicalHistoryDTO> medicalHistories = medicalHistoryService.getPatientMedicalHistory(patient.getId());
         
-        String latestMedicalHistory = medicalHistoryService.getLatestMedicalHistoryContent(patient.getId());
+        // latestMedicalHistory is now passed as parameter
         
-        List<RatingRepository.SubcategoryCount> subcategoryCounts = 
-                ratingRepository.countSubcategoriesByRatedId(patient.getId(), "DOCTOR");
-        
-        java.util.Map<String, Long> subcategoryMap = new java.util.HashMap<>();
-        for (RatingRepository.SubcategoryCount sc : subcategoryCounts) {
-            String subcategoriesString = sc.getSubcategory();
-            if (subcategoriesString != null && !subcategoriesString.trim().isEmpty()) {
-                String[] subcategories = subcategoriesString.split(",");
-                for (String subcategory : subcategories) {
-                    String trimmed = subcategory.trim();
-                    if (!trimmed.isEmpty()) {
-                        subcategoryMap.merge(trimmed, sc.getCount(), Long::sum);
-                    }
-                }
-            }
-        }
-        
-        List<SubcategoryCountDTO> ratingSubcategories = subcategoryMap.entrySet().stream()
+        List<SubcategoryCountDTO> ratingSubcategories = (ratings != null ? ratings : new java.util.HashMap<String, Long>()).entrySet().stream()
                 .map(entry -> new SubcategoryCountDTO(entry.getKey(), entry.getValue()))
                 .sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
                 .limit(3)

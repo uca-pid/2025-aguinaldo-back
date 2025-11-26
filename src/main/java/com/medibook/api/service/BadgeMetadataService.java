@@ -153,17 +153,6 @@ public class BadgeMetadataService {
                 .criteria("Ten tu primer turno")
                 .build());
 
-        patientBadgeMetadata.put("PATIENT_HEALTH_GUARDIAN", BadgeMetadata.builder()
-                .badgeType("PATIENT_HEALTH_GUARDIAN")
-                .category(BadgeCategory.PREVENTIVE_CARE)
-                .rarity(BadgeMetadata.BadgeRarity.COMMON)
-                .name("Guardián de la Salud")
-                .description("Demuestras compromiso con tu bienestar")
-                .icon("Shield")
-                .color("#2196F3")
-                .criteria("Completa 6+ turnos")
-                .build());
-
         patientBadgeMetadata.put("PATIENT_COMMITTED_PATIENT", BadgeMetadata.builder()
                 .badgeType("PATIENT_COMMITTED_PATIENT")
                 .category(BadgeCategory.PREVENTIVE_CARE)
