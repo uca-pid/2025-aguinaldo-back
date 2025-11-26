@@ -3,6 +3,7 @@ package com.medibook.api.repository;
 import com.medibook.api.entity.Rating;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -39,6 +40,9 @@ public interface RatingRepository extends JpaRepository<Rating, UUID> {
 
     @Query("SELECT r FROM Rating r WHERE r.rated.id = :ratedId ORDER BY r.createdAt DESC")
     List<Rating> findByRatedId(@org.springframework.data.repository.query.Param("ratedId") UUID ratedId);
+
+    @Query("SELECT r.rated.id, r.subcategory, COUNT(r) FROM Rating r WHERE r.rated.id IN :ratedIds AND r.rater.role = :raterRole GROUP BY r.rated.id, r.subcategory")
+    List<Object[]> countSubcategoriesByRatedIds(@Param("ratedIds") List<UUID> ratedIds, @Param("raterRole") String raterRole);
 
     interface SubcategoryCount {
         String getSubcategory();
