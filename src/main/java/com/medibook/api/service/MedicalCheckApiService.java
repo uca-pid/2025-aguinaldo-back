@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,10 +74,10 @@ public class MedicalCheckApiService {
     @SuppressWarnings("unchecked")
     public boolean registerMedicalCheck(String email, boolean hasMedicalCheck) {
         try {
-            String url = apiBaseUrl + "/userHasMedicalCheck";
+            String url = apiBaseUrl + "/medical-check";
             
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("mail", email);
+            requestBody.put("email", email);
             requestBody.put("medicalCheck", hasMedicalCheck);
 
             HttpHeaders headers = new HttpHeaders();
