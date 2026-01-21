@@ -43,14 +43,12 @@ public class SecurityConfig {
                 return config;
             }))
             .authorizeHttpRequests(authz -> authz
+                // Rutas públicas
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/gymcloud/**").permitAll()
-                .requestMatchers("/api/ratings/**").authenticated()
-                .requestMatchers("/api/turns/**").authenticated()
-                .requestMatchers("/api/admin/**").authenticated()
-                .requestMatchers("/api/profile/**").authenticated()
-                .requestMatchers("/api/badges/**").authenticated()
-                .anyRequest().permitAll()
+                .requestMatchers("/error").permitAll()
+                // Rutas privadas
+                .anyRequest().authenticated()
             )
             .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         

@@ -33,52 +33,28 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         if ("OPTIONS".equals(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
-        }
-        
-        String requestPath = request.getRequestURI();
-        // Ensure the authentication filter runs for all endpoints that require authentication.
-        // Add /api/ratings so rating endpoints that expect an authenticated user get the token processed.
-        if (!requestPath.startsWith("/api/turns") && 
-            !requestPath.startsWith("/api/admin") && 
-            !requestPath.startsWith("/api/profile") &&
-            !requestPath.startsWith("/api/notifications") &&
-            !requestPath.startsWith("/api/doctors") &&
-            !requestPath.startsWith("/api/ratings") &&
-            !requestPath.startsWith("/api/badges") &&
-            !requestPath.startsWith("/api/storage")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        }      
         
         String authorizationHeader = request.getHeader("Authorization");
         
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Authorization header required\"}");
-            response.setContentType("application/json");
+            filterChain.doFilter(request, response);
             return;
         }
         
         Optional<User> userOpt = authenticatedUserService.getUserFromAuthorizationHeader(authorizationHeader);
         
-        if (userOpt.isEmpty()) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Invalid access token\"}");
-            response.setContentType("application/json");
-            return;
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+            );
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+            request.setAttribute("authenticatedUser", user);
         }
         
-        User user = userOpt.get();
-        
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-            user, 
-            null, 
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
-        );
-        
-        SecurityContextHolder.getContext().setAuthentication(authToken);
-        
-        request.setAttribute("authenticatedUser", user);
         filterChain.doFilter(request, response);
     }
 }

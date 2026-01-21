@@ -32,6 +32,7 @@ class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
     private final EmailService emailService;
+    private final JwtService jwtService;
 
     private static final java.util.Set<String> VALID_SPECIALTIES = java.util.Set.of(
         "ALERGIA E INMUNOLOGÍA",
@@ -104,13 +105,15 @@ class AuthServiceImpl implements AuthService {
             PasswordEncoder passwordEncoder,
             UserMapper userMapper,
             AuthMapper authMapper,
-            EmailService emailService) {
+            EmailService emailService,
+            JwtService jwtService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.authMapper = authMapper;
         this.emailService = emailService;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -276,7 +279,7 @@ class AuthServiceImpl implements AuthService {
     }
 
     private String generateAccessToken(User user) {
-        return "jwt-token-for-user-" + user.getId();
+        return jwtService.generateToken(user);
     }
 
     private void validateCommonFields(RegisterRequestDTO request) {
