@@ -19,9 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.SecureRandom;
+import java.security.MessageDigest;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Base64;
+import java.nio.charset.StandardCharsets;
+
 
 @Service
 @Slf4j
@@ -212,12 +216,15 @@ class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        RefreshToken refreshToken = createRefreshToken(user);
+        String rawToken = generateSecureToken();
+        String hashedToken = hashToken(rawToken);
+
+        RefreshToken refreshToken = createRefreshToken(user, hashedToken);
         refreshTokenRepository.save(refreshToken);
 
         String accessToken = generateAccessToken(user);
 
-        return authMapper.toSignInResponse(user, accessToken, refreshToken.getTokenHash());
+        return authMapper.toSignInResponse(user, accessToken, rawToken);
     }
 
     private boolean isUserAuthorizedToSignIn(User user) {
@@ -237,14 +244,21 @@ class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void signOut(String refreshTokenHash) {
-        refreshTokenRepository.revokeTokenByHash(refreshTokenHash, ZonedDateTime.now(ARGENTINA_ZONE));
+    public void signOut(String rawRefreshToken) {
+        if (rawRefreshToken == null) {
+            return;
+        }
+        String hashedToken = hashToken(rawRefreshToken);
+        refreshTokenRepository.revokeTokenByHash(hashedToken, ZonedDateTime.now(ARGENTINA_ZONE));
     }
 
     @Override
     @Transactional
-    public SignInResponseDTO refreshToken(String refreshTokenHash) {
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(refreshTokenHash)
+    public SignInResponseDTO refreshToken(String rawRefreshToken) {
+        
+        String hashedInputToken = hashToken(rawRefreshToken);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(hashedInputToken)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
 
         if (!refreshToken.isValid()) {
@@ -252,20 +266,23 @@ class AuthServiceImpl implements AuthService {
         }
 
         User user = refreshToken.getUser();
-
         String newAccessToken = generateAccessToken(user);
 
-        RefreshToken newRefreshToken = createRefreshToken(user);
-        refreshTokenRepository.save(newRefreshToken);
-        refreshTokenRepository.revokeTokenByHash(refreshTokenHash, ZonedDateTime.now(ARGENTINA_ZONE));
+        String newRawToken = generateSecureToken();
+        String newHashedToken = hashToken(newRawToken);
 
-        return authMapper.toSignInResponse(user, newAccessToken, newRefreshToken.getTokenHash());
+        RefreshToken newRefreshToken = createRefreshToken(user, newHashedToken);
+        refreshTokenRepository.save(newRefreshToken);
+        
+        refreshTokenRepository.revokeTokenByHash(hashedInputToken, ZonedDateTime.now(ARGENTINA_ZONE));
+
+        return authMapper.toSignInResponse(user, newAccessToken, newRawToken);
     }
 
-    private RefreshToken createRefreshToken(User user) {
+    private RefreshToken createRefreshToken(User user, String hashedToken) {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
-        refreshToken.setTokenHash(generateSecureToken());
+        refreshToken.setTokenHash(hashedToken);
         refreshToken.setExpiresAt(ZonedDateTime.now(ARGENTINA_ZONE).plusDays(30));
         refreshToken.setCreatedAt(ZonedDateTime.now(ARGENTINA_ZONE));
         return refreshToken;
@@ -337,6 +354,16 @@ class AuthServiceImpl implements AuthService {
                 
         if (request.slotDurationMin() < 5 || request.slotDurationMin() > 180) {
             throw new IllegalArgumentException("Slot duration must be between 5 and 180 minutes");
+        }
+    }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error initializing SHA-256", e);
         }
     }
 }
