@@ -24,6 +24,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,12 +44,14 @@ class AuthServiceTest {
     private AuthMapper authMapper;
     @Mock
     private EmailService emailService;
+    @Mock
+    private JwtService jwtService;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, jwtService);
     }
 
     @Test
@@ -263,7 +268,9 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
-        when(authMapper.toSignInResponse(eq(user), anyString(), anyString())).thenReturn(expectedResponse);
+        when(authMapper.toSignInResponse(any(User.class), anyString(), anyString()))
+            .thenReturn(expectedResponse);
+        when(jwtService.generateToken(any(User.class))).thenReturn("mocked-jwt-token");
 
         SignInResponseDTO response = authService.signIn(request);
 
@@ -330,6 +337,7 @@ class AuthServiceTest {
     @Test
     void whenRefreshTokenWithValidToken_thenSuccess() {
         String refreshTokenHash = "valid-token-hash";
+        String mockedNewAccessToken = "mocked-new-access-token"; // Token simulado
         
         User user = new User();
         user.setId(UUID.randomUUID());
@@ -351,12 +359,16 @@ class AuthServiceTest {
             user.getSurname(),
             user.getRole(),
             "ACTIVE",
-            "new-access-token",
-            "new-refresh-token"
+            mockedNewAccessToken,
+            "new-refresh-token-hash"
         );
 
+        when(jwtService.generateToken(any(User.class))).thenReturn(mockedNewAccessToken);
+
         when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(refreshToken));
-        when(authMapper.toSignInResponse(eq(user), anyString(), anyString())).thenReturn(expectedResponse);
+        
+        when(authMapper.toSignInResponse(any(User.class), anyString(), anyString()))
+            .thenReturn(expectedResponse);
 
         SignInResponseDTO response = authService.refreshToken(refreshTokenHash);
 
@@ -367,6 +379,7 @@ class AuthServiceTest {
         verify(refreshTokenRepository).findByTokenHash(refreshTokenHash);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
         verify(refreshTokenRepository).revokeTokenByHash(eq(refreshTokenHash), any(ZonedDateTime.class));
+        
         verify(authMapper).toSignInResponse(eq(user), anyString(), anyString());
     }
 

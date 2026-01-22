@@ -51,6 +51,8 @@ class AuthServiceImplTest {
     private AuthMapper authMapper;
     @Mock
     private EmailService emailService;
+    @Mock
+    private JwtService jwtService;
 
     private AuthServiceImpl authService;
 
@@ -62,7 +64,7 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, jwtService);
 
         // Mock EmailService async methods
         EmailResponseDto successResponse = EmailResponseDto.builder()
@@ -378,6 +380,7 @@ class AuthServiceImplTest {
                                 "access_token", "refresh_token")
         );
 
+        when(jwtService.generateToken(sampleUser)).thenReturn("mocked-jwt-token");
         SignInResponseDTO result = authService.signIn(validSignInRequest);
 
         assertNotNull(result);
@@ -466,6 +469,7 @@ class AuthServiceImplTest {
                                 "access_token", "refresh_token")
         );
 
+        when(jwtService.generateToken(pendingDoctor)).thenReturn("mocked-jwt-token");
         SignInResponseDTO result = authService.signIn(validSignInRequest);
 
         assertNotNull(result);
@@ -521,6 +525,7 @@ class AuthServiceImplTest {
                                 "new_access_token", "new_refresh_token")
         );
 
+        when(jwtService.generateToken(sampleUser)).thenReturn("new-mocked-jwt-token");
         SignInResponseDTO result = authService.refreshToken("validRefreshToken");
 
         assertNotNull(result);
@@ -688,6 +693,10 @@ class AuthServiceImplTest {
                         sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus(), "jwt1", "refresh1"))
                 .thenReturn(new SignInResponseDTO(sampleUser.getId(), sampleUser.getEmail(), sampleUser.getName(),
                         sampleUser.getSurname(), sampleUser.getRole(), sampleUser.getStatus(), "jwt2", "refresh2"));
+
+        when(jwtService.generateToken(any(User.class)))
+                .thenReturn("token-1")
+                .thenReturn("token-2");
 
         SignInResponseDTO result1 = authService.signIn(validSignInRequest);
         SignInResponseDTO result2 = authService.signIn(validSignInRequest);

@@ -17,12 +17,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
+    private final JwtAuthenticationEntryEndpoint jwtAuthenticationEntryEndpoint;
 
     @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173}")
     private String allowedOrigins;
 
-    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter) {
+    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter,
+                            JwtAuthenticationEntryEndpoint jwtAuthenticationEntryEndpoint) {
+        
         this.tokenAuthenticationFilter = tokenAuthenticationFilter;
+        this.jwtAuthenticationEntryEndpoint = jwtAuthenticationEntryEndpoint;
     }
 
     @Bean
@@ -49,6 +53,9 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 // Rutas privadas
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryEndpoint)
             )
             .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         

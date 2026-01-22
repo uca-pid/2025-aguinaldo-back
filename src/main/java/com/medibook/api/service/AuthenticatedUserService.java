@@ -11,16 +11,15 @@ import java.util.UUID;
 public class AuthenticatedUserService {
     
     private final UserRepository userRepository;
-    private JwtService jwtService;
+    private final JwtService jwtService;
     
-    public AuthenticatedUserService(UserRepository userRepository) {
+    public AuthenticatedUserService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
     
     public Optional<User> validateAccessToken(String accessToken) {
-        if (!jwtService.isTokenValid(accessToken)) {
-            return Optional.empty();
-        }        
+        jwtService.validateTokenThrows(accessToken);     
 
         String userIdString = jwtService.extractUserId(accessToken);
 

@@ -45,6 +45,13 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public void validateTokenThrows(String token){
+        Jwts.parserBuilder()
+            .setSigningKey(getSignInKey())
+            .build()
+            .parseClaimsJws(token);
+    }
+
     private Key getSignInKey(){
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
