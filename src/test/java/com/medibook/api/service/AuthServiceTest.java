@@ -24,6 +24,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,12 +44,14 @@ class AuthServiceTest {
     private AuthMapper authMapper;
     @Mock
     private EmailService emailService;
+    @Mock
+    private JwtService jwtService;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, jwtService);
     }
 
     @Test
@@ -263,7 +268,9 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
-        when(authMapper.toSignInResponse(eq(user), anyString(), anyString())).thenReturn(expectedResponse);
+        when(authMapper.toSignInResponse(any(User.class), anyString(), anyString()))
+            .thenReturn(expectedResponse);
+        when(jwtService.generateToken(any(User.class))).thenReturn("mocked-jwt-token");
 
         SignInResponseDTO response = authService.signIn(request);
 
@@ -324,12 +331,13 @@ class AuthServiceTest {
 
         authService.signOut(refreshTokenHash);
 
-        verify(refreshTokenRepository).revokeTokenByHash(eq(refreshTokenHash), any(ZonedDateTime.class));
+        verify(refreshTokenRepository).revokeTokenByHash(eq(hashToken(refreshTokenHash)), any(ZonedDateTime.class));
     }
 
     @Test
     void whenRefreshTokenWithValidToken_thenSuccess() {
         String refreshTokenHash = "valid-token-hash";
+        String mockedNewAccessToken = "mocked-new-access-token"; // Token simulado
         
         User user = new User();
         user.setId(UUID.randomUUID());
@@ -340,7 +348,7 @@ class AuthServiceTest {
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
-        refreshToken.setTokenHash(refreshTokenHash);
+        refreshToken.setTokenHash(hashToken(refreshTokenHash));
         refreshToken.setExpiresAt(ZonedDateTime.now().plusDays(30));
         refreshToken.setCreatedAt(ZonedDateTime.now());
 
@@ -351,12 +359,16 @@ class AuthServiceTest {
             user.getSurname(),
             user.getRole(),
             "ACTIVE",
-            "new-access-token",
-            "new-refresh-token"
+            mockedNewAccessToken,
+            "new-refresh-token-hash"
         );
 
-        when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(refreshToken));
-        when(authMapper.toSignInResponse(eq(user), anyString(), anyString())).thenReturn(expectedResponse);
+        when(jwtService.generateToken(any(User.class))).thenReturn(mockedNewAccessToken);
+
+        when(refreshTokenRepository.findByTokenHash(hashToken(refreshTokenHash))).thenReturn(Optional.of(refreshToken));
+        
+        when(authMapper.toSignInResponse(any(User.class), anyString(), anyString()))
+            .thenReturn(expectedResponse);
 
         SignInResponseDTO response = authService.refreshToken(refreshTokenHash);
 
@@ -364,9 +376,10 @@ class AuthServiceTest {
         assertEquals(expectedResponse.id(), response.id());
         assertEquals(expectedResponse.email(), response.email());
 
-        verify(refreshTokenRepository).findByTokenHash(refreshTokenHash);
+        verify(refreshTokenRepository).findByTokenHash(hashToken(refreshTokenHash));
         verify(refreshTokenRepository).save(any(RefreshToken.class));
-        verify(refreshTokenRepository).revokeTokenByHash(eq(refreshTokenHash), any(ZonedDateTime.class));
+        verify(refreshTokenRepository).revokeTokenByHash(eq(hashToken(refreshTokenHash)), any(ZonedDateTime.class));
+        
         verify(authMapper).toSignInResponse(eq(user), anyString(), anyString());
     }
 
@@ -374,7 +387,7 @@ class AuthServiceTest {
     void whenRefreshTokenWithInvalidToken_thenThrowException() {
         String invalidTokenHash = "invalid-token-hash";
 
-        when(refreshTokenRepository.findByTokenHash(invalidTokenHash)).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByTokenHash(hashToken(invalidTokenHash))).thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
@@ -382,7 +395,7 @@ class AuthServiceTest {
         );
 
         assertEquals("Invalid refresh token", exception.getMessage());
-        verify(refreshTokenRepository).findByTokenHash(invalidTokenHash);
+        verify(refreshTokenRepository).findByTokenHash(hashToken(invalidTokenHash));
         verifyNoMoreInteractions(refreshTokenRepository, authMapper);
     }
 
@@ -395,11 +408,11 @@ class AuthServiceTest {
 
         RefreshToken expiredToken = new RefreshToken();
         expiredToken.setUser(user);
-        expiredToken.setTokenHash(expiredTokenHash);
+        expiredToken.setTokenHash(hashToken(expiredTokenHash)); // Store hashed version
         expiredToken.setExpiresAt(ZonedDateTime.now().minusDays(1));
         expiredToken.setCreatedAt(ZonedDateTime.now().minusDays(31));
 
-        when(refreshTokenRepository.findByTokenHash(expiredTokenHash)).thenReturn(Optional.of(expiredToken));
+        when(refreshTokenRepository.findByTokenHash(hashToken(expiredTokenHash))).thenReturn(Optional.of(expiredToken));
 
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
@@ -407,7 +420,17 @@ class AuthServiceTest {
         );
 
         assertEquals("Refresh token is expired or revoked", exception.getMessage());
-        verify(refreshTokenRepository).findByTokenHash(expiredTokenHash);
+        verify(refreshTokenRepository).findByTokenHash(hashToken(expiredTokenHash));
         verifyNoMoreInteractions(refreshTokenRepository, authMapper);
+    }
+
+    private String hashToken(String token) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

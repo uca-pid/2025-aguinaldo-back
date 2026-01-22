@@ -28,7 +28,7 @@ public class ExternalController {
 
     private final TurnAssignedService turnAssignedService;
 
-    @Value("${gymcloud.api.keys}")
+    @Value("${gymcloud.api.keys:test-key}")
     private String allowedApiKeysString;
 
     private final ConcurrentHashMap<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
