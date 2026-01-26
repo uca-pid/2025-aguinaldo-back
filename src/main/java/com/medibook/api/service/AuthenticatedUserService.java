@@ -11,24 +11,20 @@ import java.util.UUID;
 public class AuthenticatedUserService {
     
     private final UserRepository userRepository;
+    private final JwtService jwtService;
     
-    public AuthenticatedUserService(UserRepository userRepository) {
+    public AuthenticatedUserService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
     
     public Optional<User> validateAccessToken(String accessToken) {
-        if (accessToken == null || accessToken.isEmpty()) {
-            return Optional.empty();
-        }
-        
-        if (!accessToken.startsWith("jwt-token-for-user-")) {
-            return Optional.empty();
-        }
-        
-        String userIdString = accessToken.substring("jwt-token-for-user-".length());
-        
+        jwtService.validateTokenThrows(accessToken);     
+
+        String userIdString = jwtService.extractUserId(accessToken);
+
         try {
-            UUID userId = UUID.fromString(userIdString);
+            UUID userId = UUID.fromString(userIdString);            
             Optional<User> userOpt = userRepository.findById(userId);
             
             if (userOpt.isPresent() && "ACTIVE".equals(userOpt.get().getStatus())) {

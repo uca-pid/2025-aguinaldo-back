@@ -10,12 +10,17 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.MalformedJwtException;
 
 @Component
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
@@ -33,52 +38,49 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         if ("OPTIONS".equals(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
-        }
+        }      
         
-        String requestPath = request.getRequestURI();
-        // Ensure the authentication filter runs for all endpoints that require authentication.
-        // Add /api/ratings so rating endpoints that expect an authenticated user get the token processed.
-        if (!requestPath.startsWith("/api/turns") && 
-            !requestPath.startsWith("/api/admin") && 
-            !requestPath.startsWith("/api/profile") &&
-            !requestPath.startsWith("/api/notifications") &&
-            !requestPath.startsWith("/api/doctors") &&
-            !requestPath.startsWith("/api/ratings") &&
-            !requestPath.startsWith("/api/badges") &&
-            !requestPath.startsWith("/api/storage")) {
+        try {
+            String authorizationHeader = request.getHeader("Authorization");
+            
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
+            Optional<User> userOpt = authenticatedUserService.getUserFromAuthorizationHeader(authorizationHeader);
+            
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    user,
+                    null,
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                request.setAttribute("authenticatedUser", user);
+            }
+            
             filterChain.doFilter(request, response);
-            return;
-        }
-        
-        String authorizationHeader = request.getHeader("Authorization");
-        
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // Error 401: Token válido pero vencido
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Authorization header required\"}");
             response.setContentType("application/json");
-            return;
-        }
+            response.getWriter().write("{\"error\": \"Token expired\", \"message\": \"El token ha expirado.\"}");
         
-        Optional<User> userOpt = authenticatedUserService.getUserFromAuthorizationHeader(authorizationHeader);
-        
-        if (userOpt.isEmpty()) {
+        } catch (io.jsonwebtoken.security.SignatureException | io.jsonwebtoken.MalformedJwtException e) {
+            // Error 401/403: Bloqueo de seguridad
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\":\"Invalid access token\"}");
             response.setContentType("application/json");
-            return;
+            response.getWriter().write("{\"error\": \"Invalid token\", \"message\": \"Firma de token inválida.\"}");
+        
+        } catch (Exception e) {
+            // Otros errores
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Authentication error\", \"message\": \"Error procesando autenticación.\"}");
         }
-        
-        User user = userOpt.get();
-        
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-            user, 
-            null, 
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
-        );
-        
-        SecurityContextHolder.getContext().setAuthentication(authToken);
-        
-        request.setAttribute("authenticatedUser", user);
-        filterChain.doFilter(request, response);
     }
 }

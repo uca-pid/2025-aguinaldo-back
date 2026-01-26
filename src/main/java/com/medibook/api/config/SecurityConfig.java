@@ -17,12 +17,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
+    private final JwtAuthenticationEntryEndpoint jwtAuthenticationEntryEndpoint;
 
     @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173}")
     private String allowedOrigins;
 
-    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter) {
+    public SecurityConfig(TokenAuthenticationFilter tokenAuthenticationFilter,
+                            JwtAuthenticationEntryEndpoint jwtAuthenticationEntryEndpoint) {
+        
         this.tokenAuthenticationFilter = tokenAuthenticationFilter;
+        this.jwtAuthenticationEntryEndpoint = jwtAuthenticationEntryEndpoint;
     }
 
     @Bean
@@ -43,14 +47,15 @@ public class SecurityConfig {
                 return config;
             }))
             .authorizeHttpRequests(authz -> authz
+                // Rutas públicas
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/gymcloud/**").permitAll()
-                .requestMatchers("/api/ratings/**").authenticated()
-                .requestMatchers("/api/turns/**").authenticated()
-                .requestMatchers("/api/admin/**").authenticated()
-                .requestMatchers("/api/profile/**").authenticated()
-                .requestMatchers("/api/badges/**").authenticated()
-                .anyRequest().permitAll()
+                .requestMatchers("/error").permitAll()
+                // Rutas privadas
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryEndpoint)
             )
             .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
