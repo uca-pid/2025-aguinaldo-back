@@ -55,7 +55,7 @@ public class AdminController {
         }
 
         try {
-            List<User> pendingDoctors = userRepository.findByRoleAndStatus("DOCTOR", "PENDING");
+            List<User> pendingDoctors = userRepository.findByRoleAndStatusAndEmailVerified("DOCTOR", "PENDING", true);
             List<PendingDoctorDTO> pendingDoctorDTOs = pendingDoctors.stream()
                 .map(adminMapper::convertToPendingDoctorDTO)
                 .collect(Collectors.toList());

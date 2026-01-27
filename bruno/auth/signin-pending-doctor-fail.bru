@@ -27,7 +27,7 @@ tests {
   test("Should reject sign in for pending doctor", function() {
     expect(res.getStatus()).to.equal(401);
     expect(res.getBody().error).to.equal("ACCOUNT_NOT_ACTIVE");
-    expect(res.getBody().message).to.include("Invalid email or password");
+    expect(res.getBody().message).to.include("Correo o contraseña incorrecto");
     expect(res.getBody().timestamp).to.be.a('string');
     expect(res.getBody().path).to.equal('/api/auth/signin');
   });

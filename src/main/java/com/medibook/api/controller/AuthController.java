@@ -81,6 +81,18 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+        try {
+            authService.verifyAccount(token);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Mail validado correctamente");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/signin")
     public ResponseEntity<?> signIn(
             @Valid @RequestBody SignInRequestDTO request, 
@@ -137,7 +149,7 @@ public class AuthController {
     }
 
     private String determineSignInErrorCode(String message) {
-        if (message.contains("Invalid email or password")) {
+        if (message.contains("Correo o contraseña incorrecto")) {
             return "INVALID_CREDENTIALS";
         }
         if (message.contains("not found") || message.contains("ACTIVE")) {

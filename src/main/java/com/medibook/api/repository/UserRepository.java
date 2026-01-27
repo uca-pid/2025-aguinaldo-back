@@ -28,7 +28,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT u FROM User u JOIN FETCH u.doctorProfile dp WHERE u.role = 'DOCTOR' AND u.status = :status AND dp.specialty = :specialty")
     List<User> findDoctorsByStatusAndSpecialty(@Param("status") String status, @Param("specialty") String specialty);
 
-    List<User> findByRoleAndStatus(String role, String status);
+    List<User> findByRoleAndStatusAndEmailVerified(String role, String status, Boolean email_verified);
     
     long countByRole(String role);
     long countByRoleAndStatus(String role, String status);

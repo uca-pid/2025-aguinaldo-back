@@ -8,6 +8,7 @@ import com.medibook.api.entity.RefreshToken;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
+import com.medibook.api.repository.EmailVerificationRepository;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 
@@ -45,13 +46,15 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
     @Mock
+    private EmailVerificationRepository emailVerificationRepository;
+    @Mock
     private JwtService jwtService;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, jwtService);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, emailVerificationRepository, jwtService);
     }
 
     @Test
@@ -254,6 +257,7 @@ class AuthServiceTest {
         user.setPasswordHash("hashed_password");
         user.setStatus("ACTIVE");
         user.setRole("PATIENT"); // Agregamos el rol
+        user.setEmailVerified(true);
 
         SignInResponseDTO expectedResponse = new SignInResponseDTO(
             user.getId(),
@@ -296,7 +300,7 @@ class AuthServiceTest {
             () -> authService.signIn(request)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
         verify(userRepository).findByEmail(request.email());
         verifyNoMoreInteractions(passwordEncoder, refreshTokenRepository, authMapper);
     }
@@ -309,7 +313,8 @@ class AuthServiceTest {
         user.setEmail(request.email());
         user.setPasswordHash("hashed_password");
         user.setStatus("ACTIVE");
-        user.setRole("PATIENT"); // Agregamos el rol
+        user.setRole("PATIENT");
+        user.setEmailVerified(true);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(false);
@@ -319,7 +324,7 @@ class AuthServiceTest {
             () -> authService.signIn(request)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
         verify(userRepository).findByEmail(request.email());
         verify(passwordEncoder).matches(request.password(), user.getPasswordHash());
         verifyNoMoreInteractions(refreshTokenRepository, authMapper);
