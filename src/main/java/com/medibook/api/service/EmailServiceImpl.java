@@ -89,6 +89,25 @@ public class EmailServiceImpl implements EmailService {
 
     @Async("emailTaskExecutor")
     @Override
+    public CompletableFuture<EmailResponseDto> sendVerificationEmailAsync(String to, String name, String token) {
+        String verificationLink = frontendUrl + "/?token=" + token;
+        String subject = "Verifica tu cuenta en MediBook";
+        String htmlContent = buildVerificationEmailHtml(name, verificationLink);
+        String textContent = buildVerificationEmailText(name, verificationLink);
+
+        EmailRequestDto emailRequest = EmailRequestDto.builder()
+                .to(to)
+                .toName(name)
+                .subject(subject)
+                .htmlContent(htmlContent)
+                .textContent(textContent)
+                .build();
+
+        return sendEmailAsync(emailRequest);
+    }
+
+    @Async("emailTaskExecutor")
+    @Override
     public CompletableFuture<EmailResponseDto> sendWelcomeEmailToPatientAsync(String patientEmail, String patientName) {
         String subject = "Registro confirmado en MediBook";
         String htmlContent = buildWelcomePatientHtml(patientName);
@@ -252,6 +271,58 @@ public class EmailServiceImpl implements EmailService {
                 .build();
                 
         return sendEmailAsync(emailRequest);
+    }
+
+    private String buildVerificationEmailHtml(String name, String verificationLink) {
+        return """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Verifica tu cuenta en MediBook</title>
+                </head>
+                <body>
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px;">
+                            <h1>Verifica tu cuenta en MediBook</h1>
+                        </div>
+                        
+                        <div style="padding: 30px 20px;">
+                            <h2>Estimado/a %s,</h2>
+                            
+                            <p>Por favor, verifique su cuenta haciendo click en el siguiente enlace:</p>
+
+                            <p></p>
+                            
+                            <div style="text-align: center; margin-top: 10px;">
+                                <a href="%s" style="display:inline-block;padding:12px 20px;background-color:#4287f5;color:white;border-radius:6px;text-decoration:none;font-weight:600;">Verificar mi cuenta</a>
+                            </div>
+
+                            <p></p>
+                            
+                            <p>Si usted no lo solicitó, ignore este mensaje.</p>
+                            
+                            <p>Atentamente,<br>Equipo de MediBook</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """.formatted(name, verificationLink);
+    }
+
+    private String buildVerificationEmailText(String name, String verificationLink) {
+        return """
+                Verifica tu cuenta en MediBook
+                
+                Estimado/a %s,
+                
+                Por favor, verifique su cuenta haciendo click en el siguiente enlace: %s
+
+                Si usted no lo solicitó, ignore este mensaje.
+                
+                Atentamente,
+                Equipo de MediBook
+                """.formatted(name, verificationLink);
     }
 
     private String buildWelcomePatientHtml(String patientName) {

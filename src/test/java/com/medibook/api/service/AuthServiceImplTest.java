@@ -11,6 +11,8 @@ import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
 
 import static com.medibook.api.util.DateTimeUtils.ARGENTINA_ZONE;
+
+import com.medibook.api.repository.EmailVerificationRepository;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 
@@ -52,6 +54,8 @@ class AuthServiceImplTest {
     @Mock
     private EmailService emailService;
     @Mock
+    private EmailVerificationRepository emailVerificationRepository;
+    @Mock
     private JwtService jwtService;
 
     private AuthServiceImpl authService;
@@ -64,7 +68,7 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, jwtService);
+        authService = new AuthServiceImpl(userRepository, refreshTokenRepository, passwordEncoder, userMapper, authMapper, emailService, emailVerificationRepository, jwtService);
 
         // Mock EmailService async methods
         EmailResponseDto successResponse = EmailResponseDto.builder()
@@ -74,6 +78,8 @@ class AuthServiceImplTest {
                 .build();
                 
         when(emailService.sendWelcomeEmailToPatientAsync(anyString(), anyString()))
+            .thenReturn(CompletableFuture.completedFuture(successResponse));
+        when(emailService.sendVerificationEmailAsync(anyString(), anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
         when(emailService.sendApprovalEmailToDoctorAsync(anyString(), anyString()))
             .thenReturn(CompletableFuture.completedFuture(successResponse));
@@ -131,6 +137,7 @@ class AuthServiceImplTest {
         sampleUser.setSurname("User");
         sampleUser.setRole("PATIENT");
         sampleUser.setStatus("ACTIVE");
+        sampleUser.setEmailVerified(true);
 
         validSignInRequest = new SignInRequestDTO("test@test.com", "password123");
     }
@@ -404,7 +411,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
         
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
         verify(userRepository).findByEmail(validSignInRequest.email());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
@@ -419,7 +426,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
         
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
         verify(passwordEncoder).matches(validSignInRequest.password(), sampleUser.getPasswordHash());
     }
 
@@ -440,7 +447,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
         
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
         verify(userRepository).findByEmail(validSignInRequest.email());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
@@ -454,6 +461,7 @@ class AuthServiceImplTest {
         pendingDoctor.setPasswordHash("hashedPassword");
         pendingDoctor.setRole("DOCTOR");
         pendingDoctor.setStatus("PENDING");
+        pendingDoctor.setEmailVerified(true);
         
         when(userRepository.findByEmail(validSignInRequest.email())).thenReturn(Optional.of(pendingDoctor));
         when(passwordEncoder.matches(validSignInRequest.password(), pendingDoctor.getPasswordHash())).thenReturn(true);
@@ -1320,7 +1328,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1339,7 +1347,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1358,7 +1366,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1377,7 +1385,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1396,7 +1404,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1415,7 +1423,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1434,7 +1442,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1453,7 +1461,7 @@ class AuthServiceImplTest {
                 () -> authService.signIn(validSignInRequest)
         );
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
     }
 
     @Test
@@ -1464,7 +1472,7 @@ class AuthServiceImplTest {
                 .message("send failed")
                 .build();
 
-        when(emailService.sendWelcomeEmailToPatientAsync(anyString(), anyString()))
+        when(emailService.sendVerificationEmailAsync(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(failureResponse));
 
         when(userRepository.existsByEmail(validPatientRequest.email())).thenReturn(false);
@@ -1476,7 +1484,7 @@ class AuthServiceImplTest {
 
         // Should not throw even if email send reports failure
         assertDoesNotThrow(() -> authService.registerPatient(validPatientRequest));
-        verify(emailService).sendWelcomeEmailToPatientAsync(anyString(), anyString());
+        verify(emailService).sendVerificationEmailAsync(anyString(), anyString(), anyString());
     }
 
     @Test
@@ -1484,7 +1492,7 @@ class AuthServiceImplTest {
         CompletableFuture<EmailResponseDto> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new RuntimeException("send failure"));
 
-        when(emailService.sendWelcomeEmailToPatientAsync(anyString(), anyString()))
+        when(emailService.sendVerificationEmailAsync(anyString(), anyString(), anyString()))
                 .thenReturn(failedFuture);
 
         when(userRepository.existsByEmail(validPatientRequest.email())).thenReturn(false);
@@ -1496,7 +1504,7 @@ class AuthServiceImplTest {
 
         // Exception in async email should be handled internally, not propagated
         assertDoesNotThrow(() -> authService.registerPatient(validPatientRequest));
-        verify(emailService).sendWelcomeEmailToPatientAsync(anyString(), anyString());
+        verify(emailService).sendVerificationEmailAsync(anyString(), anyString(), anyString());
     }
 
     @Test

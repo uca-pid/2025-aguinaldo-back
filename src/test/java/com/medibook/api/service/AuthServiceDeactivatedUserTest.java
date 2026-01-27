@@ -53,7 +53,7 @@ class AuthServiceDeactivatedUserTest {
             authService.signIn(signInRequest);
         });
 
-        assertEquals("Invalid email or password", exception.getMessage());
+        assertEquals("Correo o contraseña incorrecto", exception.getMessage());
         verify(userRepository).findByEmail("disabled@example.com");
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
