@@ -115,6 +115,7 @@ class TurnAssignedControllerTest {
         patient.setGender("MALE");
         patient.setRole("PATIENT");
         patient.setStatus("ACTIVE");
+        patient.setEmailVerified(true);
         return userRepository.save(patient);
     }
 
@@ -130,6 +131,7 @@ class TurnAssignedControllerTest {
         doctor.setGender("FEMALE");
         doctor.setRole("DOCTOR");
         doctor.setStatus("ACTIVE");
+        doctor.setEmailVerified(true);
         return userRepository.save(doctor);
     }
 

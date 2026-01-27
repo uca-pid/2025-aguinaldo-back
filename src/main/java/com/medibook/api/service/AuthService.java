@@ -15,6 +15,7 @@ public interface AuthService {
     RegisterResponseDTO registerDoctor(RegisterRequestDTO request);
     RegisterResponseDTO registerAdmin(RegisterRequestDTO request);
     
+    void verifyAccount(String token);
     SignInResponseDTO signIn(SignInRequestDTO request);
     void signOut(String refreshToken);
     SignInResponseDTO refreshToken(String refreshToken);

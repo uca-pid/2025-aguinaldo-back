@@ -8,6 +8,8 @@ import java.util.concurrent.CompletableFuture;
 public interface EmailService {
     
     CompletableFuture<EmailResponseDto> sendEmailAsync(EmailRequestDto emailRequest);
+
+    CompletableFuture<EmailResponseDto> sendVerificationEmailAsync(String to, String name, String token);
     
     CompletableFuture<EmailResponseDto> sendWelcomeEmailToPatientAsync(String patientEmail, String patientName);
     

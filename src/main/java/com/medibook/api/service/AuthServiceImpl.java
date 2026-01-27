@@ -4,10 +4,12 @@ import com.medibook.api.dto.Auth.RegisterRequestDTO;
 import com.medibook.api.dto.Auth.RegisterResponseDTO;
 import com.medibook.api.dto.Auth.SignInRequestDTO;
 import com.medibook.api.dto.Auth.SignInResponseDTO;
+import com.medibook.api.entity.EmailVerification;
 import com.medibook.api.entity.RefreshToken;
 import com.medibook.api.entity.User;
 import com.medibook.api.mapper.AuthMapper;
 import com.medibook.api.mapper.UserMapper;
+import com.medibook.api.repository.EmailVerificationRepository;
 import com.medibook.api.repository.RefreshTokenRepository;
 import com.medibook.api.repository.UserRepository;
 
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 
 @Service
@@ -36,6 +39,7 @@ class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
     private final EmailService emailService;
+    private final EmailVerificationRepository emailVerificationRepository;
     private final JwtService jwtService;
 
     private static final java.util.Set<String> VALID_SPECIALTIES = java.util.Set.of(
@@ -110,6 +114,7 @@ class AuthServiceImpl implements AuthService {
             UserMapper userMapper,
             AuthMapper authMapper,
             EmailService emailService,
+            EmailVerificationRepository emailVerificationRepository,
             JwtService jwtService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -117,7 +122,47 @@ class AuthServiceImpl implements AuthService {
         this.userMapper = userMapper;
         this.authMapper = authMapper;
         this.emailService = emailService;
+        this.emailVerificationRepository = emailVerificationRepository;
         this.jwtService = jwtService;
+    }
+
+    @Override
+    @Transactional
+    public void verifyAccount(String rawToken) {
+        String hashedToken = hashToken(rawToken);
+
+        EmailVerification verification = emailVerificationRepository.findByCodeHash(hashedToken)
+                .orElseThrow(() -> new IllegalArgumentException("Código de verificación inválido o no encontrado"));
+
+        if (verification.getConsumedAt() != null) {
+            throw new IllegalArgumentException("Este enlace ya fue utilizado");
+        }
+
+        if (verification.getExpiresAt().isBefore(ZonedDateTime.now(ARGENTINA_ZONE))) {
+            throw new IllegalArgumentException("El enlace de verificación ha expirado");
+        }
+
+        User user = verification.getUser();
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        verification.setConsumedAt(ZonedDateTime.now(ARGENTINA_ZONE));
+        emailVerificationRepository.save(verification);
+
+        if ("PATIENT".equals(user.getRole())) {
+            try {
+                final String userEmail = user.getEmail();
+                final String userName = user.getName();
+
+                emailService.sendWelcomeEmailToPatientAsync(userEmail, userName);
+                log.info("Email de bienvenida enviado a: {}", userEmail);                
+                
+            } catch (Exception e) {
+                log.warn("Error enviando email de bienvenida a {}: {}", user.getEmail(), e.getMessage());            
+            }
+        }
+        
+        log.info("Cuenta verificada exitosamente para: {}", user.getEmail());
     }
 
     @Override
@@ -135,28 +180,21 @@ class AuthServiceImpl implements AuthService {
 
         String hashedPassword = passwordEncoder.encode(request.password());
         User user = userMapper.toUser(request, "PATIENT", hashedPassword);
+
+        user.setEmailVerified(false);
+        
         user = userRepository.save(user);
         
         try {
             final String userEmail = user.getEmail();
             final String userName = user.getName();
+            final String verificationToken = createVerificationForUser(user);
             
-            emailService.sendWelcomeEmailToPatientAsync(userEmail, userName)
-                .thenAccept(response -> {
-                    if (response.isSuccess()) {
-                        log.info("Email de bienvenida enviado al paciente: {}", userEmail);
-                    } else {
-                        log.warn("Falló email de bienvenida para {}: {}", userEmail, response.getMessage());
-                    }
-                })
-                .exceptionally(throwable -> {
-                    log.error("Error crítico enviando email a {}: {}", userEmail, throwable.getMessage());
-                    return null;
-                });
+            emailService.sendVerificationEmailAsync(userEmail, userName, verificationToken);                
             
-            log.info("Email de bienvenida encolado para: {}", userEmail);
+            log.info("Email de verificación enviado a: {}", userEmail);
         } catch (Exception e) {
-            log.warn("Error encolando email de bienvenida para {}: {}", user.getEmail(), e.getMessage());            
+            log.warn("Error enviando email de verificación a {}: {}", user.getEmail(), e.getMessage());            
         }
 
         return userMapper.toRegisterResponse(user);
@@ -179,7 +217,22 @@ class AuthServiceImpl implements AuthService {
         String hashedPassword = passwordEncoder.encode(request.password());
         User user = userMapper.toUser(request, "DOCTOR", hashedPassword);
         user.setStatus("PENDING");
+
+        user.setEmailVerified(false);
+
         user = userRepository.save(user);
+
+        try {
+            final String userEmail = user.getEmail();
+            final String userName = user.getName();
+            final String verificationToken = createVerificationForUser(user);
+            
+            emailService.sendVerificationEmailAsync(userEmail, userName, verificationToken);                
+            
+            log.info("Email de verificación enviado a: {}", userEmail);
+        } catch (Exception e) {
+            log.warn("Error enviando email de verificación a {}: {}", user.getEmail(), e.getMessage());            
+        }
 
         return userMapper.toRegisterResponse(user);
     }
@@ -206,14 +259,18 @@ class AuthServiceImpl implements AuthService {
     @Transactional
     public SignInResponseDTO signIn(SignInRequestDTO request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+                .orElseThrow(() -> new IllegalArgumentException("Correo o contraseña incorrecto"));
+
+        if(!user.isEmailVerified()) {
+            throw new IllegalArgumentException("Correo o contraseña incorrecto");
+        }
 
         if (!isUserAuthorizedToSignIn(user)) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new IllegalArgumentException("Correo o contraseña incorrecto");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new IllegalArgumentException("Correo o contraseña incorrecto");
         }
 
         String rawToken = generateSecureToken();
@@ -365,5 +422,19 @@ class AuthServiceImpl implements AuthService {
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new RuntimeException("Error initializing SHA-256", e);
         }
+    }
+
+    private String createVerificationForUser(User user) {
+        String rawToken = generateSecureToken();
+        String hashedToken = hashToken(rawToken);
+
+        EmailVerification verification = new EmailVerification();
+        verification.setUser(user);
+        verification.setCodeHash(hashedToken);
+        verification.setExpiresAt(ZonedDateTime.now(ARGENTINA_ZONE).plusHours(72));
+
+        emailVerificationRepository.save(verification);
+
+        return rawToken;
     }
 }
