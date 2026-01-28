@@ -24,45 +24,52 @@ public class StorageController {
 
     @PostMapping(value = "/upload-turn-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('PATIENT')")
-    public Mono<ResponseEntity<String>> uploadTurnFile(
+    public ResponseEntity<String> uploadTurnFile(
             @RequestParam("turnId") UUID turnId,
             @RequestParam("file") MultipartFile file) {
 
-        return turnFileService.uploadTurnFile(turnId, file)
-                .map(result -> ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(result))
-                .onErrorResume(error -> {
-                    log.error("Error uploading turn file: {}", error.getMessage());
-                    return Mono.just(ResponseEntity.badRequest()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body("{\"error\":\"" + error.getMessage() + "\"}"));
-                });
+        try {
+            String result = turnFileService.uploadTurnFile(turnId, file).block();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(result);
+        } catch (Exception error) {
+            log.error("Error uploading turn file: {}", error.getMessage());
+            String message = error.getMessage();
+            if (error.getCause() != null) {
+                message = error.getCause().getMessage();
+            }
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\":\"" + message + "\"}");
+        }
     }
 
     @DeleteMapping("/delete-turn-file/{turnId}")
     @PreAuthorize("hasRole('PATIENT')")
-    public Mono<ResponseEntity<String>> deleteTurnFile(@PathVariable UUID turnId) {
-        return turnFileService.deleteTurnFile(turnId)
-                .then(Mono.just(ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("{\"message\":\"Archivo eliminado exitosamente\"}")))
-                .onErrorResume(error -> {
-                    log.error("Error deleting turn file: {}", error.getMessage());
-                    if (error.getMessage().contains("no encontrado")) {
-                        return Mono.just(ResponseEntity.status(404)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body("{\"error\":\"" + error.getMessage() + "\"}"));
-                    }
-                    if (error.getMessage().contains("turno completado")) {
-                        return Mono.just(ResponseEntity.status(400)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body("{\"error\":\"" + error.getMessage() + "\"}"));
-                    }
-                    return Mono.just(ResponseEntity.status(500)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body("{\"error\":\"" + error.getMessage() + "\"}"));
-                });
+    public ResponseEntity<String> deleteTurnFile(@PathVariable UUID turnId) {
+        try {
+            turnFileService.deleteTurnFile(turnId).block();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"message\":\"Archivo eliminado exitosamente\"}");
+        } catch (Exception error) {
+             log.error("Error deleting turn file: {}", error.getMessage());
+             String message = error.getMessage();
+             if (message != null && message.contains("no encontrado")) {
+                 return ResponseEntity.status(404)
+                         .contentType(MediaType.APPLICATION_JSON)
+                         .body("{\"error\":\"" + message + "\"}");
+             }
+             if (message != null && message.contains("turno completado")) {
+                 return ResponseEntity.status(400)
+                         .contentType(MediaType.APPLICATION_JSON)
+                         .body("{\"error\":\"" + message + "\"}");
+             }
+             return ResponseEntity.status(500)
+                     .contentType(MediaType.APPLICATION_JSON)
+                     .body("{\"error\":\"" + (message != null ? message : "Error desconocido") + "\"}");
+        }
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
